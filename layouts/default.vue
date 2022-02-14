@@ -1,5 +1,13 @@
 <template>
   <v-app>
+    <div class="text-h4">
+      <nuxt-link
+        v-for="locale in availableLocales"
+        :key="locale.code"
+        :to="switchLocalePath(locale.code)"
+        >{{ locale.name }}</nuxt-link
+      >
+    </div>
     <v-main>
       <Nuxt />
     </v-main>
@@ -7,5 +15,25 @@
 </template>
 
 <script>
-export default {}
+export default {
+  computed: {
+    availableLocales() {
+      return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
+    },
+  },
+  created() {
+    // watch the lang changes, then change the page direction
+    this.$watch(
+      '$i18n.locale',
+      (newLocale) => {
+        if (newLocale === 'ar') {
+          this.$vuetify.rtl = true
+        } else {
+          this.$vuetify.rtl = false
+        }
+      },
+      { immediate: true }
+    )
+  },
+}
 </script>
