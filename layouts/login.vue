@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <h1>Alkholi Portal</h1>
     <v-main>
       <Nuxt />
     </v-main>
