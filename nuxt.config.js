@@ -59,14 +59,14 @@ export default {
         iso: 'en-US',
         file: 'en.json',
         dir: 'ltr',
-        name: 'English',
+        name: 'english',
       },
       {
         code: 'ar',
         iso: 'ar-SA',
         file: 'ar.json',
         dir: 'rtl',
-        name: 'العــربية',
+        name: 'العربية',
       },
     ],
     lazy: true,
@@ -104,9 +104,13 @@ export default {
       themes: {
         light: {
           primary: '#000046',
+          mainBG: '#E6E6ED',
+          secondaryBG: '#F7F7F6',
         },
         dark: {
-          primary: '#20724e',
+          primary: '#00001c',
+          mainBG: '#00002a',
+          secondaryBG: '#000034',
         },
       },
     },

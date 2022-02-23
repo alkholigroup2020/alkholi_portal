@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app v-if="show">
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.mdAndDown"
       v-model="drawer"
@@ -7,36 +7,39 @@
       app
     >
       <div class="d-flex justify-center" style="height: 60px">
-        <v-btn color="white" depressed text tile height="100%" :ripple="false">
-          <!-- <span class="px-2 pt-1 text-capitalize">Dark</span> -->
-          <v-icon>mdi-theme-light-dark</v-icon>
-          <!-- <span class="px-2 pt-1 text-capitalize">Light</span> -->
-        </v-btn>
-
-        <v-btn color="white" depressed text tile height="100%" :ripple="false">
-          <v-icon>mdi-exit-to-app</v-icon>
-          <!-- <span class="px-2 pt-1 text-capitalize">Logout</span> -->
-        </v-btn>
         <v-btn
-          color="white "
+          color="white"
           depressed
           text
           tile
           height="100%"
           :ripple="false"
-          nuxt
+          @click="changeColorMode"
         >
-          <v-icon class="px-2" size="18">mdi-web</v-icon>
-          <div class="pt-1">
-            <nuxt-link
-              v-for="locale in availableLocales"
-              :key="locale.code"
-              class="white--text text-decoration-none text-capitalize"
-              :to="switchLocalePath(locale.code)"
-              >{{ locale.name }}
-            </nuxt-link>
-          </div>
+          <v-icon>mdi-theme-light-dark</v-icon>
         </v-btn>
+
+        <v-btn color="white" depressed text tile height="100%" :ripple="false">
+          <v-icon>mdi-exit-to-app</v-icon>
+        </v-btn>
+        <nuxt-link
+          v-for="locale in availableLocales"
+          :key="locale.code"
+          class="white--text text-decoration-none"
+          :to="switchLocalePath(locale.code)"
+        >
+          <v-btn
+            color="white"
+            class="pt-1"
+            depressed
+            text
+            tile
+            height="100%"
+            :ripple="false"
+          >
+            <v-icon class="px-2" size="20">mdi-web</v-icon>
+          </v-btn>
+        </nuxt-link>
       </div>
       <v-divider class="py-0 mt-n1 white"></v-divider>
       <div class="d-flex justify-center py-5">
@@ -110,7 +113,7 @@
         <!-- group logo -->
         <div
           style="height: 100%"
-          class="d-flex align-center justify-center mx-n6 px-0 px-md-11"
+          class="d-flex align-center justify-center px-0 px-md-11"
         >
           <v-img
             contain
@@ -130,6 +133,7 @@
           tile
           height="100%"
           :ripple="false"
+          @click="changeColorMode"
         >
           <span class="px-2 pt-1 text-capitalize">{{
             $t('portalPage.appBar.light')
@@ -155,33 +159,52 @@
           }}</span>
         </v-btn>
 
-        <v-btn
-          v-if="$vuetify.breakpoint.mdAndUp"
-          color="white "
-          depressed
-          text
-          tile
-          height="100%"
-          :ripple="false"
-          nuxt
-        >
-          <v-icon class="px-2" size="18">mdi-web</v-icon>
-          <div class="pt-1">
-            <nuxt-link
-              v-for="locale in availableLocales"
-              :key="locale.code"
-              class="white--text text-decoration-none text-capitalize"
-              :to="switchLocalePath(locale.code)"
-              >{{ locale.name }}
-            </nuxt-link>
-          </div>
-        </v-btn>
+        <div style="height: 100%">
+          <nuxt-link
+            v-for="locale in availableLocales"
+            :key="locale.code"
+            class="white--text text-decoration-none"
+            :to="switchLocalePath(locale.code)"
+          >
+            <v-btn
+              v-if="$vuetify.breakpoint.mdAndUp"
+              color="white"
+              class="pt-1"
+              depressed
+              text
+              tile
+              height="100%"
+              :ripple="false"
+            >
+              <v-icon class="px-2" size="20">mdi-web</v-icon>
+              <span
+                class="text-capitalize"
+                :style="$i18n.locale == 'ar' ? 'font-size: 17px' : ''"
+              >
+                {{ locale.name }}
+              </span>
+            </v-btn>
+          </nuxt-link>
+        </div>
       </v-container>
     </v-app-bar>
 
-    <v-main>
+    <v-main class="mainBG">
       <Nuxt />
     </v-main>
+
+    <v-footer
+      class="primary d-flex justify-center align-center pa-0"
+      height="22"
+      app
+    >
+      <p
+        class="pa-0 ma-0 white--text"
+        style="width: fit-content; font-size: 13px"
+      >
+        Copyright &copy; Alkholi Group {{ getTheCurrentYear }}
+      </p>
+    </v-footer>
   </v-app>
 </template>
 
@@ -190,14 +213,29 @@ export default {
   data() {
     return {
       drawer: false,
+      show: false,
     }
   },
   computed: {
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
     },
+    getTheCurrentYear() {
+      return new Date().getFullYear()
+    },
   },
   created() {
+    // check the preferred color mode
+    setTimeout(() => {
+      if (process.client) {
+        const colorMode = localStorage.getItem('colorMode')
+        if (colorMode === 'dark') {
+          this.$vuetify.theme.dark = true
+        }
+        this.show = true
+      }
+    }, 10)
+
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',
@@ -210,6 +248,18 @@ export default {
       },
       { immediate: true }
     )
+  },
+
+  methods: {
+    changeColorMode() {
+      this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+
+      if (this.$vuetify.theme.isDark) {
+        localStorage.setItem('colorMode', 'dark')
+      } else {
+        localStorage.setItem('colorMode', 'light')
+      }
+    },
   },
 }
 </script>
