@@ -1,3 +1,10 @@
 {
-  "welcome": "مــرحباً :)"
+  "welcome": "مــرحباً",
+  "portalPage": {
+    "appBar": {
+      "logout": "الخروج",
+      "light": "فاتح",
+      "dark": "غامق"
+    }
+  }
 }

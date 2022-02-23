@@ -1,3 +1,10 @@
 {
-  "welcome": "Hello World"
+  "welcome": "Hello World",
+  "portalPage": {
+    "appBar": {
+      "logout": "Logout",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  }
 }
