@@ -225,17 +225,6 @@ export default {
     },
   },
   created() {
-    // check the preferred color mode
-    setTimeout(() => {
-      if (process.client) {
-        const colorMode = localStorage.getItem('colorMode')
-        if (colorMode === 'dark') {
-          this.$vuetify.theme.dark = true
-        }
-        this.show = true
-      }
-    }, 10)
-
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',
@@ -249,7 +238,20 @@ export default {
       { immediate: true }
     )
   },
-
+  mounted() {
+    this.$nextTick(() => {
+      this.$nuxt.$loading.start()
+      // check the preferred color mode
+      setTimeout(() => {
+        const colorMode = localStorage.getItem('colorMode')
+        if (colorMode === 'dark') {
+          this.$vuetify.theme.dark = true
+        }
+        this.show = true
+        this.$nuxt.$loading.finish()
+      }, 10)
+    })
+  },
   methods: {
     changeColorMode() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
