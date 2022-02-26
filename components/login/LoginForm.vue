@@ -7,99 +7,94 @@
     rounded
   >
     <v-container>
-      <!-- @submit.prevent="loginUser" -->
-      <v-form>
-        <!-- Title -->
-        <v-row>
-          <v-col cols="12">
-            <h2
-              class="text-center py-3 py-md-8 text-body-1"
-              style="color: #f1e9ec !important"
-            >
-              Login
-            </h2>
-          </v-col>
-        </v-row>
-        <!-- Login Errors -->
-        <!-- <p class="secondary--text text-center pb-5" v-if="showError">
-          Account or Password is incorrect!
-        </p> -->
-        <p v-if="showPlainError" class="secondary--text text-center pb-5">
-          Please enter your login credentials!
-        </p>
-        <!-- Input Fields -->
-        <v-row>
-          <v-col offset="1" cols="10" class="py-0">
-            <p class="my-0 py-0" style="color: #f1e9ec !important">
-              User Account:
-            </p>
-            <!-- 
-              @blur="$v.userAccount.$touch()"
-              :error-messages="accountErrors"
-             -->
+      <ValidationObserver v-slot="{ invalid }">
+        <v-form @submit.prevent="loginUser">
+          <!-- Title -->
+          <v-row>
+            <v-col cols="12">
+              <h2
+                class="text-center py-3 py-md-8 text-body-1"
+                style="color: #f1e9ec !important"
+              >
+                Login
+              </h2>
+            </v-col>
+          </v-row>
 
-            <ValidationProvider v-slot="{ errors }" rules="required">
-              <v-text-field
-                v-model="userAccount"
-                class="pt-0 pb-1 inputColor"
-                background-color="#f1e9ec"
-                height="35"
-                required
+          <!-- Input Fields -->
+          <v-row>
+            <v-col offset="1" cols="10" class="py-0">
+              <p class="my-0 py-0" style="color: #f1e9ec !important">
+                User Account:
+              </p>
+              <ValidationProvider v-slot="{ errors }" rules="required">
+                <v-text-field
+                  v-model="userAccount"
+                  class="pt-0 pb-1 inputColor"
+                  background-color="#f1e9ec"
+                  height="35"
+                  required
+                  rounded
+                  autocomplete
+                  :error-messages="errors[0]"
+                ></v-text-field>
+              </ValidationProvider>
+            </v-col>
+            <v-col offset="1" cols="10" class="py-0">
+              <p class="my-0 py-0" style="color: #f1e9ec !important">Domain:</p>
+              <ValidationProvider v-slot="{ errors }" rules="required">
+                <v-autocomplete
+                  v-model="domain"
+                  class="pt-0 pb-1 inputColor"
+                  :items="domains"
+                  required
+                  rounded
+                  background-color="#f1e9ec"
+                  height="35"
+                  :error-messages="errors"
+                ></v-autocomplete>
+              </ValidationProvider>
+            </v-col>
+            <v-col offset="1" cols="10" class="py-0">
+              <p class="my-0 py-0" style="color: #f1e9ec !important">
+                Password:
+              </p>
+              <ValidationProvider v-slot="{ errors }" rules="required">
+                <v-text-field
+                  v-model="userPassword"
+                  class="pt-0 pb-1 inputColor"
+                  background-color="#f1e9ec"
+                  height="35"
+                  type="password"
+                  required
+                  rounded
+                  autocomplete
+                  :error-messages="errors"
+                ></v-text-field>
+              </ValidationProvider>
+            </v-col>
+          </v-row>
+
+          <!-- Login BTN -->
+          <v-row class="pt-1 pt-md-3 pb-3 pb-md-10">
+            <v-col offset="3" cols="6" class="d-flex justify-center">
+              <v-btn
+                v-if="!invalid"
+                width="85%"
+                type="submit"
+                color="#f1e9ec"
                 rounded
-                autocomplete
-                :error-messages="errors[0]"
-              ></v-text-field>
-              <!-- <span class="mt-0 bt-0 error--text">{{ errors[0] }}</span> -->
-            </ValidationProvider>
-          </v-col>
-          <v-col offset="1" cols="10" class="py-0">
-            <p class="my-0 py-0" style="color: #f1e9ec !important">Domain:</p>
-            <!-- 
-              @blur="$v.domain.$touch()"
-              :error-messages="domainErrors"
-             -->
-            <v-autocomplete
-              v-model="domain"
-              class="pt-0 pb-1 inputColor"
-              :items="domains"
-              required
-              rounded
-              background-color="#f1e9ec"
-              height="35"
-            ></v-autocomplete>
-          </v-col>
-          <v-col offset="1" cols="10" class="py-0">
-            <p class="my-0 py-0" style="color: #f1e9ec !important">Password:</p>
-            <!-- 
-              @blur="$v.userPassword.$touch()"
-              :error-messages="passErrors"
-             -->
-            <v-text-field
-              v-model="userPassword"
-              class="pt-0 pb-1 inputColor"
-              background-color="#f1e9ec"
-              height="35"
-              type="password"
-              required
-              rounded
-              autocomplete
-            ></v-text-field>
-          </v-col>
-        </v-row>
-        <!-- Login BTN -->
-        <v-row class="pt-1 pt-md-3 pb-3 pb-md-10">
-          <v-col offset="3" cols="6" class="d-flex justify-center">
-            <v-btn
-              width="85%"
-              type="submit"
-              color="#f1e9ec"
-              rounded
-              class="py-2 py-md-3 primary--text text-subtitle-1 text-capitalize"
-              >Submit</v-btn
-            >
-          </v-col>
-        </v-row>
-      </v-form>
+                class="
+                  py-2 py-md-3
+                  primary--text
+                  text-subtitle-1 text-capitalize
+                "
+                >Submit</v-btn
+              >
+            </v-col>
+          </v-row>
+        </v-form>
+      </ValidationObserver>
     </v-container>
   </v-card>
 </template>
@@ -108,22 +103,16 @@
 import { extend, localize } from 'vee-validate'
 import { required } from 'vee-validate/dist/rules'
 
+extend('required', {
+  ...required,
+})
+
 localize({
   en: {
     messages: {
-      required: 'This field is required!!',
+      required: 'This field is required!',
     },
   },
-  ar: {
-    messages: {
-      required: 'مطلوب',
-    },
-  },
-})
-
-extend('required', {
-  ...required,
-  // message: 'This field is required!!',
 })
 
 // import { gsap } from 'gsap'
@@ -167,7 +156,7 @@ export default {
         return '10.13.10.11'
       }
     },
-    loginUser() {
+    oldLoginUser() {
       if (
         this.userAccount === '' ||
         this.password === '' ||
@@ -208,6 +197,13 @@ export default {
           })
         }
       }
+    },
+    loginUser() {
+      alert(`Form data: {
+        userName: ${this.userAccount}
+        userDomain: ${this.srvName()}
+        userPassword: ${this.userPassword}
+      }`)
     },
   },
 }
