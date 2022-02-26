@@ -19,6 +19,8 @@
 </template>
 
 <script>
+import { localize } from 'vee-validate'
+
 export default {
   computed: {
     getTheCurrentYear() {
@@ -31,8 +33,10 @@ export default {
       '$i18n.locale',
       (newLocale) => {
         if (newLocale === 'ar') {
+          localize('ar')
           this.$vuetify.rtl = true
         } else {
+          localize('en')
           this.$vuetify.rtl = false
         }
       },
@@ -41,3 +45,9 @@ export default {
   },
 }
 </script>
+
+<style lang="scss">
+.v-messages__message {
+  color: orange !important;
+}
+</style>
