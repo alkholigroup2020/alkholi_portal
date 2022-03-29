@@ -1,10 +1,28 @@
 {
-  "welcome": "Hello World",
+  "loginForm": {
+    "portalTitle": "Employees' Portal",
+    "title": "Login",
+    "userName": "User Account:",
+    "domainName": "Domain Name:",
+    "password": "Password:",
+    "submitBTN": "Submit"
+  },
   "portalPage": {
     "appBar": {
       "logout": "Logout",
       "light": "Light",
       "dark": "Dark"
+    }
+  },
+  "errorMessages": {
+    "login": {
+      "hrDataMissing": "User's data on HR system is missing!",
+      "hrTitleMissing": "User's title on HR system is missing!",
+      "hrManagerMessing": "User's manager info on HR system is missing!",
+      "adConnectionError": "Couldn't connect to Active Directory!",
+      "authFailed": "Authentication Failed!",
+      "wrongUser": "Wrong Username!",
+      "wrongPassword": "Wrong Password!"
     }
   }
 }

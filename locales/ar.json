@@ -1,10 +1,28 @@
 {
-  "welcome": "مــرحباً",
+  "loginForm": {
+    "portalTitle": "بوابــة المـوظـفــين",
+    "title": "تسجــيل الدخــول",
+    "userName": "الحســاب:",
+    "domainName": "النطــاق:",
+    "password": "كلــمة الســر:",
+    "submitBTN": "تسجــيل الدخــول"
+  },
   "portalPage": {
     "appBar": {
       "logout": "الخروج",
       "light": "فاتح",
       "dark": "غامق"
+    }
+  },
+  "errorMessages": {
+    "login": {
+      "hrDataMissing": "بيـانات الموظـف غير مكتملـة ببـرنامج المـوارد البشـرية!",
+      "hrTitleMissing": "المـسمى الوظـيفي غير مـوجود ببـرنامج المـوارد البشـرية!",
+      "hrManagerMessing": "معلـومات المدير المباشـر غير متوفرة!",
+      "adConnectionError": "حـدث خـطأ في الإتصـال!",
+      "authFailed": "حـدث خـطأ في المصـادقـة!",
+      "wrongUser": "خـطأ في إسـم المستخـدم!",
+      "wrongPassword": "خـطأ في كلـمة الـسر!"
     }
   }
 }

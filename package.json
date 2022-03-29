@@ -15,6 +15,11 @@
     "@nuxtjs/i18n": "^7.2.0",
     "@nuxtjs/pwa": "^3.3.5",
     "core-js": "^3.15.1",
+    "cryptr": "^6.0.2",
+    "express": "^4.17.3",
+    "jsonwebtoken": "^8.5.1",
+    "ldapjs": "^2.3.2",
+    "mssql": "^8.0.2",
     "nuxt": "^2.15.7",
     "vee-validate": "^3.4.14",
     "vuetify": "^2.5.5"

@@ -3,8 +3,8 @@
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    titleTemplate: '%s - alkholi_portal',
-    title: 'alkholi_portal',
+    // titleTemplate: '%s - alkholi_portal',
+    title: 'Alkholi Portal',
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
@@ -119,6 +119,16 @@ export default {
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
     transpile: ['vee-validate'],
+  },
+
+  serverMiddleware: ['~server/login/main.js'],
+
+  // client side expose
+  publicRuntimeConfig: {
+    baseURL:
+      process.env.NODE_ENV === 'production'
+        ? process.env.baseURL_prod
+        : process.env.baseURL_dev,
   },
 
   loading: '@/components/spinners/RadarSpinner.vue',

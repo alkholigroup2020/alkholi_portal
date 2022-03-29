@@ -1,5 +1,19 @@
 <template>
-  <v-container fluid style="height: 100%">
+  <v-container v-if="show" fluid class="loginBG">
+    <!-- notifications snackbar -->
+    <v-snackbar
+      v-model="showSnack"
+      app
+      left
+      top
+      color="transparent"
+      elevation="0"
+      timeout="3000"
+      :absolute="false"
+    >
+      <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
+    </v-snackbar>
+
     <v-row
       align="center"
       class="pt-10 pt-md-0"
@@ -10,10 +24,19 @@
           <LoginForm />
         </div>
       </v-col>
-      <v-col cols="12" md="6" class="green" order="1" order-md="2">
-        <div class="red d-flex flex-column align-center">
-          <h1>Alkholi Group</h1>
-          <p>Employees Portal</p>
+      <v-col
+        style="height: 45%"
+        cols="12"
+        md="6"
+        order="1"
+        order-md="2"
+        class=""
+      >
+        <div class="d-flex flex-column align-center align-md-start">
+          <v-img width="50%" src="/generalPictures/companyLogo-T.png"></v-img>
+          <p class="custom-width primary--text text-h5 text-md-h4 mt-3">
+            {{ $t('loginForm.portalTitle') }}
+          </p>
         </div>
       </v-col>
     </v-row>
@@ -21,10 +44,68 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import Notification from '~/components/appNotifications/Notification.vue'
+
 export default {
+  components: {
+    Notification,
+  },
   layout: 'login',
+  data() {
+    return {
+      showSnack: false,
+      show: false,
+    }
+  },
+
+  computed: {
+    ...mapState({
+      appNotifications: (state) => state.appNotifications.notifications,
+    }),
+  },
+
+  watch: {
+    appNotifications(newValue) {
+      if (newValue) {
+        this.showSnack = true
+      }
+    },
+  },
+
+  mounted() {
+    this.$nextTick(() => {
+      this.$nuxt.$loading.start()
+      setTimeout(() => {
+        this.show = true
+        this.$nuxt.$loading.finish()
+      }, 750)
+    })
+  },
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
+.loginBG {
+  background-image: url('/generalPictures/loginBG.jpg');
+  background-position: right bottom;
+  background-repeat: none;
+  background-size: cover;
+  height: 100%;
+}
+.custom-width {
+  width: 50%;
+  text-align: center;
+}
+@media screen and (max-width: 1225px) {
+  .custom-width {
+    width: 100%;
+    text-align: left;
+  }
+}
+@media screen and (max-width: 960px) {
+  .custom-width {
+    text-align: center;
+  }
+}
 </style>

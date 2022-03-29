@@ -13,19 +13,19 @@
           <v-row>
             <v-col cols="12">
               <h2
-                class="text-center py-3 py-md-8 text-body-1"
+                class="text-center py-3 py-md-8 text-h6 text-md-h4"
                 style="color: #f1e9ec !important"
               >
-                Login
+                {{ $t('loginForm.title') }}
               </h2>
             </v-col>
           </v-row>
 
           <!-- Input Fields -->
-          <v-row>
+          <v-row class="text-caption text-md-body-2">
             <v-col offset="1" cols="10" class="py-0">
               <p class="my-0 py-0" style="color: #f1e9ec !important">
-                User Account:
+                {{ $t('loginForm.userName') }}
               </p>
               <ValidationProvider v-slot="{ errors }" rules="required">
                 <v-text-field
@@ -41,7 +41,9 @@
               </ValidationProvider>
             </v-col>
             <v-col offset="1" cols="10" class="py-0">
-              <p class="my-0 py-0" style="color: #f1e9ec !important">Domain:</p>
+              <p class="my-0 py-0" style="color: #f1e9ec !important">
+                {{ $t('loginForm.domainName') }}
+              </p>
               <ValidationProvider v-slot="{ errors }" rules="required">
                 <v-autocomplete
                   v-model="domain"
@@ -57,7 +59,7 @@
             </v-col>
             <v-col offset="1" cols="10" class="py-0">
               <p class="my-0 py-0" style="color: #f1e9ec !important">
-                Password:
+                {{ $t('loginForm.password') }}
               </p>
               <ValidationProvider v-slot="{ errors }" rules="required">
                 <v-text-field
@@ -89,7 +91,7 @@
                   primary--text
                   text-subtitle-1 text-capitalize
                 "
-                >Submit</v-btn
+                >{{ $t('loginForm.submitBTN') }}</v-btn
               >
             </v-col>
           </v-row>
@@ -111,6 +113,11 @@ localize({
   en: {
     messages: {
       required: 'This field is required!',
+    },
+  },
+  ar: {
+    messages: {
+      required: 'هــذا حــقل مطــلوب!',
     },
   },
 })
@@ -199,11 +206,32 @@ export default {
       }
     },
     loginUser() {
-      alert(`Form data: {
-        userName: ${this.userAccount}
-        userDomain: ${this.srvName()}
-        userPassword: ${this.userPassword}
-      }`)
+      this.$nextTick(async () => {
+        this.$nuxt.$loading.start()
+        const userInfo = {
+          userAccount: this.userAccount.toLowerCase(),
+          password: this.userPassword,
+          domain: this.domain.toLowerCase(),
+          dc_ip: this.srvName(),
+        }
+        await this.$store.dispatch('login/logInUser', userInfo)
+        // .then(() => {
+        //   if (this.loggedInStatus) {
+        //     this.$nuxt.$loading.finish()
+        //     this.$router.push('/')
+        //   } else {
+        //     this.$nuxt.$loading.finish()
+        //     this.showError = true
+        //     setTimeout(() => {
+        //       this.showError = false
+        //     }, 3000)
+        //   }
+        // })
+        // .catch((e) => {
+        //   // console.error('Error in loginform -> loginUser ->', e)
+        // })
+        this.$nuxt.$loading.finish()
+      })
     },
   },
 }

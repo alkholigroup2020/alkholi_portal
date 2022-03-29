@@ -152,6 +152,7 @@
           tile
           height="100%"
           :ripple="false"
+          @click="$router.push(localePath('/login'))"
         >
           <v-icon>mdi-exit-to-app</v-icon>
           <span class="px-2 pt-1 text-capitalize">{{
