@@ -24,14 +24,7 @@
           <LoginForm />
         </div>
       </v-col>
-      <v-col
-        style="height: 45%"
-        cols="12"
-        md="6"
-        order="1"
-        order-md="2"
-        class=""
-      >
+      <v-col style="height: 45%" cols="12" md="6" order="1" order-md="2">
         <div class="d-flex flex-column align-center align-md-start">
           <v-img width="50%" src="/generalPictures/companyLogo-T.png"></v-img>
           <p class="custom-width primary--text text-h5 text-md-h4 mt-3">

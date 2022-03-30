@@ -28,6 +28,8 @@ export default {
     },
   },
   created() {
+    this.$vuetify.theme.dark = false
+
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',

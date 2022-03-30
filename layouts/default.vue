@@ -6,7 +6,7 @@
       class="primary"
       app
     >
-      <div class="d-flex justify-center" style="height: 60px">
+      <div class="d-flex justify-center" style="height: 52px">
         <v-btn
           color="white"
           depressed
@@ -19,7 +19,15 @@
           <v-icon>mdi-theme-light-dark</v-icon>
         </v-btn>
 
-        <v-btn color="white" depressed text tile height="100%" :ripple="false">
+        <v-btn
+          color="white"
+          depressed
+          text
+          tile
+          height="100%"
+          :ripple="false"
+          @click="logoff"
+        >
           <v-icon>mdi-exit-to-app</v-icon>
         </v-btn>
         <nuxt-link
@@ -102,8 +110,8 @@
     </v-navigation-drawer>
 
     <!-- portal bar -->
-    <v-app-bar app color="primary" flat>
-      <v-container class="py-0 fill-height">
+    <v-app-bar app color="primary" flat height="50">
+      <v-container fluid class="py-0 fill-height px-xl-16">
         <!-- hamburger icon -->
         <v-app-bar-nav-icon
           v-if="$vuetify.breakpoint.smAndDown"
@@ -113,12 +121,12 @@
         <!-- group logo -->
         <div
           style="height: 100%"
-          class="d-flex align-center justify-center px-0 px-md-11"
+          class="d-flex align-center justify-center mt-n1 px-0 px-md-10"
         >
           <v-img
             contain
             max-width="180"
-            max-height="66%"
+            max-height="80%"
             src="/generalPictures/Alkholi Group White.png"
           ></v-img>
         </div>
@@ -152,7 +160,7 @@
           tile
           height="100%"
           :ripple="false"
-          @click="$router.push(localePath('/login'))"
+          @click="logoff"
         >
           <v-icon>mdi-exit-to-app</v-icon>
           <span class="px-2 pt-1 text-capitalize">{{
@@ -226,6 +234,14 @@ export default {
     },
   },
   created() {
+    if (this.$nuxt.context.from) {
+      if (!this.$nuxt.context.from.path === '/login') {
+        this.reAuthenticate()
+      }
+    } else {
+      this.reAuthenticate()
+    }
+
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',
@@ -250,10 +266,45 @@ export default {
         }
         this.show = true
         this.$nuxt.$loading.finish()
-      }, 10)
+      }, 100)
     })
   },
   methods: {
+    async reAuthenticate() {
+      try {
+        if (process.client) {
+          const mail = localStorage.getItem('userMailAddress')
+          const userAccount = localStorage.getItem('userAccount')
+          const domainName = localStorage.getItem('domainName')
+          if (mail && userAccount && domainName) {
+            const payload = {
+              mail,
+              userAccount,
+              domainName,
+            }
+            await this.$store.dispatch('login/reAuthenticate', payload)
+          } else {
+            this.$router.push('/login')
+          }
+        }
+      } catch (error) {}
+    },
+    logoff() {
+      try {
+        this.$nextTick(async () => {
+          this.$nuxt.$loading.start()
+          if (process.client) {
+            const userToken = localStorage.getItem('userToken')
+            if (userToken) {
+              await this.$store.dispatch('login/logoff', { token: userToken })
+              this.$nuxt.$loading.finish()
+            } else {
+              this.$nuxt.$loading.finish()
+            }
+          }
+        })
+      } catch (error) {}
+    },
     changeColorMode() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
 

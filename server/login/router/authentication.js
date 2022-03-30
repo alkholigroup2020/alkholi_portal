@@ -199,4 +199,86 @@ router.post('/login', async (req, res) => {
   }
 })
 
+router.post('/reauthenticate', async (req, res) => {
+  try {
+    // connect to the db & get the user password
+    await sql.connect(sqlConfigs)
+
+    const loggedInUser =
+      await sql.query`exec usersInfo_getGroupID ${req.body.mail}`
+
+    const userGroupID = loggedInUser.recordset[0].groupID
+
+    const dcIP = () => {
+      if (req.body.domainName === 'alkholi') {
+        return '10.10.10.11'
+      } else if (req.body.domainName === 'buildingtek') {
+        return '10.11.10.11'
+      } else if (req.body.domainName === 'upmoc') {
+        return '10.12.10.11'
+      } else if (req.body.domainName === 'amos-sa') {
+        return '10.13.10.11'
+      }
+    }
+
+    // const domainName = domainResult()
+    const domainIP = dcIP()
+
+    const userPass = cryptr.decrypt(userGroupID)
+
+    // re-authenticate the user with AD
+    const user = await adAuth(
+      req.body.userAccount,
+      userPass,
+      req.body.domainName,
+      domainIP
+    )
+
+    res.status(200).json({ message: `${user.mail}` })
+  } catch (e) {
+    if (!e.statusCode) {
+      const error = e.toString()
+      const newErrorString = error.replaceAll('Error: ', '')
+      res.status(500).json({
+        message: `${newErrorString}`,
+      })
+    } else {
+      res.status(e.statusCode).json({
+        message: `${e.message}`,
+      })
+    }
+  } finally {
+    await sql.close()
+  }
+})
+
+router.post('/logoff', async (req, res) => {
+  try {
+    // connect to db
+    await sql.connect(sqlConfigs)
+    // delete the token
+    const deletedToken =
+      await sql.query`exec usersInfo_deleteToken ${req.body.token}`
+    if (deletedToken.rowsAffected[0] === 1) {
+      res.send()
+    } else {
+      throw new CustomError('Something Went Wrong!!', 503)
+    }
+  } catch (e) {
+    if (!e.statusCode) {
+      const error = e.toString()
+      const newErrorString = error.replaceAll('Error: ', '')
+      res.status(500).json({
+        message: `${newErrorString}`,
+      })
+    } else {
+      res.status(e.statusCode).json({
+        message: `${e.message}`,
+      })
+    }
+  } finally {
+    await sql.close()
+  }
+})
+
 module.exports = router

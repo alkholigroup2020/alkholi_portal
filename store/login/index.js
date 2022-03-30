@@ -19,7 +19,6 @@ export const mutations = {
     state.managerEmail = userData.managerInfo.Email
     state.managerCode = userData.moreInfo.Manager_Code
     state.branch = userData.moreInfo.branch_code
-
     state.employeeCode = userData.moreInfo.employee_code
     state.arName = userData.moreInfo.employee_name_a
     state.employeePicture = userData.moreInfo.employee_picture
@@ -38,9 +37,39 @@ export const mutations = {
     localStorage.setItem('userFullName', userData.user.cn)
     localStorage.setItem('managerEmail', userData.managerInfo.Email)
     localStorage.setItem('managerCode', userData.moreInfo.Manager_Code)
-
     // set the authentication header
     this.$axios.defaults.headers.common.Authorization = `Bearer ${userData.token}`
+  },
+  SAVE_REAUTHENTICATE_USER_DATA(state, data) {
+    state.userIsLoggedIn = true
+    localStorage.setItem('userMailAddress', data.message.toLocaleLowerCase())
+    // set the authorization header
+    const userToken = localStorage.getItem('userToken')
+    this.$axios.defaults.headers.common.Authorization = `Bearer ${userToken}`
+  },
+  DELETE_USER_DATA(state) {
+    state.userEmailAdd = null
+    state.userFullName = null
+    state.managerEmail = null
+    state.branch = null
+    state.employeeCode = null
+    state.managerCode = null
+    state.arName = null
+    state.employeePicture = null
+    state.domainName = null
+    state.userAccount = null
+    state.userIsLoggedIn = false
+    localStorage.removeItem('userMailAddress')
+    localStorage.removeItem('userToken')
+    localStorage.removeItem('domainName')
+    // localStorage.removeItem('colorMode')
+    localStorage.removeItem('userAccount')
+    localStorage.removeItem('userFullName')
+    localStorage.removeItem('employeeCode')
+    localStorage.removeItem('managerCode')
+    localStorage.removeItem('managerEmail')
+    // remove authorization header
+    this.$axios.defaults.headers.common.Authorization = ''
   },
 }
 
@@ -48,13 +77,13 @@ export const actions = {
   async logInUser({ commit, dispatch }, payload) {
     try {
       // make the server call with the user credentials
-      const serverCall = await this.$axios.post(
+      const login = await this.$axios.post(
         `${this.$config.baseURL}/login-api/login`,
         payload
       )
-      if (serverCall.status === 200) {
+      if (login.status === 200) {
         // set the user states with the received data
-        commit('SAVE_USER_DATA', serverCall.data)
+        commit('SAVE_USER_DATA', login.data)
         this.$router.push(this.localePath('/'))
       }
     } catch (error) {
@@ -65,6 +94,50 @@ export const actions = {
         ),
       }
       dispatch('appNotifications/addNotification', notification, { root: true })
+    }
+  },
+
+  async reAuthenticate({ commit }, payload) {
+    try {
+      const authenticate = await this.$axios.post(
+        `${this.$config.baseURL}/login-api/reauthenticate`,
+        payload
+      )
+      if (authenticate.status === 200) {
+        // set the user state with the received token
+        commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
+      }
+    } catch (error) {
+      commit('DELETE_USER_DATA')
+
+      this.$router.push('/login')
+
+      // delete the token from db
+      const theToken = localStorage.getItem('userToken')
+      const tokenPayload = { token: theToken }
+
+      await this.$axios.post(
+        `${this.$config.baseURL}/login-api/logoff`,
+        tokenPayload
+      )
+    }
+  },
+
+  async logoff({ commit }, payload) {
+    try {
+      // make the server call with the user token to be deleted
+      const logoff = await this.$axios.post(
+        `${this.$config.baseURL}/login-api/logoff`,
+        payload
+      )
+      if (logoff.status === 200) {
+        // delete local storage data
+        commit('DELETE_USER_DATA')
+        this.$router.push('/login')
+      }
+    } catch (error) {
+      commit('DELETE_USER_DATA')
+      this.$router.push('/login')
     }
   },
 }
