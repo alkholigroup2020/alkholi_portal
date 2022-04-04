@@ -12,6 +12,10 @@
       "logout": "Logout",
       "light": "Light",
       "dark": "Dark"
+    },
+    "shortcuts": {
+      "title": "Alkholi Portal",
+      "secondTitle": "The one place for all in-house developed applications, and other available systems."
     }
   },
   "errorMessages": {

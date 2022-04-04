@@ -110,7 +110,7 @@ export const actions = {
     } catch (error) {
       commit('DELETE_USER_DATA')
 
-      this.$router.push('/login')
+      this.$router.push(this.localePath('/login'))
 
       // delete the token from db
       const theToken = localStorage.getItem('userToken')
@@ -133,11 +133,11 @@ export const actions = {
       if (logoff.status === 200) {
         // delete local storage data
         commit('DELETE_USER_DATA')
-        this.$router.push('/login')
+        this.$router.push(this.localePath('/login'))
       }
     } catch (error) {
       commit('DELETE_USER_DATA')
-      this.$router.push('/login')
+      this.$router.push(this.localePath('/login'))
     }
   },
 }

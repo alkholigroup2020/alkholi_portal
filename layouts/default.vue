@@ -6,7 +6,7 @@
       class="primary"
       app
     >
-      <div class="d-flex justify-center" style="height: 52px">
+      <div class="d-flex justify-center" style="height: 62px">
         <v-btn
           color="white"
           depressed
@@ -110,7 +110,7 @@
     </v-navigation-drawer>
 
     <!-- portal bar -->
-    <v-app-bar app color="primary" flat height="50">
+    <v-app-bar app color="primary" flat height="60">
       <v-container fluid class="py-0 fill-height px-xl-16">
         <!-- hamburger icon -->
         <v-app-bar-nav-icon
