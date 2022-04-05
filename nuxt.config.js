@@ -25,7 +25,12 @@ export default {
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: {
-    dirs: ['~/components', '~/components/portal/shortcuts'],
+    dirs: [
+      '~/components',
+      '~/components/portal',
+      '~/components/portal/shortcuts',
+      '~/components/appNotifications',
+    ],
   },
 
   // Modules for dev and build (recommended): https://go.nuxtjs.dev/config-modules
@@ -123,7 +128,7 @@ export default {
     transpile: ['vee-validate'],
   },
 
-  serverMiddleware: ['~server/login/main.js'],
+  serverMiddleware: ['~server/login/main.js', '~server/portal/main.js'],
 
   // client side expose
   publicRuntimeConfig: {

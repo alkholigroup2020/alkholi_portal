@@ -16,7 +16,8 @@
     "shortcuts": {
       "title": "Alkholi Portal",
       "secondTitle": "The one place for all in-house developed applications, and other available systems."
-    }
+    },
+    "editProfile": "Edit Profile"
   },
   "errorMessages": {
     "login": {
@@ -27,6 +28,10 @@
       "authFailed": "Authentication Failed!",
       "wrongUser": "Wrong Username!",
       "wrongPassword": "Wrong Password!"
+    },
+    "portal": {
+      "authFailed": "Authorization Failed!",
+      "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!"
     }
   }
 }

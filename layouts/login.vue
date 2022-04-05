@@ -1,5 +1,19 @@
 <template>
   <v-app>
+    <!-- notifications snackbar -->
+    <v-snackbar
+      v-model="showSnack"
+      app
+      left
+      top
+      color="transparent"
+      elevation="0"
+      timeout="3000"
+      :absolute="false"
+    >
+      <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
+    </v-snackbar>
+
     <v-main>
       <Nuxt />
     </v-main>
@@ -20,11 +34,27 @@
 
 <script>
 import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
+import { mapState } from 'vuex'
 
 export default {
+  data() {
+    return {
+      showSnack: false,
+    }
+  },
   computed: {
+    ...mapState({
+      appNotifications: (state) => state.appNotifications.notifications,
+    }),
     getTheCurrentYear() {
       return new Date().getFullYear()
+    },
+  },
+  watch: {
+    appNotifications(newValue) {
+      if (newValue) {
+        this.showSnack = true
+      }
     },
   },
   created() {

@@ -34,6 +34,8 @@ export const mutations = {
       userData.user.mail.toLocaleLowerCase()
     )
     localStorage.setItem('employeeCode', userData.moreInfo.employee_code)
+    localStorage.setItem('firstNameAr', userData.moreInfo.first_name_a)
+    localStorage.setItem('secondNameAr', userData.moreInfo.second_name_a)
     localStorage.setItem('userFullName', userData.user.cn)
     localStorage.setItem('managerEmail', userData.managerInfo.Email)
     localStorage.setItem('managerCode', userData.moreInfo.Manager_Code)
@@ -97,7 +99,7 @@ export const actions = {
     }
   },
 
-  async reAuthenticate({ commit }, payload) {
+  async reAuthenticate({ commit, dispatch }, payload) {
     try {
       const authenticate = await this.$axios.post(
         `${this.$config.baseURL}/login-api/reauthenticate`,
@@ -108,18 +110,10 @@ export const actions = {
         commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
       }
     } catch (error) {
-      commit('DELETE_USER_DATA')
-
-      this.$router.push(this.localePath('/login'))
-
-      // delete the token from db
+      // logoff user
       const theToken = localStorage.getItem('userToken')
       const tokenPayload = { token: theToken }
-
-      await this.$axios.post(
-        `${this.$config.baseURL}/login-api/logoff`,
-        tokenPayload
-      )
+      dispatch('login/logoff', tokenPayload, { root: true })
     }
   },
 

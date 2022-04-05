@@ -9,11 +9,38 @@
     <v-container>
       <ValidationObserver v-slot="{ invalid }">
         <v-form @submit.prevent="loginUser">
+          <!-- language switcher -->
+          <v-row>
+            <v-col cols="12" class="d-flex justify-center">
+              <nuxt-link
+                v-for="locale in availableLocales"
+                :key="locale.code"
+                class="white--text text-decoration-none"
+                :to="switchLocalePath(locale.code)"
+              >
+                <v-btn
+                  color="white"
+                  class="pt-1"
+                  depressed
+                  text
+                  tile
+                  height="100%"
+                  :ripple="false"
+                  plain
+                >
+                  <span style="font-size: 14px" class="text-capitalize">{{
+                    locale.name
+                  }}</span>
+                  <v-icon class="px-2" size="20">mdi-web</v-icon>
+                </v-btn>
+              </nuxt-link>
+            </v-col>
+          </v-row>
           <!-- Title -->
           <v-row>
             <v-col cols="12">
               <h2
-                class="text-center py-3 py-md-8 text-h6 text-md-h4"
+                class="text-center py-3 py-md-5 text-h4"
                 style="color: #f1e9ec !important"
               >
                 {{ $t('loginForm.title') }}
@@ -141,6 +168,9 @@ export default {
     // ...mapGetters({
     //   loggedInStatus: 'login/loggedInStatus',
     // }),
+    availableLocales() {
+      return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
+    },
   },
   mounted() {
     // gsap.from('.animation101', {

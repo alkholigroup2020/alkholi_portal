@@ -1,5 +1,19 @@
 <template>
   <v-app v-if="show">
+    <!-- notifications snackbar -->
+    <v-snackbar
+      v-model="showSnack"
+      app
+      left
+      bottom
+      color="transparent"
+      elevation="0"
+      timeout="3000"
+      :absolute="false"
+    >
+      <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
+    </v-snackbar>
+
     <v-navigation-drawer
       v-if="$vuetify.breakpoint.mdAndDown"
       v-model="drawer"
@@ -50,63 +64,8 @@
         </nuxt-link>
       </div>
       <v-divider class="py-0 mt-n1 white"></v-divider>
-      <div class="d-flex justify-center py-5">
-        <!-- <v-avatar size="100">
-          <v-img
-            :src="`${profilePicPath}`"
-            alt="Profile Image"
-            position="top center"
-          ></v-img>
-        </v-avatar> -->
-      </div>
-      <div class="text-subtitle-1 white--text text-center">
-        <p class="mb-0">userFullName</p>
-      </div>
-      <div class="text-subtitle-1 white--text text-center">
-        <p class="mb-0">employeeFileNumber</p>
-      </div>
-      <!-- <div v-if="qrFileName" class="d-flex justify-center pb-5 pt-2">
-        <v-img
-          :src="`${$config.baseURL}portal-administrations/business-cards/${qrFileName}`"
-          max-width="70"
-          contain
-        ></v-img>
-      </div> -->
-      <v-divider></v-divider>
-      <!-- <v-dialog v-model="dialog" width="500">
-        <template #activator="{ on, attrs }">
-          <div class="d-flex flex-column align-center py-6">
-            <v-btn
-              v-bind="attrs"
-              elevation="0"
-              class="text-subtitle-2 text-capitalize"
-              color="primary_8"
-              small
-              v-on="on"
-              @click="dialog = !dialog"
-            >
-              Edit Your Profile
-            </v-btn>
-          </div>
-        </template>
-        <v-card class="pa-10">
-          <v-form v-model="formIsValid" @submit.prevent="saveProfile">
-            <v-file-input
-              v-model="profilePic"
-              :rules="profileImgRules"
-              accept="image/png, image/jpeg, image/jpg"
-              prepend-icon="mdi-camera"
-              label="Upload a new profile image"
-              @change="checkExt(profilePic)"
-            ></v-file-input>
-            <div class="mt-3">
-              <v-btn color="primary" class="px-8 py-0" type="submit"
-                >Save</v-btn
-              >
-            </div>
-          </v-form>
-        </v-card>
-      </v-dialog> -->
+
+      <userProfile />
     </v-navigation-drawer>
 
     <!-- portal bar -->
@@ -218,19 +177,32 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   data() {
     return {
       drawer: false,
       show: false,
+      showSnack: false,
     }
   },
   computed: {
+    ...mapState({
+      appNotifications: (state) => state.appNotifications.notifications,
+    }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
     },
     getTheCurrentYear() {
       return new Date().getFullYear()
+    },
+  },
+  watch: {
+    appNotifications(newValue) {
+      if (newValue) {
+        this.showSnack = true
+      }
     },
   },
   created() {

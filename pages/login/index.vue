@@ -1,19 +1,5 @@
 <template>
   <v-container v-if="show" fluid class="loginBG">
-    <!-- notifications snackbar -->
-    <v-snackbar
-      v-model="showSnack"
-      app
-      left
-      top
-      color="transparent"
-      elevation="0"
-      timeout="3000"
-      :absolute="false"
-    >
-      <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
-    </v-snackbar>
-
     <v-row
       align="center"
       class="pt-10 pt-md-0"
@@ -37,33 +23,13 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
-import Notification from '~/components/appNotifications/Notification.vue'
-
 export default {
-  components: {
-    Notification,
-  },
   layout: 'login',
+
   data() {
     return {
-      showSnack: false,
       show: false,
     }
-  },
-
-  computed: {
-    ...mapState({
-      appNotifications: (state) => state.appNotifications.notifications,
-    }),
-  },
-
-  watch: {
-    appNotifications(newValue) {
-      if (newValue) {
-        this.showSnack = true
-      }
-    },
   },
 
   mounted() {
