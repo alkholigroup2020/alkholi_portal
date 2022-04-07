@@ -68,7 +68,7 @@ router.post(
 
       // send the reply
       return res.status(201).json({
-        message: 'Image uploaded successfully!',
+        message: 'imgSuccess',
       })
     } catch (e) {
       const error = e.toString()

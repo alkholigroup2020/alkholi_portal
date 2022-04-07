@@ -36,6 +36,7 @@
               </nuxt-link>
             </v-col>
           </v-row>
+
           <!-- Title -->
           <v-row>
             <v-col cols="12">
@@ -150,7 +151,6 @@ localize({
 })
 
 // import { gsap } from 'gsap'
-// import { mapGetters } from 'vuex'
 
 export default {
   data() {
@@ -165,9 +165,6 @@ export default {
   },
 
   computed: {
-    // ...mapGetters({
-    //   loggedInStatus: 'login/loggedInStatus',
-    // }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
     },
@@ -193,48 +190,6 @@ export default {
         return '10.13.10.11'
       }
     },
-    oldLoginUser() {
-      if (
-        this.userAccount === '' ||
-        this.password === '' ||
-        this.domain === ''
-      ) {
-        this.showPlainError = true
-        setTimeout(() => {
-          this.showPlainError = false
-        }, 3000)
-      } else {
-        this.$v.$touch()
-        if (!this.$v.$invalid) {
-          const userInfo = {
-            userAccount: this.userAccount.toLowerCase(),
-            password: this.userPassword,
-            domain: this.domain.toLowerCase(),
-            dc_ip: this.srvName(),
-          }
-          this.$nextTick(() => {
-            this.$nuxt.$loading.start()
-            this.$store
-              .dispatch('login/logInUser', userInfo)
-              .then(() => {
-                if (this.loggedInStatus) {
-                  this.$nuxt.$loading.finish()
-                  this.$router.push('/')
-                } else {
-                  this.$nuxt.$loading.finish()
-                  this.showError = true
-                  setTimeout(() => {
-                    this.showError = false
-                  }, 3000)
-                }
-              })
-              .catch((e) => {
-                // console.error('Error in loginform -> loginUser ->', e)
-              })
-          })
-        }
-      }
-    },
     loginUser() {
       this.$nextTick(async () => {
         this.$nuxt.$loading.start()
@@ -245,21 +200,6 @@ export default {
           dc_ip: this.srvName(),
         }
         await this.$store.dispatch('login/logInUser', userInfo)
-        // .then(() => {
-        //   if (this.loggedInStatus) {
-        //     this.$nuxt.$loading.finish()
-        //     this.$router.push('/')
-        //   } else {
-        //     this.$nuxt.$loading.finish()
-        //     this.showError = true
-        //     setTimeout(() => {
-        //       this.showError = false
-        //     }, 3000)
-        //   }
-        // })
-        // .catch((e) => {
-        //   // console.error('Error in loginform -> loginUser ->', e)
-        // })
         this.$nuxt.$loading.finish()
       })
     },

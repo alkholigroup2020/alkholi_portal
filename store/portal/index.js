@@ -45,6 +45,38 @@ export const actions = {
       dispatch('login/logoff', tokenPayload, { root: true })
     }
   },
+  async saveUserProfile({ dispatch }, payload) {
+    try {
+      const FormData = require('form-data')
+      const profileData = new FormData()
+      profileData.append('attachment', payload.img)
+      profileData.append('employeeCode', payload.eCode)
+
+      const serverCall = await this.$axios({
+        method: 'post',
+        url: `${this.$config.baseURL}/portal-api/save-user-profile`,
+        data: profileData,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (serverCall.status === 201) {
+        const notification = {
+          type: 'success',
+          message: this.app.i18n.t(
+            `successMessages.portal.${serverCall.data.message}`
+          ),
+        }
+        dispatch('appNotifications/addNotification', notification, {
+          root: true,
+        })
+      }
+    } catch (error) {
+      const notification = {
+        type: 'error',
+        message: error.response.data.message,
+      }
+      dispatch('appNotifications/addNotification', notification, { root: true })
+    }
+  },
 }
 
 export const getters = {}

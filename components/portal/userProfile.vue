@@ -8,7 +8,7 @@
   >
     <div class="d-flex justify-center py-5">
       <v-avatar
-        :size="$vuetify.breakpoint.mdAndDown ? '120' : '150'"
+        :size="$vuetify.breakpoint.smAndDown ? '120' : '150'"
         style="border: 0.5px #000046 solid"
       >
         <v-img
@@ -22,14 +22,14 @@
       <p
         v-if="$i18n.locale === 'en'"
         class="mb-0 text-body-1 font-weight-medium"
-        :class="$vuetify.breakpoint.mdAndDown ? 'white--text' : ''"
+        :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
       >
         {{ userFullName }}
       </p>
       <p
         v-else
         class="mb-1 text-body-1 font-weight-medium"
-        :class="$vuetify.breakpoint.mdAndDown ? 'white--text' : ''"
+        :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
       >
         {{ userFullNameAr }}
       </p>
@@ -37,7 +37,7 @@
     <div class="body-2 text-center">
       <p
         class="mb-0 text-body-1 font-weight-medium"
-        :class="$vuetify.breakpoint.mdAndDown ? 'white--text' : ''"
+        :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
       >
         {{ employeeCode }}
       </p>
@@ -59,31 +59,40 @@
               v-bind="attrs"
               elevation="0"
               class="text-body-2 text-capitalize"
-              :class="$vuetify.breakpoint.mdAndDown ? 'white--text' : ''"
+              :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
               outlined
               v-on="on"
               @click="dialog = !dialog"
             >
-              {{ $t('portalPage.editProfile') }}
+              {{ $t('portalPage.editProfile.edit') }}
             </v-btn>
           </div>
         </template>
-        <v-card class="pa-10">
-          <!-- <v-form v-model="formIsValid" @submit.prevent="saveProfile">
-            <v-file-input
-              v-model="profilePic"
-              :rules="profileImgRules"
-              accept="image/png, image/jpeg, image/jpg"
-              prepend-icon="mdi-camera"
-              label="Upload a new profile image"
-              @change="checkExt(profilePic)"
-            ></v-file-input>
-            <div class="mt-3">
-              <v-btn color="primary" class="px-10 py-0" type="submit"
-                >Save</v-btn
+        <v-card class="pa-10" color="secondaryBG">
+          <ValidationObserver v-slot="{ invalid }">
+            <v-form @submit.prevent="saveUserProfile">
+              <ValidationProvider
+                v-slot="{ errors }"
+                rules="size:5120|required|image"
               >
-            </div>
-          </v-form> -->
+                <v-file-input
+                  v-model="profilePic"
+                  :color="$vuetify.theme.dark ? 'white' : ''"
+                  :error-messages="errors"
+                  accept="image/png, image/jpeg, image/jpg"
+                  prepend-icon="mdi-camera"
+                  :label="$t('portalPage.editProfile.label')"
+                ></v-file-input>
+              </ValidationProvider>
+              <v-btn
+                :disabled="invalid"
+                color="primary"
+                class="px-8 py-0 mt-5 text-capitalize"
+                type="submit"
+                >{{ $t('portalPage.editProfile.submit') }}</v-btn
+              >
+            </v-form>
+          </ValidationObserver>
         </v-card>
       </v-dialog>
     </div>
@@ -92,11 +101,41 @@
 
 <script>
 import { mapState } from 'vuex'
+import { extend, localize } from 'vee-validate'
+import { required, image, size } from 'vee-validate/dist/rules'
 
+// Override the default message.
+extend('required', {
+  ...required,
+})
+extend('image', {
+  ...image,
+})
+extend('size', {
+  ...size,
+})
+
+localize({
+  en: {
+    messages: {
+      required: 'This field is required!',
+      image: 'Should be an image file!',
+      size: "File size shouldn't exceed 5MB!",
+    },
+  },
+  ar: {
+    messages: {
+      required: 'هــذا الحــقل مطــلوب!',
+      image: 'يجب أن يكون نوع الملف، صورة!',
+      size: 'حجم الملف يجب أن يكون أقل من 5 ميجا بايت!',
+    },
+  },
+})
 export default {
   data() {
     return {
       dialog: false,
+      profilePic: null,
     }
   },
   computed: {
@@ -123,11 +162,21 @@ export default {
   },
   methods: {
     async getUserProfileData() {
-      try {
-        await this.$store.dispatch('portal/getUserProfile', this.employeeCode)
-      } catch (error) {
-        //
+      await this.$store.dispatch('portal/getUserProfile', this.employeeCode)
+    },
+    async saveUserProfile() {
+      const employeeCode = localStorage.getItem('employeeCode')
+
+      const profileData = {
+        img: this.profilePic,
+        eCode: employeeCode,
       }
+
+      await this.$store.dispatch('portal/saveUserProfile', profileData)
+      await this.$store.dispatch('portal/getUserProfile', employeeCode)
+
+      this.profilePic = null
+      this.dialog = false
     },
   },
 }

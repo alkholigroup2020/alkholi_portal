@@ -17,7 +17,11 @@
       "title": "Alkholi Portal",
       "secondTitle": "The one place for all in-house developed applications, and other available systems."
     },
-    "editProfile": "Edit Profile"
+    "editProfile": {
+      "edit": "Edit Profile",
+      "submit": "Submit",
+      "label": "Upload a new profile image."
+    }
   },
   "errorMessages": {
     "login": {
@@ -32,6 +36,11 @@
     "portal": {
       "authFailed": "Authorization Failed!",
       "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!"
+    }
+  },
+  "successMessages": {
+    "portal": {
+      "imgSuccess": "Image uploaded successfully!"
     }
   }
 }
