@@ -104,34 +104,34 @@
         <v-list class="py-0 my-0">
           <v-list-item
             nuxt
-            :to="localePath('/business-cards')"
+            :to="localePath('/administration')"
             exact
             class="py-3"
           >
             <v-list-item-action>
-              <v-icon>mdi-card-account-details-outline</v-icon>
+              <v-icon>mdi-account-cog</v-icon>
             </v-list-item-action>
             <v-list-item-content>
-              <v-list-item-title class="primaryText--text">{{
-                $t('businessCards.appPageNames.generator')
-              }}</v-list-item-title>
+              <v-list-item-title class="primaryText--text">
+                Portal Administration
+              </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
-          <v-list-item
+          <!-- <v-list-item
             nuxt
             :to="localePath('/business-cards/generated-cards')"
             exact
             class="py-3"
           >
             <v-list-item-action>
-              <v-icon>mdi-credit-card-multiple-outline</v-icon>
+              <v-icon>mdi-account-cog-outline</v-icon>
             </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">{{
                 $t('businessCards.appPageNames.generated')
               }}</v-list-item-title>
             </v-list-item-content>
-          </v-list-item>
+          </v-list-item> -->
         </v-list>
 
         <!-- footer -->

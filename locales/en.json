@@ -24,6 +24,12 @@
       "label": "Upload a new profile image."
     }
   },
+  "businessCards": {
+    "appPageNames": {
+      "generator": "Generate A Card",
+      "generated": "Generated Cards"
+    }
+  },
   "errorMessages": {
     "login": {
       "hrDataMissing": "User's data on HR system is missing!",

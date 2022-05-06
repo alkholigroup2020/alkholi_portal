@@ -24,6 +24,12 @@
       "label": "رفع صورة شخصية جديدة."
     }
   },
+  "businessCards": {
+    "appPageNames": {
+      "generator": "كارت جديد",
+      "generated": "كروت تم إصدارها"
+    }
+  },
   "errorMessages": {
     "login": {
       "hrDataMissing": "بيـانات الموظـف غير مكتملـة ببـرنامج المـوارد البشـرية!",

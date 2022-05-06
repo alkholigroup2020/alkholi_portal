@@ -7,11 +7,23 @@ export const mutations = {
     if (data.portalProfilePicPath == null) {
       if (data.profilePicPath === 'profile.png') {
         state.profilePicPath = `${this.$config.baseURL}/portal-api/profile-data/profile.png`
+        localStorage.setItem(
+          'profilePicPath',
+          `${this.$config.baseURL}/portal-api/profile-data/profile.png`
+        )
       } else {
         state.profilePicPath = `https://hr.alkholi.com/MenaITech/application/hrms/MenaImages/Employees_Pictures/${data.profilePicPath}`
+        localStorage.setItem(
+          'profilePicPath',
+          `https://hr.alkholi.com/MenaITech/application/hrms/MenaImages/Employees_Pictures/${data.profilePicPath}`
+        )
       }
     } else {
       state.profilePicPath = `${this.$config.baseURL}/portal-api/profile-data/${data.portalProfilePicPath}`
+      localStorage.setItem(
+        'profilePicPath',
+        `${this.$config.baseURL}/portal-api/profile-data/${data.portalProfilePicPath}`
+      )
     }
   },
 }

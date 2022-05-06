@@ -223,6 +223,11 @@ export default {
           title: 'Online Business Cards',
           url: `${this.localePath('/business-cards')}`,
         },
+        {
+          imgURL: '/websiteImages/administration.jpg',
+          title: 'Administration',
+          url: `${this.localePath('/administration')}`,
+        },
       ],
       sharepoint: [
         {
