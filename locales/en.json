@@ -11,7 +11,8 @@
     "appBar": {
       "logout": "Logout",
       "light": "Light",
-      "dark": "Dark"
+      "dark": "Dark",
+      "dashboard": "Dashboard"
     },
     "shortcuts": {
       "title": "Alkholi Portal",

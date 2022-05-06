@@ -38,7 +38,11 @@
               </v-col>
 
               <!-- citrix -->
-              <v-dialog v-model="citrixDialog" width="500">
+              <v-dialog
+                v-model="citrixDialog"
+                width="500"
+                overlay-opacity="0.9"
+              >
                 <template #activator="{ on, attrs }">
                   <v-col
                     v-bind="attrs"
@@ -119,7 +123,7 @@
               </v-dialog>
 
               <!-- sharePoint -->
-              <v-dialog v-model="spDialog" width="800">
+              <v-dialog v-model="spDialog" width="800" overlay-opacity="0.9">
                 <template #activator="{ on, attrs }">
                   <v-col
                     v-bind="attrs"
@@ -161,6 +165,19 @@
                   </v-row>
                 </v-card>
               </v-dialog>
+
+              <!-- portalApps -->
+              <v-col
+                v-for="app in portalAppsData"
+                :key="app.url"
+                cols="6"
+                sm="4"
+                lg="3"
+                xl="2"
+                class="d-flex justify-center py-3 py-xl-8 animateItem"
+              >
+                <portalApps :data="app" />
+              </v-col>
             </v-row>
           </v-container>
         </v-sheet>
@@ -185,7 +202,7 @@ export default {
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/mename/index.php',
         },
         {
-          imgURL: '/websiteImages/KAP+.png',
+          imgURL: '/websiteImages/KAP+.jpg',
           title: 'KAP+ System',
           url: 'https://kap.alkholi.com/',
         },
@@ -198,6 +215,13 @@ export default {
           imgURL: '/websiteImages/hrms.png',
           title: 'HR System',
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/index.php',
+        },
+      ],
+      portalAppsData: [
+        {
+          imgURL: '/websiteImages/Online Business Card.png',
+          title: 'Online Business Cards',
+          url: `${this.localePath('/business-cards')}`,
         },
       ],
       sharepoint: [

@@ -21,6 +21,18 @@
       app
     >
       <div class="d-flex justify-center" style="height: 62px">
+        <nuxt-link :to="localePath(`/`)">
+          <v-btn
+            color="white"
+            depressed
+            text
+            tile
+            height="100%"
+            :ripple="false"
+          >
+            <v-icon>mdi-monitor-dashboard</v-icon>
+          </v-btn>
+        </nuxt-link>
         <v-btn
           color="white"
           depressed
@@ -68,7 +80,6 @@
       <userProfile />
     </v-navigation-drawer>
 
-    <!-- portal bar -->
     <v-app-bar app color="primary" flat height="60">
       <v-container fluid class="py-0 fill-height px-xl-16">
         <!-- hamburger icon -->
@@ -77,6 +88,7 @@
           class="white--text"
           @click="drawer = !drawer"
         ></v-app-bar-nav-icon>
+
         <!-- group logo -->
         <div
           style="height: 100%"
@@ -91,6 +103,7 @@
         </div>
 
         <v-spacer></v-spacer>
+
         <!-- action buttons -->
         <v-divider
           v-if="$vuetify.breakpoint.mdAndUp"
@@ -109,14 +122,39 @@
           :ripple="false"
           @click="changeColorMode"
         >
-          <span class="pt-1 text-capitalize">{{
+          <span class="px-2 pt-1 text-capitalize">{{
             $t('portalPage.appBar.light')
           }}</span>
           <v-icon>mdi-theme-light-dark</v-icon>
-          <span class="pt-1 text-capitalize">{{
+          <span class="px-2 pt-1 text-capitalize">{{
             $t('portalPage.appBar.dark')
           }}</span>
         </v-btn>
+        <v-divider
+          v-if="$vuetify.breakpoint.mdAndUp"
+          vertical
+          class="white"
+          style="opacity: 0.25"
+        ></v-divider>
+
+        <div style="height: 100%">
+          <nuxt-link :to="localePath(`/`)">
+            <v-btn
+              v-if="$vuetify.breakpoint.mdAndUp"
+              color="white"
+              depressed
+              text
+              tile
+              height="100%"
+              :ripple="false"
+            >
+              <v-icon>mdi-monitor-dashboard</v-icon>
+              <span class="px-2 pt-1 text-capitalize">{{
+                $t('portalPage.appBar.dashboard')
+              }}</span>
+            </v-btn>
+          </nuxt-link>
+        </div>
 
         <v-divider
           v-if="$vuetify.breakpoint.mdAndUp"
@@ -152,7 +190,6 @@
             </v-btn>
           </nuxt-link>
         </div>
-
         <v-divider
           v-if="$vuetify.breakpoint.mdAndUp"
           vertical
@@ -187,34 +224,21 @@
     <v-main class="mainBG">
       <Nuxt />
     </v-main>
-
-    <v-footer
-      class="primary d-flex justify-center align-center pa-0"
-      height="22"
-      app
-    >
-      <p
-        class="pa-0 ma-0 white--text"
-        style="width: fit-content; font-size: 13px"
-      >
-        Copyright &copy; Alkholi Group {{ getTheCurrentYear }}
-      </p>
-    </v-footer>
   </v-app>
 </template>
 
 <script>
 import { mapState } from 'vuex'
-import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
 
 export default {
   data() {
     return {
+      showSnack: false,
       drawer: false,
       show: false,
-      showSnack: false,
     }
   },
+
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
@@ -225,37 +249,6 @@ export default {
     getTheCurrentYear() {
       return new Date().getFullYear()
     },
-  },
-  watch: {
-    appNotifications(newValue) {
-      if (newValue) {
-        this.showSnack = true
-      }
-    },
-  },
-  created() {
-    if (this.$nuxt.context.from) {
-      if (!this.$nuxt.context.from.path === '/login') {
-        this.reAuthenticate()
-      }
-    } else {
-      this.reAuthenticate()
-    }
-
-    // watch the lang changes, then change the page direction
-    this.$watch(
-      '$i18n.locale',
-      (newLocale) => {
-        if (newLocale === 'ar') {
-          localize('ar') // to support arabic and english error messages for vee-validate
-          this.$vuetify.rtl = true
-        } else {
-          localize('en') // to support arabic and english error messages for vee-validate
-          this.$vuetify.rtl = false
-        }
-      },
-      { immediate: true }
-    )
   },
   mounted() {
     this.$nextTick(() => {
@@ -270,6 +263,24 @@ export default {
         this.$nuxt.$loading.finish()
       }, 100)
     })
+  },
+  created() {
+    this.reAuthenticate()
+
+    // watch the lang changes, then change the page direction
+    this.$watch(
+      '$i18n.locale',
+      (newLocale) => {
+        if (newLocale === 'ar') {
+          // localize('ar') // to support arabic and english error messages for vee-validate
+          this.$vuetify.rtl = true
+        } else {
+          // localize('en') // to support arabic and english error messages for vee-validate
+          this.$vuetify.rtl = false
+        }
+      },
+      { immediate: true }
+    )
   },
   methods: {
     async reAuthenticate() {
@@ -309,7 +320,6 @@ export default {
     },
     changeColorMode() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark
-
       if (this.$vuetify.theme.isDark) {
         localStorage.setItem('colorMode', 'dark')
       } else {
@@ -320,3 +330,5 @@ export default {
 }
 </script>
 
+<style>
+</style>
