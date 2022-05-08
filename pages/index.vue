@@ -57,10 +57,19 @@
                     <div class="d-flex flex-column align-center">
                       <v-avatar
                         :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                        class="mb-2"
+                        class="mb-2 main-div"
                         color="white"
                       >
-                        <v-img src="/websiteImages/citrix.png"></v-img>
+                        <div
+                          v-if="$vuetify.theme.dark"
+                          class="the-overlay"
+                        ></div>
+                        <div class="the-image">
+                          <v-img
+                            alt="app-image"
+                            src="/websiteImages/citrix.png"
+                          ></v-img>
+                        </div>
                       </v-avatar>
                       <h5 class="text-body-2 text-md-body-1 text-center">
                         Citrix
@@ -83,10 +92,19 @@
                         >
                           <v-avatar
                             :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                            class="mb-2"
+                            class="mb-2 main-div"
                             color="white"
                           >
-                            <v-img src="/websiteImages/citrix.png"></v-img>
+                            <div
+                              v-if="$vuetify.theme.dark"
+                              class="the-overlay"
+                            ></div>
+                            <div class="the-image">
+                              <v-img
+                                alt="app-image"
+                                src="/websiteImages/citrix.png"
+                              ></v-img>
+                            </div>
                           </v-avatar>
                         </a>
                         <h5 class="text-body-2 text-md-body-1 text-center">
@@ -107,10 +125,19 @@
                         >
                           <v-avatar
                             :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                            class="mb-2"
+                            class="mb-2 main-div"
                             color="white"
                           >
-                            <v-img src="/websiteImages/citrix.png"></v-img>
+                            <div
+                              v-if="$vuetify.theme.dark"
+                              class="the-overlay"
+                            ></div>
+                            <div class="the-image">
+                              <v-img
+                                alt="app-image"
+                                src="/websiteImages/citrix.png"
+                              ></v-img>
+                            </div>
                           </v-avatar>
                         </a>
                         <h5 class="text-body-2 text-md-body-1 text-center">
@@ -138,10 +165,19 @@
                     <div class="d-flex flex-column align-center">
                       <v-avatar
                         :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                        class="mb-2"
+                        class="mb-2 main-div"
                         color="white"
                       >
-                        <v-img src="/websiteImages/sharepoint.png"></v-img>
+                        <div
+                          v-if="$vuetify.theme.dark"
+                          class="the-overlay"
+                        ></div>
+                        <div class="the-image">
+                          <v-img
+                            alt="app-image"
+                            src="/websiteImages/sharepoint.png"
+                          ></v-img>
+                        </div>
                       </v-avatar>
                       <h5 class="text-body-2 text-md-body-1 text-center">
                         SharePoint
@@ -224,7 +260,7 @@ export default {
           url: `${this.localePath('/business-cards')}`,
         },
         {
-          imgURL: '/websiteImages/administration.jpg',
+          imgURL: '/websiteImages/administration.png',
           title: 'Administration',
           url: `${this.localePath('/administration')}`,
         },
@@ -289,5 +325,28 @@ export default {
 </script>
 
 
+
+<style lang="scss" scoped>
+.main-div {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  .the-overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: black;
+    opacity: 0.1;
+    z-index: 10;
+  }
+  .the-image {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 5;
+  }
+}
+</style>
 
 

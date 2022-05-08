@@ -113,25 +113,10 @@
             </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">
-                Portal Administration
+                Users Authorization
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
-          <!-- <v-list-item
-            nuxt
-            :to="localePath('/business-cards/generated-cards')"
-            exact
-            class="py-3"
-          >
-            <v-list-item-action>
-              <v-icon>mdi-account-cog-outline</v-icon>
-            </v-list-item-action>
-            <v-list-item-content>
-              <v-list-item-title class="primaryText--text">{{
-                $t('businessCards.appPageNames.generated')
-              }}</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item> -->
         </v-list>
 
         <!-- footer -->
