@@ -320,3 +320,29 @@ export default {
 }
 </script>
 
+
+
+<style lang="scss">
+.main-div {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  .the-overlay {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: black;
+    opacity: 0.1;
+    z-index: 10;
+  }
+  .the-image {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 5;
+  }
+}
+</style>
+
+
