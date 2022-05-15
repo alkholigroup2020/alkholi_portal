@@ -30,6 +30,7 @@ export default {
       '~/components/portal',
       '~/components/portal/shortcuts',
       '~/components/appNotifications',
+      '~/components/administration/authControlledApps',
     ],
   },
 
@@ -128,7 +129,11 @@ export default {
     transpile: ['vee-validate'],
   },
 
-  serverMiddleware: ['~server/login/main.js', '~server/portal/main.js'],
+  serverMiddleware: [
+    '~server/login/main.js',
+    '~server/portal/main.js',
+    '~server/administration/main.js',
+  ],
 
   // client side expose
   publicRuntimeConfig: {
@@ -136,6 +141,8 @@ export default {
       process.env.NODE_ENV === 'production'
         ? process.env.baseURL_prod
         : process.env.baseURL_dev,
+
+    hrPictureURL: process.env.hrPictureURL,
   },
 
   loading: '@/components/spinners/RadarSpinner.vue',

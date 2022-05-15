@@ -66,6 +66,15 @@ router.post(
         ${req.body.employeeCode}, ${req.file.filename}
       `
 
+      // update authorization tables
+      const checkIfBusinessCardsAdmin =
+        await sql.query`exec dbo.business_card_admins_checkIfExist ${req.body.employeeCode}`
+      if (checkIfBusinessCardsAdmin.recordset[0].exist === 1) {
+        await sql.query`exec dbo.business_card_admins_updateData ${
+          req.body.employeeCode
+        }, ${req.file.filename}, ${false}, ${true}`
+      }
+
       // send the reply
       return res.status(201).json({
         message: 'imgSuccess',

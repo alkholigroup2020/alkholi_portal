@@ -24,6 +24,24 @@
       "label": "Upload a new profile image."
     }
   },
+  "adminPage": {
+    "layout": {
+      "tab1": "Users Authorization"
+    },
+    "choices": {
+      "title": "Choose the application to set the authorization for.",
+      "app1": "Portal Admins",
+      "app2": "Business Cards",
+      "app3": "HR Surveys System",
+      "app4": "Elevators Survey System"
+    },
+    "bCards": {
+      "tableTitle": "Members of this table will get access to the 'Business Cards' App.",
+      "formInput": "Add members by employee code ...",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this user?"
+    }
+  },
   "businessCards": {
     "appPageNames": {
       "generator": "Generate A Card",
@@ -43,11 +61,28 @@
     "portal": {
       "authFailed": "Authorization Failed!",
       "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!"
+    },
+    "administration": {
+      "bCards": {
+        "memberExist": "This admin already exist!",
+        "employeeInfoMessing": "Admin Information is missing on the HR system!",
+        "notFound": "Can't find the admin record!"
+      }
     }
   },
   "successMessages": {
     "portal": {
       "imgSuccess": "Image uploaded successfully!"
+    },
+    "administration": {
+      "bCards": {
+        "successAdd": "Successfully Added!",
+        "successDelete": "Successfully Deleted!"
+      }
     }
+  },
+  "generals": {
+    "yes": "Yes",
+    "no": "No"
   }
 }

@@ -4,12 +4,11 @@
     <v-snackbar
       v-model="showSnack"
       app
-      left
-      bottom
+      right
+      timeout="3000"
+      top
       color="transparent"
       elevation="0"
-      timeout="3000"
-      :absolute="false"
     >
       <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
     </v-snackbar>
@@ -113,7 +112,7 @@
             </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">
-                Users Authorization
+                {{ $t('adminPage.layout.tab1') }}
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
@@ -156,31 +155,6 @@
           style="opacity: 0.25"
         ></v-divider>
 
-        <v-btn
-          v-if="$vuetify.breakpoint.mdAndUp"
-          color="white"
-          depressed
-          text
-          tile
-          height="100%"
-          :ripple="false"
-          @click="changeColorMode"
-        >
-          <span class="px-2 pt-1 text-capitalize">{{
-            $t('portalPage.appBar.light')
-          }}</span>
-          <v-icon>mdi-theme-light-dark</v-icon>
-          <span class="px-2 pt-1 text-capitalize">{{
-            $t('portalPage.appBar.dark')
-          }}</span>
-        </v-btn>
-        <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
-          vertical
-          class="white"
-          style="opacity: 0.25"
-        ></v-divider>
-
         <div style="height: 100%">
           <nuxt-link :to="localePath(`/`)">
             <v-btn
@@ -199,6 +173,32 @@
             </v-btn>
           </nuxt-link>
         </div>
+
+        <v-divider
+          v-if="$vuetify.breakpoint.mdAndUp"
+          vertical
+          class="white"
+          style="opacity: 0.25"
+        ></v-divider>
+
+        <v-btn
+          v-if="$vuetify.breakpoint.mdAndUp"
+          color="white"
+          depressed
+          text
+          tile
+          height="100%"
+          :ripple="false"
+          @click="changeColorMode"
+        >
+          <span class="px-2 pt-1 text-capitalize">{{
+            $t('portalPage.appBar.light')
+          }}</span>
+          <v-icon>mdi-theme-light-dark</v-icon>
+          <span class="px-2 pt-1 text-capitalize">{{
+            $t('portalPage.appBar.dark')
+          }}</span>
+        </v-btn>
 
         <v-divider
           v-if="$vuetify.breakpoint.mdAndUp"
@@ -295,6 +295,13 @@ export default {
       return new Date().getFullYear()
     },
   },
+  watch: {
+    appNotifications(newValue) {
+      if (newValue) {
+        this.showSnack = true
+      }
+    },
+  },
   mounted() {
     this.$nextTick(() => {
       this.$nuxt.$loading.start()
@@ -329,6 +336,7 @@ export default {
       { immediate: true }
     )
   },
+
   methods: {
     async reAuthenticate() {
       try {
