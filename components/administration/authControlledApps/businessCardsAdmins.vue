@@ -41,7 +41,7 @@
           <template #default>
             <thead>
               <tr>
-                <th class="text-left text-subtitle-2 primaryText--text"></th>
+                <th></th>
                 <th class="text-left text-subtitle-2 primaryText--text">
                   Name
                 </th>
@@ -54,7 +54,7 @@
                 <th class="text-left text-subtitle-2 primaryText--text">
                   Title
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text"></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -85,56 +85,55 @@
                 <td>{{ member.employeeID }}</td>
                 <td>{{ member.mailAddress }}</td>
                 <td>{{ member.title }}</td>
-
-                <!-- delete confirmation -->
-                <v-dialog v-model="dialog" width="500" persistent>
-                  <template #activator="{ on, attrs }">
-                    <v-btn
-                      text
-                      fab
-                      small
-                      v-bind="attrs"
-                      v-on="on"
-                      @click="dialog = true"
-                    >
-                      <v-icon small color="error">mdi-delete</v-icon>
-                    </v-btn>
-                  </template>
-
-                  <v-card>
-                    <v-card-title class="text-subtitle-1 primary_5">
-                      {{ $t('adminPage.bCards.confirmationTitle') }}
-                    </v-card-title>
-
-                    <v-card-text class="pb-0">
-                      <p class="text-subtitle-1 pt-3 pb-8 mb-0 text-center">
-                        {{ $t('adminPage.bCards.confirmationMessage') }}
-                      </p>
-                    </v-card-text>
-
-                    <v-divider></v-divider>
-
-                    <v-card-actions>
-                      <v-spacer></v-spacer>
+                <td>
+                  <!-- delete confirmation -->
+                  <v-dialog v-model="dialog" width="500" persistent>
+                    <template #activator="{ on, attrs }">
                       <v-btn
-                        color="error darken-1"
                         text
-                        @click.stop="dialog = false"
+                        fab
+                        small
+                        v-bind="attrs"
+                        v-on="on"
+                        @click="setToBeDeleted(member.employeeID)"
                       >
-                        {{ $t('generals.no') }}
+                        <v-icon small color="error">mdi-delete</v-icon>
                       </v-btn>
-                      <v-btn
-                        color="success darken-1"
-                        text
-                        @click.stop="
-                          deleteBusinessCardsAdmin(member.employeeID)
-                        "
-                      >
-                        {{ $t('generals.yes') }}
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
+                    </template>
+
+                    <v-card>
+                      <v-card-title class="text-subtitle-1 primary_5">
+                        {{ $t('adminPage.bCards.confirmationTitle') }}
+                      </v-card-title>
+
+                      <v-card-text class="pb-0">
+                        <p class="text-subtitle-1 pt-3 pb-8 mb-0 text-center">
+                          {{ $t('adminPage.bCards.confirmationMessage') }}
+                        </p>
+                      </v-card-text>
+
+                      <v-divider></v-divider>
+
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn
+                          color="error darken-1"
+                          text
+                          @click="dialog = false"
+                        >
+                          {{ $t('generals.no') }}
+                        </v-btn>
+                        <v-btn
+                          color="success darken-1"
+                          text
+                          @click="deleteBusinessCardsAdmin()"
+                        >
+                          {{ $t('generals.yes') }}
+                        </v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+                </td>
               </tr>
             </tbody>
           </template>
@@ -154,6 +153,7 @@ export default {
       showSnackbar: true,
       adminMember: null,
       dialog: false,
+      toBeDeleted: null,
     }
   },
 
@@ -200,16 +200,21 @@ export default {
         //
       }
     },
-    deleteBusinessCardsAdmin(id) {
+    setToBeDeleted(id) {
+      this.toBeDeleted = id
+      this.dialog = true
+    },
+    deleteBusinessCardsAdmin() {
       try {
         this.dialog = false
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
           await this.$store.dispatch(
             'administration/businessCardsAdmins/deleteBusinessCardsAdmin',
-            { code: id }
+            { code: this.toBeDeleted }
           )
           await this.getBusinessCardsAdmins()
+          this.toBeDeleted = null
           this.$nuxt.$loading.finish()
         })
       } catch (error) {
