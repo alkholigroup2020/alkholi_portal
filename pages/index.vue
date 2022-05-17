@@ -32,7 +32,7 @@
                 sm="4"
                 lg="3"
                 xl="2"
-                class="d-flex justify-center py-3 py-xl-8 animateItem"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
               >
                 <otherApps :data="card" />
               </v-col>
@@ -50,13 +50,13 @@
                     sm="4"
                     lg="3"
                     xl="2"
-                    class="d-flex justify-center py-3 py-xl-8 animateItem"
+                    class="d-flex justify-center py-3 py-md-5 animateItem"
                     v-on="on"
                     @click="citrixDialog = !citrixDialog"
                   >
                     <div class="d-flex flex-column align-center">
                       <v-avatar
-                        :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
+                        :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
                         class="mb-2 main-div"
                         color="white"
                       >
@@ -72,7 +72,7 @@
                         </div>
                       </v-avatar>
                       <h5 class="text-body-2 text-md-body-1 text-center">
-                        Citrix
+                        {{ $t('portalPage.shortcuts.citrix') }}
                       </h5>
                     </div>
                   </v-col>
@@ -108,7 +108,9 @@
                           </v-avatar>
                         </a>
                         <h5 class="text-body-2 text-md-body-1 text-center">
-                          Citrix (Internal)
+                          {{
+                            $t('portalPage.shortcuts.citrixShortcuts.internal')
+                          }}
                         </h5>
                       </div>
                     </v-col>
@@ -141,7 +143,9 @@
                           </v-avatar>
                         </a>
                         <h5 class="text-body-2 text-md-body-1 text-center">
-                          Citrix (External)
+                          {{
+                            $t('portalPage.shortcuts.citrixShortcuts.external')
+                          }}
                         </h5>
                       </div>
                     </v-col>
@@ -158,13 +162,14 @@
                     sm="4"
                     lg="3"
                     xl="2"
-                    class="d-flex justify-center py-3 py-xl-8 animateItem"
+                    class="d-flex justify-center py-3 py-md-5 animateItem"
                     v-on="on"
                     @click="spDialog = !spDialog"
                   >
                     <div class="d-flex flex-column align-center">
+                      <!-- style="border: 0.5px solid black !important" -->
                       <v-avatar
-                        :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
+                        :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
                         class="mb-2 main-div"
                         color="white"
                       >
@@ -180,7 +185,7 @@
                         </div>
                       </v-avatar>
                       <h5 class="text-body-2 text-md-body-1 text-center">
-                        SharePoint
+                        {{ $t('portalPage.shortcuts.sharePoint') }}
                       </h5>
                     </div>
                   </v-col>
@@ -204,15 +209,65 @@
 
               <!-- portalApps -->
               <v-col
-                v-for="app in portalAppsData"
-                :key="app.url"
+                v-if="isBusinessCardsAdmin"
                 cols="6"
                 sm="4"
                 lg="3"
                 xl="2"
-                class="d-flex justify-center py-3 py-xl-8 animateItem"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
               >
-                <portalApps :data="app" />
+                <div class="d-flex flex-column align-center">
+                  <nuxt-link
+                    :to="`${localePath('/business-cards')}`"
+                    class="text-decoration-none"
+                  >
+                    <v-avatar
+                      :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
+                      class="mb-2 main-div"
+                    >
+                      <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
+                      <div class="the-image">
+                        <v-img
+                          alt="app-image"
+                          src="/websiteImages/Online Business Card.png"
+                        ></v-img>
+                      </div>
+                    </v-avatar>
+                  </nuxt-link>
+                  <h5 class="text-body-2 text-md-body-1 text-center">
+                    {{ $t('portalPage.shortcuts.bCards') }}
+                  </h5>
+                </div>
+              </v-col>
+              <v-col
+                cols="6"
+                sm="4"
+                lg="3"
+                xl="2"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
+              >
+                <div class="d-flex flex-column align-center">
+                  <nuxt-link
+                    :to="`${localePath('/administration')}`"
+                    class="text-decoration-none"
+                  >
+                    <v-avatar
+                      :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
+                      class="mb-2 main-div"
+                    >
+                      <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
+                      <div class="the-image">
+                        <v-img
+                          alt="app-image"
+                          src="/websiteImages/administration.png"
+                        ></v-img>
+                      </div>
+                    </v-avatar>
+                  </nuxt-link>
+                  <h5 class="text-body-2 text-md-body-1 text-center">
+                    {{ $t('portalPage.shortcuts.administration') }}
+                  </h5>
+                </div>
               </v-col>
             </v-row>
           </v-container>
@@ -223,86 +278,80 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   data() {
     return {
       otherAppsData: [
         {
           imgURL: '/websiteImages/owa.png',
-          title: 'Outlook Webapp',
+          title: this.$t('portalPage.shortcuts.owa'),
           url: this.owaURL(),
         },
         {
           imgURL: '/websiteImages/mena-me.jpg',
-          title: 'MenaMe',
+          title: this.$t('portalPage.shortcuts.menaMe'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/mename/index.php',
         },
         {
           imgURL: '/websiteImages/KAP+.jpg',
-          title: 'KAP+ System',
+          title: this.$t('portalPage.shortcuts.kap'),
           url: 'https://kap.alkholi.com/',
         },
         {
           imgURL: '/websiteImages/etas.png',
-          title: 'Attendance System',
+          title: this.$t('portalPage.shortcuts.oldAttendance'),
           url: 'http://attendance.alkholi.com/eTAS/eTas.aspx',
         },
         {
           imgURL: '/websiteImages/hrms.png',
-          title: 'HR System',
+          title: this.$t('portalPage.shortcuts.hrSystem'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/index.php',
-        },
-      ],
-      portalAppsData: [
-        {
-          imgURL: '/websiteImages/Online Business Card.png',
-          title: 'Online Business Cards',
-          url: `${this.localePath('/business-cards')}`,
-        },
-        {
-          imgURL: '/websiteImages/administration.png',
-          title: 'Administration',
-          url: `${this.localePath('/administration')}`,
         },
       ],
       sharepoint: [
         {
-          title: 'Public',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.public'),
           imgURL: '/websiteImages/SP_Public.png',
           url: 'https://alkholi.sharepoint.com/public/SitePages/Home.aspx',
         },
         {
-          title: 'Chairman Office',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.chairman'),
           imgURL: '/websiteImages/SP_Chairman.png',
           url: 'https://alkholi.sharepoint.com/chairmanoffice',
         },
         {
-          title: 'Construction',
+          title: this.$t(
+            'portalPage.shortcuts.sharePointShortcuts.construction'
+          ),
           imgURL: '/websiteImages/SP_Construction.png',
           url: 'https://alkholi.sharepoint.com/construction',
         },
         {
-          title: 'Elevators',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.elevators'),
           imgURL: '/websiteImages/SP_Elevators.png',
           url: 'https://alkholi.sharepoint.com/elevators',
         },
         {
-          title: 'Finance',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.finance'),
           imgURL: '/websiteImages/SP_Finance.png',
           url: 'https://alkholi.sharepoint.com/finance',
         },
         {
-          title: 'HAKTCO',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.haktco'),
           imgURL: '/websiteImages/SP_Haktco.png',
           url: 'https://alkholi.sharepoint.com/haktco',
         },
         {
-          title: 'HR',
+          title: this.$t('portalPage.shortcuts.sharePointShortcuts.hr'),
           imgURL: '/websiteImages/SP_HR.png',
           url: 'https://alkholi.sharepoint.com/hr',
         },
         {
-          title: 'Procurement',
+          title: this.$t(
+            'portalPage.shortcuts.sharePointShortcuts.procurement'
+          ),
           imgURL: '/websiteImages/SP_Procurement.png',
           url: 'https://alkholi.sharepoint.com/procurement',
         },
@@ -311,6 +360,12 @@ export default {
       spDialog: false,
     }
   },
+  computed: {
+    ...mapState({
+      isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
+    }),
+  },
+
   methods: {
     owaURL() {
       const domainName = localStorage.getItem('domainName')

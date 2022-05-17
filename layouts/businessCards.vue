@@ -88,12 +88,17 @@
         </div>
 
         <!-- profile picture -->
-        <div class="d-flex justify-center py-8">
-          <v-avatar size="150" style="border: 0.5px #000046 solid">
+        <div class="d-flex justify-center py-5">
+          <v-avatar
+            height="150"
+            :size="$vuetify.breakpoint.smAndDown ? '120' : '140'"
+            style="border-radius: 10px !important"
+            tile
+          >
             <v-img
               :src="`${profilePicPath}`"
               alt="Profile Image"
-              position="top"
+              position="top center"
             ></v-img>
           </v-avatar>
         </div>
@@ -171,31 +176,6 @@
           style="opacity: 0.25"
         ></v-divider>
 
-        <v-btn
-          v-if="$vuetify.breakpoint.mdAndUp"
-          color="white"
-          depressed
-          text
-          tile
-          height="100%"
-          :ripple="false"
-          @click="changeColorMode"
-        >
-          <span class="px-2 pt-1 text-capitalize">{{
-            $t('portalPage.appBar.light')
-          }}</span>
-          <v-icon>mdi-theme-light-dark</v-icon>
-          <span class="px-2 pt-1 text-capitalize">{{
-            $t('portalPage.appBar.dark')
-          }}</span>
-        </v-btn>
-        <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
-          vertical
-          class="white"
-          style="opacity: 0.25"
-        ></v-divider>
-
         <div style="height: 100%">
           <nuxt-link :to="localePath(`/`)">
             <v-btn
@@ -214,6 +194,32 @@
             </v-btn>
           </nuxt-link>
         </div>
+
+        <v-divider
+          v-if="$vuetify.breakpoint.mdAndUp"
+          vertical
+          class="white"
+          style="opacity: 0.25"
+        ></v-divider>
+
+        <v-btn
+          v-if="$vuetify.breakpoint.mdAndUp"
+          color="white"
+          depressed
+          text
+          tile
+          height="100%"
+          :ripple="false"
+          @click="changeColorMode"
+        >
+          <span class="px-2 pt-1 text-capitalize">{{
+            $t('portalPage.appBar.light')
+          }}</span>
+          <v-icon>mdi-theme-light-dark</v-icon>
+          <span class="px-2 pt-1 text-capitalize">{{
+            $t('portalPage.appBar.dark')
+          }}</span>
+        </v-btn>
 
         <v-divider
           v-if="$vuetify.breakpoint.mdAndUp"
@@ -302,6 +308,7 @@ export default {
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
+      isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
     }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
@@ -313,6 +320,7 @@ export default {
   mounted() {
     this.$nextTick(() => {
       this.$nuxt.$loading.start()
+
       // check the preferred color mode and the profile picture path
       setTimeout(() => {
         const colorMode = localStorage.getItem('colorMode')
@@ -358,11 +366,18 @@ export default {
               domainName,
             }
             await this.$store.dispatch('login/reAuthenticate', payload)
+
+            // check authorization
+            if (!this.isBusinessCardsAdmin) {
+              this.$router.push(this.localePath('/'))
+            }
           } else {
             this.$router.push('/login')
           }
         }
-      } catch (error) {}
+      } catch (error) {
+        //
+      }
     },
     logoff() {
       try {

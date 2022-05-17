@@ -2,7 +2,7 @@
   <div class="d-flex flex-column align-center">
     <a :href="data.url" target="_blank" class="text-decoration-none">
       <v-avatar
-        :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
+        :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
         class="mb-2 main-div"
       >
         <div v-if="$vuetify.theme.dark" class="the-overlay"></div>

@@ -69,6 +69,9 @@ export const mutations = {
     localStorage.removeItem('userFullName')
     localStorage.removeItem('employeeCode')
     localStorage.removeItem('managerCode')
+    localStorage.removeItem('firstNameAr')
+    localStorage.removeItem('secondNameAr')
+    localStorage.removeItem('profilePicPath')
     localStorage.removeItem('managerEmail')
     // remove authorization header
     this.$axios.defaults.headers.common.Authorization = ''
@@ -85,7 +88,13 @@ export const actions = {
       )
       if (login.status === 200) {
         // set the user states with the received data
-        commit('SAVE_USER_DATA', login.data)
+        await commit('SAVE_USER_DATA', login.data)
+
+        await dispatch('portal/getUserAuthorizations', undefined, {
+          root: true,
+        })
+        await dispatch('portal/getUserProfile', undefined, { root: true })
+
         this.$router.push(this.localePath('/'))
       }
     } catch (error) {
@@ -107,13 +116,17 @@ export const actions = {
       )
       if (authenticate.status === 200) {
         // set the user state with the received token
-        commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
+        await commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
+        await dispatch('portal/getUserAuthorizations', undefined, {
+          root: true,
+        })
+        await dispatch('portal/getUserProfile', undefined, { root: true })
       }
     } catch (error) {
       // logoff user
       const theToken = localStorage.getItem('userToken')
       const tokenPayload = { token: theToken }
-      dispatch('login/logoff', tokenPayload, { root: true })
+      await dispatch('login/logoff', tokenPayload, { root: true })
     }
   },
 
@@ -126,11 +139,11 @@ export const actions = {
       )
       if (logoff.status === 200) {
         // delete local storage data
-        commit('DELETE_USER_DATA')
+        await commit('DELETE_USER_DATA')
         this.$router.push(this.localePath('/login'))
       }
     } catch (error) {
-      commit('DELETE_USER_DATA')
+      await commit('DELETE_USER_DATA')
       this.$router.push(this.localePath('/login'))
     }
   },

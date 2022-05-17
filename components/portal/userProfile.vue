@@ -6,10 +6,12 @@
     class="d-flex flex-column"
     height="50vh"
   >
-    <div class="d-flex justify-center py-5">
+    <div class="d-flex justify-center pb-5 pt-8">
       <v-avatar
-        :size="$vuetify.breakpoint.smAndDown ? '120' : '150'"
-        style="border: 0.5px #000046 solid"
+        :size="$vuetify.breakpoint.smAndDown ? '140' : '160'"
+        height="170"
+        style="border-radius: 10px !important"
+        tile
       >
         <v-img
           :src="`${profilePicPath}`"
@@ -157,13 +159,8 @@ export default {
       return userFullNameAr
     },
   },
-  mounted() {
-    this.getUserProfileData()
-  },
+
   methods: {
-    async getUserProfileData() {
-      await this.$store.dispatch('portal/getUserProfile', this.employeeCode)
-    },
     async saveUserProfile() {
       const employeeCode = localStorage.getItem('employeeCode')
 
@@ -173,7 +170,7 @@ export default {
       }
 
       await this.$store.dispatch('portal/saveUserProfile', profileData)
-      await this.$store.dispatch('portal/getUserProfile', employeeCode)
+      await this.$store.dispatch('portal/getUserProfile')
 
       this.profilePic = null
       this.dialog = false
@@ -181,6 +178,3 @@ export default {
   },
 }
 </script>
-
-<style>
-</style>

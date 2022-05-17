@@ -2,9 +2,10 @@
   <!-- animation101 -->
   <v-card
     :max-width="$vuetify.breakpoint.mdAndUp ? '400' : '320'"
-    class="primary"
+    color="#000046"
     elevation="5"
     rounded
+    light
   >
     <v-container>
       <ValidationObserver v-slot="{ invalid }">

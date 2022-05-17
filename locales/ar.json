@@ -16,7 +16,30 @@
     },
     "shortcuts": {
       "title": "بوابــة المـوظـفــين",
-      "secondTitle": "المكان المــوحد لجميع التطبيقات المطورة داخليًا، والأنظمة الأخرى المتاحة."
+      "secondTitle": "المكان المــوحد لجميع التطبيقات المطورة داخليًا، والأنظمة الأخرى المتاحة.",
+      "owa": "البريد الإلكتروني",
+      "menaMe": "MenaMe",
+      "kap": "KAP+",
+      "oldAttendance": "نظام الحضور والإنصراف",
+      "hrSystem": "نظام الموارد البشرية",
+      "citrix": "Citrix",
+      "citrixShortcuts": {
+        "internal": "داخل الشبكة",
+        "external": "خارج الشبكة"
+      },
+      "sharePoint": "SharePoint",
+      "sharePointShortcuts": {
+        "public": "الموقع العام",
+        "hr": "الموارد البشرية",
+        "elevators": "المصاعد",
+        "construction": "الإنشاءات",
+        "chairman": "مكتب رئيس مجلس الإدارة",
+        "procurement": "إدارة المشتريات",
+        "haktco": "HAKTCO",
+        "finance": "إدارة الحسابات"
+      },
+      "bCards": "الكروت الشخصية",
+      "administration": "الإعدادات والصلاحيات"
     },
     "editProfile": {
       "edit": "تعـديل المـلف",

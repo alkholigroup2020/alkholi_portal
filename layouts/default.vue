@@ -235,7 +235,7 @@ export default {
   },
   created() {
     if (this.$nuxt.context.from) {
-      if (!this.$nuxt.context.from.path === '/login') {
+      if (this.$nuxt.context.from.path !== '/login') {
         this.reAuthenticate()
       }
     } else {

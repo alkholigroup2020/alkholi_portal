@@ -15,7 +15,7 @@
           <div class="d-flex">
             <v-text-field
               v-model="adminMember"
-              color="primary"
+              :color="$vuetify.theme.dark ? 'white' : 'primary'"
               outlined
               dense
               :placeholder="$t('adminPage.bCards.formInput')"
@@ -37,21 +37,24 @@
     <!-- table -->
     <v-row>
       <v-col cols="12" class="py-0">
-        <v-simple-table class="pb-3">
+        <v-simple-table
+          class="pb-1"
+          :class="$vuetify.theme.dark ? 'primary' : ''"
+        >
           <template #default>
             <thead>
               <tr>
                 <th></th>
-                <th class="text-left text-subtitle-2 primaryText--text">
+                <th class="text-center text-subtitle-2 primaryText--text">
                   Name
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
+                <th class="text-center text-subtitle-2 primaryText--text">
                   Employee ID
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
+                <th class="text-center text-subtitle-2 primaryText--text">
                   Email Address
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
+                <th class="text-center text-subtitle-2 primaryText--text">
                   Title
                 </th>
                 <th></th>
@@ -59,7 +62,7 @@
             </thead>
             <tbody>
               <tr v-for="member in bCardsAdmins" :key="member._id">
-                <td>
+                <td class="text-center py-1">
                   <v-avatar
                     v-if="member.hrPicture"
                     style="border: 0.5px #000046 solid"
@@ -81,10 +84,10 @@
                     ></v-img>
                   </v-avatar>
                 </td>
-                <td>{{ member.fullName }}</td>
-                <td>{{ member.employeeID }}</td>
-                <td>{{ member.mailAddress }}</td>
-                <td>{{ member.title }}</td>
+                <td class="text-center">{{ member.fullName }}</td>
+                <td class="text-center">{{ member.employeeID }}</td>
+                <td class="text-center">{{ member.mailAddress }}</td>
+                <td class="text-center">{{ member.title }}</td>
                 <td>
                   <!-- delete confirmation -->
                   <v-dialog v-model="dialog" width="500" persistent>

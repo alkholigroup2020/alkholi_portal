@@ -18,9 +18,11 @@
       <Nuxt />
     </v-main>
     <v-footer
-      class="primary d-flex justify-center align-center pa-0"
+      class="d-flex justify-center align-center pa-0"
       height="22"
       app
+      light
+      color="#000046"
     >
       <p
         class="pa-0 ma-0 white--text"

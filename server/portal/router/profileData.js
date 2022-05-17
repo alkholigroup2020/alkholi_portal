@@ -93,7 +93,6 @@ router.post(
 
 router.post('/get-user-profile', authorize, async (req, res) => {
   try {
-    // throw new Error(`Just an Error!!`)
     // connect to the db
     await sql.connect(sqlConfigs)
 
@@ -104,9 +103,11 @@ router.post('/get-user-profile', authorize, async (req, res) => {
     const result = userInfo.recordset[0]
 
     res.send(result)
-  } catch (error) {
+  } catch (e) {
+    const error = e.toString()
+    const newErrorString = error.replaceAll('Error: ', '')
     res.status(500).json({
-      message: `${error}`,
+      message: `${newErrorString}`,
     })
   } finally {
     await sql.close()

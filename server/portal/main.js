@@ -2,12 +2,12 @@ const path = require('path')
 const express = require('express')
 const api = express()
 const profilesData = require('./router/profileData')
-// const openSQLCalls = require('./router/openSQLCalls')
+const userAuthorizations = require('./router/authorizations')
 
 api.use(express.json())
 api.use(express.urlencoded({ extended: true }))
 api.use(profilesData)
-// api.use(openSQLCalls)
+api.use(userAuthorizations)
 
 // set up a static file serving
 api.use(

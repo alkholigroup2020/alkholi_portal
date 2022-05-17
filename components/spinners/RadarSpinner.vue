@@ -34,25 +34,11 @@ export default {
       circlesNum: 4,
       // manually added
       loading: false,
+      setColor: '',
+      bgColor: '',
     }
   },
   computed: {
-    setColor() {
-      const colorMode = localStorage.getItem('colorMode')
-      if (colorMode === 'dark') {
-        return this.$vuetify.theme.themes.light.mainBG
-      } else {
-        return this.$vuetify.theme.themes.dark.mainBG
-      }
-    },
-    bgColor() {
-      const colorMode = localStorage.getItem('colorMode')
-      if (colorMode === 'dark') {
-        return this.$vuetify.theme.themes.dark.mainBG
-      } else {
-        return this.$vuetify.theme.themes.light.mainBG
-      }
-    },
     borderWidth() {
       return (this.size * 5) / 110
     },
@@ -99,6 +85,14 @@ export default {
   // manually added
   methods: {
     start() {
+      const colorMode = localStorage.getItem('colorMode')
+      if (colorMode === 'dark') {
+        this.setColor = this.$vuetify.theme.themes.light.mainBG
+        this.bgColor = this.$vuetify.theme.themes.dark.mainBG
+      } else {
+        this.setColor = this.$vuetify.theme.themes.dark.mainBG
+        this.bgColor = this.$vuetify.theme.themes.light.mainBG
+      }
       this.loading = true
     },
     finish() {

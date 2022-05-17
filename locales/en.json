@@ -16,7 +16,30 @@
     },
     "shortcuts": {
       "title": "Alkholi Portal",
-      "secondTitle": "The one place for all in-house developed applications, and other available systems."
+      "secondTitle": "The one place for all in-house developed applications, and other available systems.",
+      "owa": "Outlook Webapp",
+      "menaMe": "MenaMe",
+      "kap": "KAP+ System",
+      "oldAttendance": "Attendance System",
+      "hrSystem": "HR System",
+      "citrix": "Citrix",
+      "citrixShortcuts": {
+        "internal": "Internal",
+        "external": "External"
+      },
+      "sharePoint": "SharePoint",
+      "sharePointShortcuts": {
+        "public": "Public",
+        "hr": "HR Department",
+        "elevators": "Elevators",
+        "construction": "Construction",
+        "chairman": "Chairman Office",
+        "procurement": "Procurement",
+        "haktco": "HAKTCO",
+        "finance": "Finance"
+      },
+      "bCards": "Business Cards",
+      "administration": "Administration"
     },
     "editProfile": {
       "edit": "Edit Profile",

@@ -22,7 +22,7 @@
                 </v-btn>
               </template>
 
-              <v-list>
+              <v-list :class="$vuetify.theme.dark ? 'primary' : ''">
                 <v-list-item
                   v-for="(item, i) in applications"
                   :key="i"

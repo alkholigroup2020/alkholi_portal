@@ -87,12 +87,17 @@
         </div>
 
         <!-- profile picture -->
-        <div class="d-flex justify-center py-8">
-          <v-avatar size="150" style="border: 0.5px #000046 solid">
+        <div class="d-flex justify-center py-5">
+          <v-avatar
+            height="150"
+            :size="$vuetify.breakpoint.smAndDown ? '120' : '140'"
+            style="border-radius: 10px !important"
+            tile
+          >
             <v-img
               :src="`${profilePicPath}`"
               alt="Profile Image"
-              position="top"
+              position="top center"
             ></v-img>
           </v-avatar>
         </div>

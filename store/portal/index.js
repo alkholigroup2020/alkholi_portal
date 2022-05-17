@@ -1,5 +1,6 @@
 export const state = () => ({
   profilePicPath: '',
+  isBusinessCardsAdmin: undefined,
 })
 
 export const mutations = {
@@ -26,18 +27,22 @@ export const mutations = {
       )
     }
   },
+  SET_USER_AUTHORIZATIONS_DATA(state, data) {
+    state.isBusinessCardsAdmin = data.isBusinessCardsAdmin
+  },
 }
 
 export const actions = {
-  async getUserProfile({ commit, dispatch }, payload) {
+  async getUserProfile({ commit, dispatch }) {
     try {
       const userToken = localStorage.getItem('userToken')
+      const employeeCode = localStorage.getItem('employeeCode')
       this.$axios.defaults.headers.common.Authorization = `Bearer ${userToken}`
       // get user profile data
       const serverCall = await this.$axios.post(
         `${this.$config.baseURL}/portal-api/get-user-profile`,
         {
-          employeeID: payload,
+          employeeID: employeeCode,
         }
       )
       if (serverCall.status === 200) {
@@ -50,13 +55,16 @@ export const actions = {
           `errorMessages.portal.${error.response.data.message}`
         ),
       }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
       // logoff user
       const theToken = localStorage.getItem('userToken')
       const tokenPayload = { token: theToken }
-      dispatch('login/logoff', tokenPayload, { root: true })
+      await dispatch('login/logoff', tokenPayload, { root: true })
     }
   },
+
   async saveUserProfile({ dispatch }, payload) {
     try {
       const FormData = require('form-data')
@@ -77,7 +85,7 @@ export const actions = {
             `successMessages.portal.${serverCall.data.message}`
           ),
         }
-        dispatch('appNotifications/addNotification', notification, {
+        await dispatch('appNotifications/addNotification', notification, {
           root: true,
         })
       }
@@ -86,7 +94,36 @@ export const actions = {
         type: 'error',
         message: error.response.data.message,
       }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
+    }
+  },
+
+  async getUserAuthorizations({ commit, dispatch }) {
+    try {
+      const employeeCode = localStorage.getItem('employeeCode')
+      const serverCall = await this.$axios.post(
+        `${this.$config.baseURL}/portal-api/get-user-authorizations`,
+        {
+          employeeID: employeeCode,
+        }
+      )
+      if (serverCall.status === 200) {
+        await commit('SET_USER_AUTHORIZATIONS_DATA', serverCall.data)
+      }
+    } catch (error) {
+      const notification = {
+        type: 'error',
+        message: error.response.data.message,
+      }
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
+      // logoff user
+      const theToken = localStorage.getItem('userToken')
+      const tokenPayload = { token: theToken }
+      await dispatch('login/logoff', tokenPayload, { root: true })
     }
   },
 }

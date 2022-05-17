@@ -25,7 +25,9 @@ export const actions = {
           `errorMessages.portal.${error.response.data.message}`
         ),
       }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
     }
   },
   async addBusinessCardsAdmin({ dispatch }, payload) {
@@ -41,7 +43,7 @@ export const actions = {
             `successMessages.administration.bCards.successAdd`
           ),
         }
-        dispatch('appNotifications/addNotification', notification, {
+        await dispatch('appNotifications/addNotification', notification, {
           root: true,
         })
       }
@@ -52,7 +54,9 @@ export const actions = {
           `errorMessages.administration.bCards.${error.response.data.message}`
         ),
       }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
     }
   },
   async deleteBusinessCardsAdmin({ dispatch }, payload) {
@@ -79,7 +83,9 @@ export const actions = {
           `errorMessages.administration.bCards.${error.response.data.message}`
         ),
       }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
     }
   },
 }
