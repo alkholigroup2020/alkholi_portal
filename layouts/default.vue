@@ -234,14 +234,6 @@ export default {
     },
   },
   created() {
-    if (this.$nuxt.context.from) {
-      if (this.$nuxt.context.from.path !== '/login') {
-        this.reAuthenticate()
-      }
-    } else {
-      this.reAuthenticate()
-    }
-
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',
@@ -258,8 +250,15 @@ export default {
     )
   },
   mounted() {
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
       this.$nuxt.$loading.start()
+      if (this.$nuxt.context.from) {
+        if (this.$nuxt.context.from.path !== '/login') {
+          await this.reAuthenticate()
+        }
+      } else {
+        await this.reAuthenticate()
+      }
       // check the preferred color mode
       setTimeout(() => {
         const colorMode = localStorage.getItem('colorMode')

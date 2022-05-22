@@ -15,7 +15,7 @@ const auth = async (req, res, next) => {
     const isTheTokenExist =
       await sql.query`exec dbo.userTokens_checkIfExist ${token}`
     if (isTheTokenExist.recordset[0].token === 1) {
-      await sql.close()
+      // await sql.close()
       next()
     } else {
       throw new Error('authFailed')
@@ -27,6 +27,9 @@ const auth = async (req, res, next) => {
       message: `${newErrorString}`,
     })
   }
+  // finally {
+  //   await sql.close()
+  // }
 }
 
 module.exports = auth

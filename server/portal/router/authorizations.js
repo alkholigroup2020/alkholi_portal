@@ -7,11 +7,19 @@ const authorize = require('../middleware/authorization.js')
 router.post('/get-user-authorizations', authorize, async (req, res) => {
   try {
     const results = {
+      isPortalAdmin: false,
       isBusinessCardsAdmin: false,
     }
 
     await sql.close()
     await sql.connect(sqlConfigs)
+
+    const isPortalAdmin =
+      await sql.query`exec dbo.admin_members_checkIfExist ${req.body.employeeID}`
+
+    if (isPortalAdmin.recordset[0].exist) {
+      results.isPortalAdmin = true
+    }
 
     const isBusinessCardsAdmin =
       await sql.query`exec dbo.business_card_admins_checkIfExist ${req.body.employeeID}`

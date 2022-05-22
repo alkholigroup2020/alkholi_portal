@@ -292,6 +292,7 @@ export default {
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
+      isPortalAdmin: (state) => state.portal.isPortalAdmin,
     }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
@@ -308,8 +309,9 @@ export default {
     },
   },
   mounted() {
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
       this.$nuxt.$loading.start()
+      await this.reAuthenticate()
       // check the preferred color mode and the profile picture path
       setTimeout(() => {
         const colorMode = localStorage.getItem('colorMode')
@@ -324,7 +326,7 @@ export default {
     })
   },
   created() {
-    this.reAuthenticate()
+    // this.reAuthenticate()
 
     // watch the lang changes, then change the page direction
     this.$watch(
@@ -356,6 +358,10 @@ export default {
               domainName,
             }
             await this.$store.dispatch('login/reAuthenticate', payload)
+            // check authorization
+            if (!this.isPortalAdmin) {
+              this.$router.push(this.localePath('/'))
+            }
           } else {
             this.$router.push('/login')
           }

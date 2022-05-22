@@ -240,6 +240,7 @@
                 </div>
               </v-col>
               <v-col
+                v-if="isPortalAdmin"
                 cols="6"
                 sm="4"
                 lg="3"
@@ -362,6 +363,7 @@ export default {
   },
   computed: {
     ...mapState({
+      isPortalAdmin: (state) => state.portal.isPortalAdmin,
       isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
     }),
   },

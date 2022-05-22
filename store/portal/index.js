@@ -1,5 +1,6 @@
 export const state = () => ({
   profilePicPath: '',
+  isPortalAdmin: undefined,
   isBusinessCardsAdmin: undefined,
 })
 
@@ -28,6 +29,7 @@ export const mutations = {
     }
   },
   SET_USER_AUTHORIZATIONS_DATA(state, data) {
+    state.isPortalAdmin = data.isPortalAdmin
     state.isBusinessCardsAdmin = data.isBusinessCardsAdmin
   },
 }

@@ -318,9 +318,9 @@ export default {
     },
   },
   mounted() {
-    this.$nextTick(() => {
+    this.$nextTick(async () => {
       this.$nuxt.$loading.start()
-
+      await this.reAuthenticate()
       // check the preferred color mode and the profile picture path
       setTimeout(() => {
         const colorMode = localStorage.getItem('colorMode')
@@ -335,8 +335,6 @@ export default {
     })
   },
   created() {
-    this.reAuthenticate()
-
     // watch the lang changes, then change the page direction
     this.$watch(
       '$i18n.locale',

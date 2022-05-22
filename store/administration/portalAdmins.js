@@ -1,22 +1,22 @@
 export const state = () => ({
-  bCardsAdmins: [],
+  portalAdmins: [],
 })
 
 export const mutations = {
-  SET_BUSINESS_CARDS_ADMINS(state, data) {
-    state.bCardsAdmins = data
+  SET_PORTAL_ADMINS(state, data) {
+    state.portalAdmins = data
   },
 }
 
 export const actions = {
-  async getBusinessCardsAdmins({ commit, dispatch }) {
+  async getPortalAdmins({ commit, dispatch }) {
     try {
       const serverCall = await this.$axios.post(
         `${this.$config.baseURL}/administration-api/sql-call`,
-        { query: 'SELECT * FROM dbo.business_card_admins' }
+        { query: 'SELECT * FROM dbo.admin_members' }
       )
       if (serverCall.status === 200) {
-        await commit('SET_BUSINESS_CARDS_ADMINS', serverCall.data)
+        await commit('SET_PORTAL_ADMINS', serverCall.data)
       }
     } catch (error) {
       const notification = {
@@ -28,17 +28,17 @@ export const actions = {
       })
     }
   },
-  async addBusinessCardsAdmin({ dispatch }, payload) {
+  async addPortalAdmin({ dispatch }, payload) {
     try {
       const serverCall = await this.$axios.post(
-        `${this.$config.baseURL}/administration-api/add-business-card-admin`,
+        `${this.$config.baseURL}/administration-api/add-portal-admin`,
         payload
       )
       if (serverCall.status === 200) {
         const notification = {
           type: 'success',
           message: this.app.i18n.t(
-            `successMessages.administration.bCards.successAdd`
+            `successMessages.administration.portalAdmins.successAdd`
           ),
         }
         await dispatch('appNotifications/addNotification', notification, {
@@ -49,7 +49,7 @@ export const actions = {
       const notification = {
         type: 'error',
         message: this.app.i18n.t(
-          `errorMessages.administration.bCards.${error.response.data.message}`
+          `errorMessages.administration.portalAdmins.${error.response.data.message}`
         ),
       }
       await dispatch('appNotifications/addNotification', notification, {
@@ -57,17 +57,17 @@ export const actions = {
       })
     }
   },
-  async deleteBusinessCardsAdmin({ dispatch }, payload) {
+  async deletePortalAdmin({ dispatch }, payload) {
     try {
       const serverCall = await this.$axios.post(
-        `${this.$config.baseURL}/administration-api/delete-business-card-admin`,
+        `${this.$config.baseURL}/administration-api/delete-portal-admin`,
         payload
       )
       if (serverCall.status === 200) {
         const notification = {
           type: 'success',
           message: this.app.i18n.t(
-            `successMessages.administration.bCards.successDelete`
+            `successMessages.administration.portalAdmins.successDelete`
           ),
         }
         await dispatch('appNotifications/addNotification', notification, {
@@ -78,7 +78,7 @@ export const actions = {
       const notification = {
         type: 'error',
         message: this.app.i18n.t(
-          `errorMessages.administration.bCards.${error.response.data.message}`
+          `errorMessages.administration.portalAdmins.${error.response.data.message}`
         ),
       }
       await dispatch('appNotifications/addNotification', notification, {

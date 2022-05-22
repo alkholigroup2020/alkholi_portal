@@ -58,6 +58,12 @@
       "app3": "HR Surveys System",
       "app4": "Elevators Survey System"
     },
+    "portalAdmins": {
+      "tableTitle": "Members of this table will have full control over the portal administration.",
+      "formInput": "",
+      "confirmationTitle": "",
+      "confirmationMessage": ""
+    },
     "bCards": {
       "tableTitle": "Members of this table will get access to the 'Business Cards' App.",
       "formInput": "Add members by employee code ...",
@@ -87,7 +93,12 @@
     },
     "administration": {
       "bCards": {
-        "memberExist": "This admin already exist!",
+        "memberExist": "This member already exist!",
+        "employeeInfoMessing": "Admin Information is missing on the HR system!",
+        "notFound": "Can't find the admin record!"
+      },
+      "portalAdmins": {
+        "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
         "notFound": "Can't find the admin record!"
       }
@@ -99,6 +110,10 @@
     },
     "administration": {
       "bCards": {
+        "successAdd": "Successfully Added!",
+        "successDelete": "Successfully Deleted!"
+      },
+      "portalAdmins": {
         "successAdd": "Successfully Added!",
         "successDelete": "Successfully Deleted!"
       }

@@ -3,8 +3,6 @@ const sqlConfigs = require('../configs/sql')
 
 const auth = async (req, res, next) => {
   try {
-    // throw new Error('authFailed')
-
     if (!req.header('Authorization')) throw new Error('authFailed')
     // get user token from the header
     const header = req.header('Authorization')
@@ -15,7 +13,7 @@ const auth = async (req, res, next) => {
     const isTheTokenExist =
       await sql.query`exec dbo.userTokens_checkIfExist ${token}`
     if (isTheTokenExist.recordset[0].token === 1) {
-      await sql.close()
+      // await sql.close()
       next()
     } else {
       throw new Error('authFailed')
@@ -27,6 +25,9 @@ const auth = async (req, res, next) => {
       message: `${newErrorString}`,
     })
   }
+  // finally {
+  //   await sql.close()
+  // }
 }
 
 module.exports = auth
