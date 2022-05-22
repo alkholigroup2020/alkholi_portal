@@ -11,7 +11,6 @@ router.post('/get-user-authorizations', authorize, async (req, res) => {
       isBusinessCardsAdmin: false,
     }
 
-    await sql.close()
     await sql.connect(sqlConfigs)
 
     const isPortalAdmin =
@@ -35,6 +34,8 @@ router.post('/get-user-authorizations', authorize, async (req, res) => {
     res.status(500).json({
       message: `${newErrorString}`,
     })
+  } finally {
+    await sql.close()
   }
 })
 
