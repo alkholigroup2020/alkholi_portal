@@ -133,6 +133,7 @@ export default {
     '~server/login/main.js',
     '~server/portal/main.js',
     '~server/administration/main.js',
+    '~server/businessCards/main.js',
   ],
 
   // client side expose
