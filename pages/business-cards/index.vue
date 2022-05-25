@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="12" class="d-flex py-15 justify-center">
-        <h1>Business Cards</h1>
+        <h1>Cards Generator</h1>
       </v-col>
     </v-row>
   </v-container>

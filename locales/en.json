@@ -75,6 +75,12 @@
     "appPageNames": {
       "generator": "Generate A Card",
       "generated": "Generated Cards"
+    },
+    "generatedCards": {
+      "title": "Generated Business Cards",
+      "subTitle": "Members of this group are having an online business card.",
+      "searchLabel": "Search by employee's ID or name ...",
+      "showCard": "Show the card!"
     }
   },
   "errorMessages": {

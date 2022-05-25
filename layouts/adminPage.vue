@@ -73,7 +73,7 @@
         <!-- group logo -->
         <div
           v-if="!$vuetify.breakpoint.mdAndDown"
-          class="d-flex align-center justify-center pt-3"
+          class="d-flex align-center justify-center pt-4"
         >
           <v-img
             max-width="170"
@@ -87,7 +87,7 @@
         </div>
 
         <!-- profile picture -->
-        <div class="d-flex justify-center py-5">
+        <div class="d-flex justify-center py-8">
           <v-avatar
             height="150"
             :size="$vuetify.breakpoint.smAndDown ? '120' : '140'"

@@ -75,6 +75,12 @@
     "appPageNames": {
       "generator": "كارت جديد",
       "generated": "كروت تم إصدارها"
+    },
+    "generatedCards": {
+      "title": "كروت تم إصدارها",
+      "subTitle": "أعضاء هذا الجدول لديهم كروت تعريفية.",
+      "searchLabel": "البحث بإستخدام الرقم الوظيفي، أو الإسم ...",
+      "showCard": "عرض الكرت الشخصي"
     }
   },
   "errorMessages": {
