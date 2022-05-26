@@ -294,6 +294,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
 
 export default {
   data() {
@@ -340,10 +341,10 @@ export default {
       '$i18n.locale',
       (newLocale) => {
         if (newLocale === 'ar') {
-          // localize('ar') // to support arabic and english error messages for vee-validate
+          localize('ar') // to support arabic and english error messages for vee-validate
           this.$vuetify.rtl = true
         } else {
-          // localize('en') // to support arabic and english error messages for vee-validate
+          localize('en') // to support arabic and english error messages for vee-validate
           this.$vuetify.rtl = false
         }
       },

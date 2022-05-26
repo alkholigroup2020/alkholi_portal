@@ -134,13 +134,14 @@ const saveEmployeeData = async (
     if (employeeCheck.recordset[0].exist > 0) {
       // the employee has a qr code - update his record
       // delete old files from the disk
+
       if (companyLogo) {
         const oldCompanyLogo = await sql.query(`
           SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
         if (
           oldCompanyLogo.recordset.length > 0 &&
-          oldCompanyLogo.recordset[0].companyLogo !== 'undefined'
+          oldCompanyLogo.recordset[0].companyLogo !== null
         ) {
           fs.unlinkSync(
             path.join(
@@ -150,13 +151,15 @@ const saveEmployeeData = async (
           )
         }
       }
+
       if (employeePicture) {
         const oldEmployeePicture = await sql.query(`
           SELECT [profilePic] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
+
         if (
           oldEmployeePicture.recordset.length > 0 &&
-          oldEmployeePicture.recordset[0].profilePic !== 'undefined'
+          oldEmployeePicture.recordset[0].profilePic !== null
         ) {
           fs.unlinkSync(
             path.join(
@@ -166,6 +169,23 @@ const saveEmployeeData = async (
           )
         }
       }
+
+      const oldQrCode = await sql.query(`
+        SELECT [qrCodePath] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
+      `)
+
+      if (
+        oldQrCode.recordset.length > 0 &&
+        oldQrCode.recordset[0].qrCodePath !== null
+      ) {
+        fs.unlinkSync(
+          path.join(
+            __dirname,
+            `../../../uploads/businessCards/${oldQrCode.recordset[0].qrCodePath}`
+          )
+        )
+      }
+
       const employeeData = await sql.query`
         exec businessCards.employeeData_updateData ${payload.employeeID},
         ${companyLogo}, ${employeePicture}, ${payload.employeeArabicName},
@@ -263,7 +283,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
     const qrBackgroundColor = req.body.bgColor
     const qrFrontColor = req.body.frColor
     let qrSize = req.body.qrSize
-    if (qrSize === undefined) {
+    if (qrSize === 'null') {
       qrSize = '300'
     }
     let qrLogo

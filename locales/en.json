@@ -76,6 +76,29 @@
       "generator": "Generate A Card",
       "generated": "Generated Cards"
     },
+    "cardGenerator": {
+      "title": "Generate a new business card",
+      "empID": "Employee ID (optional)",
+      "company": "Company (required)",
+      "empEmail": "Employee's mail address (required)",
+      "empPicture": "Upload an employee picture (optional)",
+      "companyLogo": "Upload a company logo (optional)",
+      "qrLogo": "Include a logo inside the QR Code (optional)",
+      "empEnName": "Employee's english name (required)",
+      "empArName": "Employee's arabic name (required)",
+      "empEnTitle": "Employee's english title (required)",
+      "empArTitle": "Employee's arabic title (required)",
+      "empMobile": "Employee's mobile number (required)",
+      "empWebsite": "Employee's company website (required)",
+      "empLandlinesMsg": "Numbers should be like (xx) xxxxxxx - (xx) xxxxxxx",
+      "empLandlinesMsgBTECO": "Numbers should be like xxxxxxxxx - xxxxxxxxx",
+      "empLandlines": "Employee's company landlines (optional)",
+      "empFaxMsg": "Numbers should be like (xx) xxxxxxx - (xx) xxxxxxx",
+      "empFax": "Employee's company fax number/s (optional)",
+      "foregroundColor": "QR Foreground Color (optional)",
+      "backgroundColor": "QR Background Color (optional)",
+      "qrWidth": "Specify QR Code width in pixels (optional)"
+    },
     "generatedCards": {
       "title": "Generated Business Cards",
       "subTitle": "Members of this group are having an online business card.",
@@ -127,6 +150,10 @@
   },
   "generals": {
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "reset": "Reset"
   }
 }
