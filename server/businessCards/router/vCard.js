@@ -198,11 +198,11 @@ router.get('/vcard', async (req, res) => {
     // set content-type and disposition including desired filename
     res.set(
       'Content-Type',
-      `text/vcard; name="${employeeData.recordset[0].fullName_e}.vcf"`
+      `text/vcard; name="${employeeData.recordset[0].employeeID}.vcf"`
     )
     res.set(
       'Content-Disposition',
-      `inline; filename="${employeeData.recordset[0].fullName_e}.vcf"`
+      `inline; filename="${employeeData.recordset[0].employeeID}.vcf"`
     )
 
     // save to file

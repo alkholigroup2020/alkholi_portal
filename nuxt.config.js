@@ -28,6 +28,7 @@ export default {
     dirs: [
       '~/components',
       '~/components/portal',
+      '~/components/businessCards',
       '~/components/portal/shortcuts',
       '~/components/appNotifications',
       '~/components/administration/authControlledApps',

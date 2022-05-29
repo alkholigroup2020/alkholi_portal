@@ -26,6 +26,27 @@ router.post('/sql-call', auth, async (req, res) => {
     await sql.close()
   }
 })
+router.post('/open-sql-call', async (req, res) => {
+  try {
+    await sql.connect(sqlConfigs)
+    const theCall = await sql.query(`${req.body.query}`)
+    res.send(theCall.recordset)
+  } catch (e) {
+    if (!e.statusCode) {
+      const error = e.toString()
+      const newErrorString = error.replaceAll('Error: ', '')
+      res.status(500).json({
+        message: `${newErrorString}`,
+      })
+    } else {
+      res.status(e.statusCode).json({
+        message: `${e.message}`,
+      })
+    }
+  } finally {
+    await sql.close()
+  }
+})
 
 router.get('/hr-sql-call', auth, async (req, res) => {
   try {

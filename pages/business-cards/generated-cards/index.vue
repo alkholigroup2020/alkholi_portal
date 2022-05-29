@@ -73,6 +73,16 @@
                       alt="Profile Image"
                     ></v-img>
                   </v-avatar>
+                  <v-avatar
+                    v-else
+                    style="border: 0.5px #000046 solid"
+                    size="40"
+                  >
+                    <v-img
+                      :src="`${$config.baseURL}/portal-api/profile-data/profile.png`"
+                      alt="Profile Image"
+                    ></v-img>
+                  </v-avatar>
                 </td>
                 <td>{{ member.fullName_e }}</td>
                 <td>{{ member.employeeID }}</td>
@@ -144,8 +154,17 @@ export default {
           }
         )
         this.bCards = generatedCards.data
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
   },

@@ -4,8 +4,8 @@
     <v-snackbar
       v-model="showSnack"
       app
-      left
-      bottom
+      top
+      right
       color="transparent"
       elevation="0"
       timeout="3000"
@@ -305,7 +305,6 @@ export default {
       profilePicPath: '',
     }
   },
-
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
@@ -318,6 +317,14 @@ export default {
       return new Date().getFullYear()
     },
   },
+  watch: {
+    appNotifications(newValue) {
+      if (newValue) {
+        this.showSnack = true
+      }
+    },
+  },
+
   mounted() {
     this.$nextTick(async () => {
       this.$nuxt.$loading.start()

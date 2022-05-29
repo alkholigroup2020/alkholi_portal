@@ -5,7 +5,7 @@
       <v-col>
         <h3 class="text-h5">{{ $t('businessCards.cardGenerator.title') }}</h3>
         <hr
-          class="mt-2 mb-5"
+          class="mt-3 mb-8"
           :style="$vuetify.breakpoint.mdAndUp ? 'width: 91.5%' : ''"
         />
       </v-col>
@@ -450,7 +450,6 @@ export default {
       companies: [
         'Alkholi Group',
         'Alkholi Holding',
-        'Dr. Hamza Alkholi',
         'AKTEK',
         'BTECO',
         'UPMOC',
