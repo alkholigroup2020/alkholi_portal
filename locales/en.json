@@ -103,7 +103,13 @@
       "title": "Generated Business Cards",
       "subTitle": "Members of this group are having an online business card.",
       "searchLabel": "Search by employee's ID or name ...",
-      "showCard": "Show the card!"
+      "showCard": "Show the card!",
+      "employeeName": "Name",
+      "employeeID": "File Number",
+      "employeeEmail": "Email Address",
+      "employeeTitle": "Title",
+      "employeeQR": "QR Download",
+      "employeeBCard": "Business Card"
     }
   },
   "errorMessages": {
@@ -154,6 +160,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "submit": "Submit",
-    "reset": "Reset"
+    "reset": "Reset",
+    "edit": "Edit"
   }
 }

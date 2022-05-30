@@ -2,8 +2,7 @@
   <div class="pa-0 ma-0">
     <v-card
       color="white"
-      class="mx-auto d-flex flex-column"
-      style="font-family: 'Cairo', sans-serif !important"
+      class="mx-auto d-flex flex-column business-card-font"
       height="100%"
       max-width="500"
       :tile="$vuetify.breakpoint.width < 500"
@@ -151,7 +150,7 @@
             <div class="text-center ml-n2 mt-2">
               <v-avatar tile size="170" class="mt-n16">
                 <v-img
-                  src="/companyLogo.jpg"
+                  src="/bcard-logos/Alkholi Group.png"
                   alt="Company Logo!"
                   position="center"
                   contain

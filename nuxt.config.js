@@ -45,8 +45,9 @@ export default {
   ],
 
   googleFonts: {
-    download: true,
+    // download: true,
     families: {
+      Cairo: [300, 400, 500, 600],
       Tajawal: [200, 300, 400, 500, 700],
     },
   },
@@ -115,11 +116,13 @@ export default {
           primary: '#000046',
           mainBG: '#E6E6ED',
           secondaryBG: '#F7F7F6',
+          primaryText: '#000046',
         },
         dark: {
           primary: '#00001c',
           mainBG: '#00002a',
           secondaryBG: '#000034',
+          primaryText: '#FFF',
         },
       },
     },

@@ -1,9 +1,11 @@
 <template>
-  <v-container class="pt-5 px-5 px-md-16">
+  <v-container fluid class="pt-5 px-5 px-md-16">
     <!-- title -->
     <v-row>
       <v-col>
-        <h3 class="text-h5">{{ $t('businessCards.cardGenerator.title') }}</h3>
+        <h3 class="text-h5 primaryText--text">
+          {{ $t('businessCards.cardGenerator.title') }}
+        </h3>
         <hr
           class="mt-3 mb-8"
           :style="$vuetify.breakpoint.mdAndUp ? 'width: 91.5%' : ''"
@@ -481,6 +483,11 @@ export default {
       userCardID: (state) => state.businessCards.userCardID,
     }),
   },
+  mounted() {
+    if (this.$nuxt.context.query.id) {
+      this.getEmployeeData(this.$nuxt.context.query.id)
+    }
+  },
   methods: {
     async generateCard() {
       try {
@@ -547,6 +554,41 @@ export default {
       this.frColor = '#07074eFF'
 
       this.$refs.theForm.reset()
+    },
+    async getEmployeeData(id) {
+      try {
+        const employeeData = await this.$axios.post(
+          `${this.$config.baseURL}/business-cards-api/sql-call`,
+          {
+            query: `SELECT * FROM [businessCards].[employeeData] WHERE employeeID = '${id}'`,
+          }
+        )
+        if (employeeData.status === 200) {
+          const result = employeeData.data
+          this.employeeID = result[0].employeeID
+          this.company = result[0].company
+          this.employeeArabicTitle = result[0].arabicTitle
+          this.employeeFaxLine = result[0].faxLine
+          this.employeeArabicName = result[0].fullName_a
+          this.employeeEnglishName = result[0].fullName_e
+          this.employeeLandLines = result[0].landLines
+          this.employeeMailAddress = result[0].mailAddress
+          this.employeeMobileNumber = result[0].mobileNumber
+          this.employeeEnglishTitle = result[0].title
+          this.employeeWebSite = result[0].webSite
+        }
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
     },
   },
 }

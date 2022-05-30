@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid>
     <!-- title -->
     <v-row>
       <v-col cols="12" class="mx-5 mx-md-15">
@@ -38,26 +38,28 @@
           <template #default>
             <thead>
               <tr>
-                <th class="text-left text-subtitle-2 primaryText--text"></th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  Name
+                <th class="text-subtitle-2 primaryText--text"></th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeName') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  Employee ID
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeID') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  Email Address
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeEmail') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  Title
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeTitle') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  QR Code
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeQR') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text">
-                  Business Card
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('businessCards.generatedCards.employeeBCard') }}
                 </th>
-                <th class="text-left text-subtitle-2 primaryText--text"></th>
+                <th class="text-center text-subtitle-2 primaryText--text">
+                  {{ $t('generals.edit') }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -104,6 +106,16 @@
                   >
                     {{ $t('businessCards.generatedCards.showCard') }}
                   </a>
+                </td>
+                <td>
+                  <nuxt-link
+                    :to="localePath(`/business-cards?id=${member.employeeID}`)"
+                    class="text-decoration-none"
+                  >
+                    <v-btn fab text color="primaryText" x-small>
+                      <v-icon>mdi-credit-card-edit-outline</v-icon>
+                    </v-btn>
+                  </nuxt-link>
                 </td>
                 <!-- delete confirmation -->
                 <!-- <portal-admins-delete-confirmation

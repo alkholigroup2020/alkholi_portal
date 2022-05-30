@@ -161,7 +161,7 @@
       <v-container fluid class="py-0 fill-height px-xl-16">
         <!-- hamburger icon -->
         <v-app-bar-nav-icon
-          v-if="$vuetify.breakpoint.smAndDown"
+          v-if="$vuetify.breakpoint.mdAndDown"
           class="white--text"
           @click="drawer = !drawer"
         ></v-app-bar-nav-icon>
@@ -170,7 +170,7 @@
 
         <!-- action buttons -->
         <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           vertical
           class="white"
           style="opacity: 0.25"
@@ -179,7 +179,7 @@
         <div style="height: 100%">
           <nuxt-link :to="localePath(`/`)">
             <v-btn
-              v-if="$vuetify.breakpoint.mdAndUp"
+              v-if="$vuetify.breakpoint.lgAndUp"
               color="white"
               depressed
               text
@@ -196,14 +196,14 @@
         </div>
 
         <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           vertical
           class="white"
           style="opacity: 0.25"
         ></v-divider>
 
         <v-btn
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           color="white"
           depressed
           text
@@ -222,7 +222,7 @@
         </v-btn>
 
         <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           vertical
           class="white"
           style="opacity: 0.25"
@@ -236,7 +236,7 @@
             :to="switchLocalePath(locale.code)"
           >
             <v-btn
-              v-if="$vuetify.breakpoint.mdAndUp"
+              v-if="$vuetify.breakpoint.lgAndUp"
               color="white"
               class="pt-1"
               depressed
@@ -256,14 +256,14 @@
           </nuxt-link>
         </div>
         <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           vertical
           class="white"
           style="opacity: 0.25"
         ></v-divider>
 
         <v-btn
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           color="white"
           depressed
           text
@@ -278,7 +278,7 @@
           }}</span>
         </v-btn>
         <v-divider
-          v-if="$vuetify.breakpoint.mdAndUp"
+          v-if="$vuetify.breakpoint.lgAndUp"
           vertical
           class="white"
           style="opacity: 0.25"

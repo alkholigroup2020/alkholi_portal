@@ -135,6 +135,9 @@ const saveEmployeeData = async (
       // the employee has a qr code - update his record
       // delete old files from the disk
 
+      let empComLogo = companyLogo
+      let empImage = employeePicture
+
       if (companyLogo) {
         const oldCompanyLogo = await sql.query(`
           SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
@@ -150,6 +153,11 @@ const saveEmployeeData = async (
             )
           )
         }
+      } else {
+        const oldCompanyLogo = await sql.query(`
+          SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
+        `)
+        empComLogo = oldCompanyLogo.recordset[0].companyLogo
       }
 
       if (employeePicture) {
@@ -168,6 +176,11 @@ const saveEmployeeData = async (
             )
           )
         }
+      } else {
+        const oldEmployeePicture = await sql.query(`
+          SELECT [profilePic] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
+        `)
+        empImage = oldEmployeePicture.recordset[0].profilePic
       }
 
       const oldQrCode = await sql.query(`
@@ -188,7 +201,7 @@ const saveEmployeeData = async (
 
       const employeeData = await sql.query`
         exec businessCards.employeeData_updateData ${payload.employeeID},
-        ${companyLogo}, ${employeePicture}, ${payload.employeeArabicName},
+        ${empComLogo}, ${empImage}, ${payload.employeeArabicName},
         ${payload.employeeEnglishName}, ${payload.employeeArabicTitle},
         ${payload.employeeEnglishTitle}, ${payload.employeeMobileNumber},
         ${payload.employeeLandLines}, ${payload.employeeMailAddress}, ${
@@ -210,6 +223,7 @@ const saveEmployeeData = async (
         return payload.employeeID
       }
     }
+
     const employeeData = await sql.query`
         exec [businessCards].[employeeData_addData] ${payload.employeeID},
         ${companyLogo}, ${employeePicture}, ${payload.employeeArabicName},
@@ -338,7 +352,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
 
     res.status(200).send(saveToDB)
   } catch (error) {
-    // delete the uploaded files
+    // delete the newly uploaded files
     fs.unlinkSync(
       path.join(
         __dirname,
@@ -360,9 +374,6 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
 
 router.post('/get-employee-data', auth, async (req, res) => {
   try {
-    // an employee maybe one of four cases (has QR code already, logged in to the portal before,
-    // never login but has an hr profile, don't have HR profile)
-
     await sql.connect(sqlConfigs)
 
     // check if the employee has a QR code already
