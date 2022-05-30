@@ -177,11 +177,20 @@ export default {
         await this.$store.dispatch(
           'administration/businessCardsAdmins/getBusinessCardsAdmins'
         )
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
-    addBusinessCardsAdmin() {
+    async addBusinessCardsAdmin() {
       try {
         const A = this.adminMember.trim()
         if (A !== '') {
@@ -199,15 +208,24 @@ export default {
             this.$nuxt.$loading.finish()
           })
         }
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
     setToBeDeleted(id) {
       this.toBeDeleted = id
       this.dialog = true
     },
-    deleteBusinessCardsAdmin() {
+    async deleteBusinessCardsAdmin() {
       try {
         this.dialog = false
         this.$nextTick(async () => {
@@ -220,8 +238,17 @@ export default {
           this.toBeDeleted = null
           this.$nuxt.$loading.finish()
         })
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
   },

@@ -381,11 +381,20 @@ export default {
             this.$router.push('/login')
           }
         }
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
-    logoff() {
+    async logoff() {
       try {
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
@@ -399,7 +408,18 @@ export default {
             }
           }
         })
-      } catch (error) {}
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
     },
     changeColorMode() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark

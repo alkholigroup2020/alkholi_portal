@@ -482,7 +482,7 @@ export default {
     }),
   },
   methods: {
-    generateCard() {
+    async generateCard() {
       try {
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
@@ -513,8 +513,17 @@ export default {
           this.$nuxt.$loading.finish()
           this.$router.push(`/business-card/${this.userCardID}`)
         })
-      } catch (error) {
-        //
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
     resetValues() {
