@@ -4,7 +4,7 @@
     rounded="lg"
     color="transparent"
     class="d-flex flex-column"
-    height="50vh"
+    height="54vh"
   >
     <div class="d-flex justify-center pb-5 pt-8">
       <v-avatar
@@ -36,7 +36,7 @@
         {{ userFullNameAr }}
       </p>
     </div>
-    <div class="body-2 text-center">
+    <div class="body-2 text-center mb-1">
       <p
         class="mb-0 text-body-1 font-weight-medium"
         :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
@@ -44,16 +44,21 @@
         {{ employeeCode }}
       </p>
     </div>
-    <!-- <div v-if="qrFileName" class="d-flex justify-center pb-5 pt-2">
-      <v-img
-        :src="`${$config.baseURL}portal-administrations/business-cards/${qrFileName}`"
-        max-width="85"
-        contain
-        style="border: 2px #000046 solid"
-      ></v-img>
-    </div> -->
+    <div v-if="qrFileName" class="d-flex justify-center mt-3">
+      <a
+        :href="`${$config.baseURL}/business-card/${employeeCode}`"
+        target="_blank"
+      >
+        <v-img
+          :src="`${$config.baseURL}/business-cards-api/business-cards/${qrFileName}`"
+          max-width="110"
+          contain
+          style="border: 2px #000046 solid"
+        ></v-img>
+      </a>
+    </div>
     <div class="mt-auto">
-      <v-divider></v-divider>
+      <v-divider :class="$vuetify.theme.dark ? 'secondary' : ''"></v-divider>
       <v-dialog v-model="dialog" width="500">
         <template #activator="{ on, attrs }">
           <div class="d-flex flex-column align-center py-6">
@@ -71,28 +76,30 @@
           </div>
         </template>
         <v-card class="pa-10" color="secondaryBG">
-          <ValidationObserver v-slot="{ invalid }">
+          <ValidationObserver>
             <v-form @submit.prevent="saveUserProfile">
               <ValidationProvider
-                v-slot="{ errors }"
-                rules="size:5120|required|image"
+                v-slot="{ errors, validate, valid }"
+                rules="image|size:5120|required"
               >
                 <v-file-input
                   v-model="profilePic"
-                  :color="$vuetify.theme.dark ? 'white' : ''"
-                  :error-messages="errors"
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  :error-messages="errors[0]"
                   accept="image/png, image/jpeg, image/jpg"
                   prepend-icon="mdi-camera"
+                  type="file"
                   :label="$t('portalPage.editProfile.label')"
+                  @input="validate"
                 ></v-file-input>
+                <v-btn
+                  :disabled="!valid"
+                  color="primary"
+                  class="px-8 py-0 mt-3 text-capitalize"
+                  type="submit"
+                  >{{ $t('portalPage.editProfile.submit') }}</v-btn
+                >
               </ValidationProvider>
-              <v-btn
-                :disabled="invalid"
-                color="primary"
-                class="px-8 py-0 mt-5 text-capitalize"
-                type="submit"
-                >{{ $t('portalPage.editProfile.submit') }}</v-btn
-              >
             </v-form>
           </ValidationObserver>
         </v-card>
@@ -104,40 +111,42 @@
 <script>
 import { mapState } from 'vuex'
 import { extend, localize } from 'vee-validate'
-import { required, image, size } from 'vee-validate/dist/rules'
+import { image, size, required } from 'vee-validate/dist/rules'
 
 // Override the default message.
-extend('required', {
-  ...required,
-})
 extend('image', {
   ...image,
 })
 extend('size', {
   ...size,
 })
+extend('required', {
+  ...required,
+})
 
 localize({
   en: {
     messages: {
-      required: 'This field is required!',
       image: 'Should be an image file!',
       size: "File size shouldn't exceed 5MB!",
+      required: 'This field is required!',
     },
   },
   ar: {
     messages: {
-      required: 'هــذا الحــقل مطــلوب!',
       image: 'يجب أن يكون نوع الملف، صورة!',
       size: 'حجم الملف يجب أن يكون أقل من 5 ميجا بايت!',
+      required: 'هــذا حــقل مطــلوب!',
     },
   },
 })
+
 export default {
   data() {
     return {
       dialog: false,
       profilePic: null,
+      qrFileName: null,
     }
   },
   computed: {
@@ -160,6 +169,10 @@ export default {
     },
   },
 
+  mounted() {
+    this.checkQR()
+  },
+
   methods: {
     async saveUserProfile() {
       const employeeCode = localStorage.getItem('employeeCode')
@@ -174,6 +187,39 @@ export default {
 
       this.profilePic = null
       this.dialog = false
+    },
+
+    async checkQR() {
+      try {
+        const checkIfQRIsGenerated = await this.$axios.post(
+          `${this.$config.baseURL}/business-cards-api/sql-call`,
+          {
+            query: `exec [businessCards].[employeeData_checkIfExist] ${this.employeeCode}`,
+          }
+        )
+        if (checkIfQRIsGenerated.data[0].exist === 1) {
+          const getQRFileName = await this.$axios.post(
+            `${this.$config.baseURL}/business-cards-api/sql-call`,
+            {
+              query: `SELECT qrCodePath FROM businessCards.employeeData where employeeID = '${this.employeeCode}'`,
+            }
+          )
+          if (getQRFileName.data.length > 0) {
+            this.qrFileName = getQRFileName.data[0].qrCodePath
+          }
+        }
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
     },
   },
 }
