@@ -8,7 +8,7 @@
               {{ $t('adminPage.choices.title') }}
             </p>
           </div>
-          <div>
+          <div class="d-flex align-center">
             <v-menu offset-y open-on-hover transition="slide-x-transition">
               <template #activator="{ on, attrs }">
                 <v-btn
@@ -34,6 +34,55 @@
                 </v-list-item>
               </v-list>
             </v-menu>
+
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app1')"
+              class="mx-5"
+            >
+              <v-avatar size="40" tile>
+                <v-img
+                  src="/websiteImages/administration.jpg"
+                  alt="App Image"
+                  style="border-radius: 5px"
+                ></v-img>
+              </v-avatar>
+            </div>
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app2')"
+              class="mx-5"
+            >
+              <v-avatar size="40" tile>
+                <v-img
+                  src="/websiteImages/Online Business Cards.png"
+                  alt="App Image"
+                  style="border-radius: 5px"
+                ></v-img>
+              </v-avatar>
+            </div>
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app3')"
+              class="mx-5"
+            >
+              <v-avatar size="40" tile>
+                <v-img
+                  src="/websiteImages/Online Business Cards.png"
+                  alt="App Image"
+                  style="border-radius: 5px"
+                ></v-img>
+              </v-avatar>
+            </div>
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app4')"
+              class="mx-5"
+            >
+              <v-avatar width="88" height="40" tile>
+                <v-img
+                  src="/websiteImages/SP_Elevators.png"
+                  alt="App Image"
+                  style="border-radius: 5px"
+                ></v-img>
+              </v-avatar>
+            </div>
           </div>
         </div>
       </v-col>

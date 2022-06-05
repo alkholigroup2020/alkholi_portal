@@ -83,6 +83,14 @@ router.post(
         }, ${req.file.filename}, ${false}, ${true}`
       }
 
+      const checkIfElevatorsAdmin =
+        await sql.query`exec dbo.elevators_users_checkIfExist ${req.body.employeeCode}`
+      if (checkIfElevatorsAdmin.recordset[0].exist === 1) {
+        await sql.query`exec dbo.elevators_users_updateData ${
+          req.body.employeeCode
+        }, ${req.file.filename}, ${false}, ${true}`
+      }
+
       // send the reply
       return res.status(201).json({
         message: 'imgSuccess',

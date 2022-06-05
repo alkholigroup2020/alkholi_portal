@@ -69,6 +69,12 @@
       "formInput": "Add members by employee code ...",
       "confirmationTitle": "Confirmation",
       "confirmationMessage": "Are you sure, you want to delete this user?"
+    },
+    "elevators": {
+      "tableTitle": "Members of this table will get access to the 'Elevators Surveys' App.",
+      "formInput": "Add members by employee code ...",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this user?"
     }
   },
   "businessCards": {
@@ -132,6 +138,11 @@
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
         "notFound": "Can't find the admin record!"
       },
+      "elevators": {
+        "memberExist": "This member already exist!",
+        "employeeInfoMessing": "Admin Information is missing on the HR system!",
+        "notFound": "Can't find the admin record!"
+      },
       "portalAdmins": {
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
@@ -145,6 +156,10 @@
     },
     "administration": {
       "bCards": {
+        "successAdd": "Successfully Added!",
+        "successDelete": "Successfully Deleted!"
+      },
+      "elevators": {
         "successAdd": "Successfully Added!",
         "successDelete": "Successfully Deleted!"
       },

@@ -152,7 +152,6 @@ export default {
   layout: 'adminPage',
   data() {
     return {
-      showSnackbar: true,
       adminMember: null,
       dialog: false,
       toBeDeleted: null,

@@ -69,6 +69,12 @@
       "formInput": "قم بإدخال الرقم الوظيفي للموظف ...",
       "confirmationTitle": "رسالة تأكيد",
       "confirmationMessage": "هل ترغب في إزالة هذا العضو بالفعل؟"
+    },
+    "elevators": {
+      "tableTitle": "أعضاء الجدول التالي، يكون لديهم صلاحيات الدخول على برنامج إستبيان عملاء شركة المصاعد.",
+      "formInput": "قم بإدخال الرقم الوظيفي للموظف ...",
+      "confirmationTitle": "رسالة تأكيد",
+      "confirmationMessage": "هل ترغب في إزالة هذا العضو بالفعل؟"
     }
   },
   "businessCards": {
@@ -132,6 +138,11 @@
         "employeeInfoMessing": "بيانات الموظف غير متوفرة ببرنامج الموظفين!",
         "notFound": "لا توجد بيانات تخص هذا الموظف!"
       },
+      "elevators": {
+        "memberExist": "تم إضافة الموظف مسبقاً!",
+        "employeeInfoMessing": "بيانات الموظف غير متوفرة ببرنامج الموظفين!",
+        "notFound": "لا توجد بيانات تخص هذا الموظف!"
+      },
       "portalAdmins": {
         "memberExist": "تم إضافة الموظف مسبقاً!",
         "employeeInfoMessing": "بيانات الموظف غير متوفرة ببرنامج الموظفين!",
@@ -145,6 +156,10 @@
     },
     "administration": {
       "bCards": {
+        "successAdd": "تمت الإضافة بنجاح!",
+        "successDelete": "تمت الإزالة بنجاح!"
+      },
+      "elevators": {
         "successAdd": "تمت الإضافة بنجاح!",
         "successDelete": "تمت الإزالة بنجاح!"
       },
