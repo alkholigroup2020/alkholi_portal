@@ -2,6 +2,7 @@ export const state = () => ({
   profilePicPath: '',
   isPortalAdmin: undefined,
   isBusinessCardsAdmin: undefined,
+  isElevatorsSurveysUser: undefined,
 })
 
 export const mutations = {
@@ -31,6 +32,7 @@ export const mutations = {
   SET_USER_AUTHORIZATIONS_DATA(state, data) {
     state.isPortalAdmin = data.isPortalAdmin
     state.isBusinessCardsAdmin = data.isBusinessCardsAdmin
+    state.isElevatorsSurveysUser = data.isElevatorsSurveysUser
   },
 }
 

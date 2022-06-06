@@ -28,6 +28,7 @@
         "external": "خارج الشبكة"
       },
       "sharePoint": "SharePoint",
+      "elevatorsSurvey": "إستبيان المصاعد",
       "sharePointShortcuts": {
         "public": "الموقع العام",
         "hr": "الموارد البشرية",
@@ -116,6 +117,12 @@
       "employeeTitle": "المسمى الوظيفي",
       "employeeQR": "تحميل الملف",
       "employeeBCard": "الكارت الشخصي"
+    }
+  },
+  "elevatorsSurvey": {
+    "appPageNames": {
+      "sendSurvey": "إرسال طلب إستبيان",
+      "surveysData": "الإستبيانات المرسلة"
     }
   },
   "errorMessages": {

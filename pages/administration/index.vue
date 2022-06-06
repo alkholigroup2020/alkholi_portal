@@ -41,7 +41,7 @@
             >
               <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/administration.jpg"
+                  src="/websiteImages/administration.png"
                   alt="App Image"
                   style="border-radius: 5px"
                 ></v-img>
@@ -53,7 +53,7 @@
             >
               <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/Online Business Cards.png"
+                  src="/websiteImages/Online Business Card.png"
                   alt="App Image"
                   style="border-radius: 5px"
                 ></v-img>
@@ -65,7 +65,7 @@
             >
               <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/Online Business Cards.png"
+                  src="/websiteImages/Online Business Card.png"
                   alt="App Image"
                   style="border-radius: 5px"
                 ></v-img>

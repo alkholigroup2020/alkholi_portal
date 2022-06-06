@@ -27,6 +27,13 @@ router.post('/get-user-authorizations', authorize, async (req, res) => {
       results.isBusinessCardsAdmin = true
     }
 
+    const isElevatorsSurveysUser =
+      await sql.query`exec dbo.elevators_users_checkIfExist ${req.body.employeeID}`
+
+    if (isElevatorsSurveysUser.recordset[0].exist) {
+      results.isElevatorsSurveysUser = true
+    }
+
     res.status(200).send(results)
   } catch (e) {
     const error = e.toString()
