@@ -191,6 +191,7 @@
           style="opacity: 0.25"
         ></v-divider>
 
+        <!-- dashboard -->
         <div style="height: 100%">
           <nuxt-link :to="localePath(`/`)">
             <v-btn
@@ -217,6 +218,7 @@
           style="opacity: 0.25"
         ></v-divider>
 
+        <!-- ColorMode -->
         <v-btn
           v-if="$vuetify.breakpoint.lgAndUp"
           color="white"
@@ -243,6 +245,7 @@
           style="opacity: 0.25"
         ></v-divider>
 
+        <!-- translate -->
         <div style="height: 100%">
           <nuxt-link
             v-for="locale in availableLocales"
@@ -270,6 +273,7 @@
             </v-btn>
           </nuxt-link>
         </div>
+
         <v-divider
           v-if="$vuetify.breakpoint.lgAndUp"
           vertical
@@ -277,6 +281,7 @@
           style="opacity: 0.25"
         ></v-divider>
 
+        <!-- logoff -->
         <v-btn
           v-if="$vuetify.breakpoint.lgAndUp"
           color="white"
@@ -292,6 +297,7 @@
             $t('portalPage.appBar.logout')
           }}</span>
         </v-btn>
+
         <v-divider
           v-if="$vuetify.breakpoint.lgAndUp"
           vertical
@@ -309,6 +315,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
 
 export default {
   data() {
@@ -337,6 +344,22 @@ export default {
         this.showSnack = true
       }
     },
+  },
+  created() {
+    // watch the lang changes, then change the page direction
+    this.$watch(
+      '$i18n.locale',
+      (newLocale) => {
+        if (newLocale === 'ar') {
+          localize('ar') // to support arabic and english error messages for vee-validate
+          this.$vuetify.rtl = true
+        } else {
+          localize('en') // to support arabic and english error messages for vee-validate
+          this.$vuetify.rtl = false
+        }
+      },
+      { immediate: true }
+    )
   },
   mounted() {
     this.$nextTick(async () => {

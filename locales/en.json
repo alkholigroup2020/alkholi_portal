@@ -124,6 +124,16 @@
       "sendSurvey": "Send A Survey",
       "surveysData": "Surveys Data",
       "anonymousData": "Anonymous Data"
+    },
+    "sendSurvey": {
+      "title": "Send A Survey Request To A Client",
+      "clientName": "Client Name",
+      "projectName": "Project Name",
+      "contractID": "Contract ID",
+      "customerEmail": "Customer Email",
+      "customerMobileNumber": "Customer Mobile Number",
+      "mailBody": "Mail Body (English)",
+      "arabicMessage": "Mail Body (Arabic)"
     }
   },
   "errorMessages": {
@@ -185,6 +195,7 @@
     "submit": "Submit",
     "reset": "Reset",
     "edit": "Edit",
-    "export": "Export"
+    "export": "Export",
+    "send": "Send"
   }
 }

@@ -124,6 +124,16 @@
       "sendSurvey": "إرسال طلب إستبيان",
       "surveysData": "الإستبيانات المرسلة",
       "anonymousData": "الإستبيانات المجهولة"
+    },
+    "sendSurvey": {
+      "title": "إرسال طلب إستبيان للعميل",
+      "clientName": "إسم العميل",
+      "projectName": "إسم المشروع",
+      "contractID": "رقم العقد",
+      "customerEmail": "البريد الإلكتروني",
+      "customerMobileNumber": "رقم الجوال",
+      "mailBody": "(نص الرسالة (بالإنجليزية",
+      "arabicMessage": "(نص الرسالة (بالعربية"
     }
   },
   "errorMessages": {
@@ -185,6 +195,7 @@
     "submit": "حفظ التغييرات",
     "reset": "إعادة تعيين الكل",
     "edit": "تعديل",
-    "export": "تصدير"
+    "export": "تصدير",
+    "send": "إرسال"
   }
 }
