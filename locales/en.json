@@ -122,7 +122,8 @@
   "elevatorsSurvey": {
     "appPageNames": {
       "sendSurvey": "Send A Survey",
-      "surveysData": "Surveys Data"
+      "surveysData": "Surveys Data",
+      "anonymousData": "Anonymous Data"
     }
   },
   "errorMessages": {
@@ -183,6 +184,7 @@
     "cancel": "Cancel",
     "submit": "Submit",
     "reset": "Reset",
-    "edit": "Edit"
+    "edit": "Edit",
+    "export": "Export"
   }
 }

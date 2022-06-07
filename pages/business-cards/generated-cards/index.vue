@@ -109,7 +109,11 @@
                 </td>
                 <td>
                   <nuxt-link
-                    :to="localePath(`/business-cards?id=${member.employeeID}`)"
+                    :to="
+                      localePath(
+                        `/business-cards/card-generator?id=${member.employeeID}`
+                      )
+                    "
                     class="text-decoration-none"
                   >
                     <v-btn fab text color="primaryText" x-small>

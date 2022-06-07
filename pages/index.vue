@@ -218,7 +218,7 @@
               >
                 <div class="d-flex flex-column align-center">
                   <nuxt-link
-                    :to="`${localePath('/business-cards')}`"
+                    :to="`${localePath('/business-cards/card-generator')}`"
                     class="text-decoration-none"
                   >
                     <v-avatar

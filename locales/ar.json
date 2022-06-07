@@ -122,7 +122,8 @@
   "elevatorsSurvey": {
     "appPageNames": {
       "sendSurvey": "إرسال طلب إستبيان",
-      "surveysData": "الإستبيانات المرسلة"
+      "surveysData": "الإستبيانات المرسلة",
+      "anonymousData": "الإستبيانات المجهولة"
     }
   },
   "errorMessages": {
@@ -183,6 +184,7 @@
     "cancel": "إلغاء",
     "submit": "حفظ التغييرات",
     "reset": "إعادة تعيين الكل",
-    "edit": "تعديل"
+    "edit": "تعديل",
+    "export": "تصدير"
   }
 }

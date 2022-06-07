@@ -137,6 +137,21 @@
               }}</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item
+            nuxt
+            :to="localePath('/elevators-survey/anonymous-surveys')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-database</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">{{
+                $t('elevatorsSurvey.appPageNames.anonymousData')
+              }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
         </v-list>
 
         <!-- footer -->

@@ -109,7 +109,7 @@
         <v-list class="py-0 my-0">
           <v-list-item
             nuxt
-            :to="localePath('/business-cards')"
+            :to="localePath('/business-cards/card-generator')"
             exact
             class="py-3"
           >

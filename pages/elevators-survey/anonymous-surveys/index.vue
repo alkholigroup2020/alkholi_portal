@@ -50,40 +50,15 @@ export default {
   layout: 'elevatorsSurvey',
   data() {
     return {
-      surveysData: [],
       headers: [
-        {
-          text: 'Contract ID',
-          align: 'start',
-          sortable: true,
-          value: 'contractID',
-        },
-        {
-          text: 'Client Name',
-          align: 'start',
-          sortable: false,
-          value: 'clientName',
-        },
-        {
-          text: 'Project Name',
-          align: 'start',
-          sortable: false,
-          value: 'projectName',
-        },
-        {
-          text: 'Email Address',
-          align: 'start',
-          sortable: false,
-          value: 'customerEmail',
-        },
         {
           text: 'Mobile Number',
           align: 'start',
           sortable: false,
-          value: 'customerMobileNumber',
+          value: 'Mobile_Number',
         },
         {
-          text: 'Experience Level',
+          text: 'Client Experience Level',
           align: 'start',
           sortable: false,
           value: 'Client_Experience_Level',
@@ -125,18 +100,18 @@ export default {
           value: 'Client_Message',
         },
       ],
+      surveysData: [],
     }
   },
   mounted() {
-    this.getClientsData()
+    this.getAnonymousClientsData()
   },
   methods: {
-    async getClientsData() {
+    async getAnonymousClientsData() {
       try {
         const request = await this.$axios.get(
-          `${this.$config.baseURL}/elevators-surveys-api/get-clients-survey-data`
+          `${this.$config.baseURL}/elevators-surveys-api/get-anonymous-survey-data`
         )
-
         if (request.status === 200) {
           this.surveysData = request.data
         }
@@ -156,7 +131,7 @@ export default {
     async exportData() {
       try {
         const request = await this.$axios.post(
-          `${this.$config.baseURL}/elevators-surveys-api/export-clients-csv-data`
+          `${this.$config.baseURL}/elevators-surveys-api/export-anonymous-csv-data`
         )
 
         if (request.status === 200) {
