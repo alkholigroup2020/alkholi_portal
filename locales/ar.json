@@ -77,6 +77,12 @@
       "formInput": "قم بإدخال الرقم الوظيفي للموظف ...",
       "confirmationTitle": "رسالة تأكيد",
       "confirmationMessage": "هل ترغب في إزالة هذا العضو بالفعل؟"
+    },
+    "hrSurveys": {
+      "tableTitle": "أعضاء الجدول التالي، يكون لديهم صلاحيات الدخول على برنامج إستبيان إدارة الموارد البشرية.",
+      "formInput": "Add members by employee code ...",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this user?"
     }
   },
   "businessCards": {
@@ -134,7 +140,8 @@
       "customerEmail": "البريد الإلكتروني",
       "customerMobileNumber": "رقم الجوال",
       "mailBody": "(نص الرسالة (بالإنجليزية",
-      "arabicMessage": "(نص الرسالة (بالعربية"
+      "arabicMessage": "(نص الرسالة (بالعربية",
+      "mailSent": "تم إرسال الإيميل بنجاح!"
     }
   },
   "hrSurvey": {

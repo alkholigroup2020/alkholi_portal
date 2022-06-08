@@ -91,6 +91,14 @@ router.post(
         }, ${req.file.filename}, ${false}, ${true}`
       }
 
+      const checkIfHRSurveysUser =
+        await sql.query`exec dbo.hr_surveys_users_checkIfExist ${req.body.employeeCode}`
+      if (checkIfHRSurveysUser.recordset[0].exist === 1) {
+        await sql.query`exec dbo.hr_surveys_users_updateData ${
+          req.body.employeeCode
+        }, ${req.file.filename}, ${false}, ${true}`
+      }
+
       // send the reply
       return res.status(201).json({
         message: 'imgSuccess',

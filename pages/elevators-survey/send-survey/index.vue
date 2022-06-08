@@ -231,6 +231,14 @@ Thank you in advance for your valuable insights.  Your input will be used to ens
             this.customerMobileNumber = null
             this.$refs.surveyRequestForm.reset()
             this.$nuxt.$loading.finish()
+            const notification = {
+              type: 'success',
+              message: this.$t('elevatorsSurvey.sendSurvey.mailSent'),
+            }
+            await this.$store.dispatch(
+              'appNotifications/addNotification',
+              notification
+            )
           }
         } catch (e) {
           this.$nuxt.$loading.finish()

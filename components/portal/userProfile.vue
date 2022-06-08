@@ -59,7 +59,7 @@
     </div>
     <div class="mt-auto">
       <v-divider :class="$vuetify.theme.dark ? 'secondary' : ''"></v-divider>
-      <v-dialog v-model="dialog" width="500">
+      <v-dialog v-model="profileDialog" width="500">
         <template #activator="{ on, attrs }">
           <div class="d-flex flex-column align-center py-6">
             <v-btn
@@ -69,7 +69,7 @@
               :class="$vuetify.breakpoint.smAndDown ? 'white--text' : ''"
               outlined
               v-on="on"
-              @click="dialog = !dialog"
+              @click="profileDialog = !profileDialog"
             >
               {{ $t('portalPage.editProfile.edit') }}
             </v-btn>
@@ -144,7 +144,7 @@ localize({
 export default {
   data() {
     return {
-      dialog: false,
+      profileDialog: false,
       profilePic: null,
       qrFileName: null,
     }
@@ -186,7 +186,7 @@ export default {
       await this.$store.dispatch('portal/getUserProfile')
 
       this.profilePic = null
-      this.dialog = false
+      this.profileDialog = false
     },
 
     async checkQR() {

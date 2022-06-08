@@ -314,7 +314,7 @@ export default {
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
-      // isElevatorsSurveysUser: (state) => state.portal.isElevatorsSurveysUser,
+      isHRSurveysUser: (state) => state.portal.isHRSurveysUser,
     }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
@@ -379,9 +379,9 @@ export default {
             await this.$store.dispatch('login/reAuthenticate', payload)
 
             // check authorization
-            // if (!this.isElevatorsSurveysUser) {
-            //   this.$router.push(this.localePath('/'))
-            // }
+            if (!this.isHRSurveysUser) {
+              this.$router.push(this.localePath('/'))
+            }
           } else {
             this.$router.push('/login')
           }

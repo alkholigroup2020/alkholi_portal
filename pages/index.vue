@@ -273,6 +273,7 @@
               </v-col>
 
               <v-col
+                v-if="isHRSurveysUser"
                 cols="6"
                 sm="4"
                 lg="3"
@@ -430,6 +431,7 @@ export default {
       isPortalAdmin: (state) => state.portal.isPortalAdmin,
       isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
       isElevatorsSurveysUser: (state) => state.portal.isElevatorsSurveysUser,
+      isHRSurveysUser: (state) => state.portal.isHRSurveysUser,
     }),
   },
 

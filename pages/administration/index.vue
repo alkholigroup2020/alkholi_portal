@@ -65,7 +65,7 @@
             >
               <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/Online Business Card.png"
+                  src="/websiteImages/survey_background.png"
                   alt="App Image"
                   style="border-radius: 5px"
                 ></v-img>
@@ -75,9 +75,9 @@
               v-if="selectedApp === $t('adminPage.choices.app4')"
               class="mx-5"
             >
-              <v-avatar width="88" height="40" tile>
+              <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/SP_Elevators.png"
+                  src="/websiteImages/Elevators_Surveys.png"
                   alt="App Image"
                   style="border-radius: 5px"
                 ></v-img>

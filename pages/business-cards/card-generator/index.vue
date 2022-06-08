@@ -252,7 +252,6 @@
                     fab
                     elevation="3"
                     v-on="on"
-                    @click="dialog = true"
                   >
                   </v-btn>
                   <div>
@@ -295,7 +294,6 @@
                     fab
                     elevation="3"
                     v-on="on"
-                    @click="dialog = true"
                   >
                   </v-btn>
                   <div>
