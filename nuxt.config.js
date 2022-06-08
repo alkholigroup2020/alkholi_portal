@@ -139,6 +139,7 @@ export default {
     '~server/administration/main.js',
     '~server/businessCards/main.js',
     '~server/elevatorsSurveys/main.js',
+    '~server/hrSurveys/main.js',
   ],
 
   // client side expose
