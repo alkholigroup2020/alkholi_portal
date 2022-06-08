@@ -273,6 +273,37 @@
               </v-col>
 
               <v-col
+                cols="6"
+                sm="4"
+                lg="3"
+                xl="2"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
+              >
+                <div class="d-flex flex-column align-center">
+                  <nuxt-link
+                    :to="`${localePath('/hr-survey/surveys-data')}`"
+                    class="text-decoration-none"
+                  >
+                    <v-avatar
+                      :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
+                      class="mb-2 main-div"
+                    >
+                      <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
+                      <div class="the-image">
+                        <v-img
+                          alt="app-image"
+                          src="/websiteImages/survey_background.png"
+                        ></v-img>
+                      </div>
+                    </v-avatar>
+                  </nuxt-link>
+                  <h5 class="text-body-2 text-md-body-1 text-center">
+                    {{ $t('portalPage.shortcuts.hrSurvey') }}
+                  </h5>
+                </div>
+              </v-col>
+
+              <v-col
                 v-if="isPortalAdmin"
                 cols="6"
                 sm="4"

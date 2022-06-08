@@ -22,6 +22,7 @@
       "kap": "KAP+ System",
       "oldAttendance": "Attendance System",
       "hrSystem": "HR System",
+      "hrSurvey": "HR Survey",
       "citrix": "Citrix",
       "citrixShortcuts": {
         "internal": "Internal",
@@ -134,6 +135,12 @@
       "customerMobileNumber": "Customer Mobile Number",
       "mailBody": "Mail Body (English)",
       "arabicMessage": "Mail Body (Arabic)"
+    }
+  },
+  "hrSurvey": {
+    "appPageNames": {
+      "surveysData": "Completed Surveys",
+      "surveysSummary": "Results Summary"
     }
   },
   "errorMessages": {

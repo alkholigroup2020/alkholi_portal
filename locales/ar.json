@@ -22,6 +22,7 @@
       "kap": "KAP+",
       "oldAttendance": "نظام الحضور والإنصراف",
       "hrSystem": "نظام الموارد البشرية",
+      "hrSurvey": "إستبيان المـوارد البشرية",
       "citrix": "Citrix",
       "citrixShortcuts": {
         "internal": "داخل الشبكة",
@@ -134,6 +135,12 @@
       "customerMobileNumber": "رقم الجوال",
       "mailBody": "(نص الرسالة (بالإنجليزية",
       "arabicMessage": "(نص الرسالة (بالعربية"
+    }
+  },
+  "hrSurvey": {
+    "appPageNames": {
+      "surveysData": "الإستبيانات المكتملة",
+      "surveysSummary": "ملخص النتائج"
     }
   },
   "errorMessages": {
