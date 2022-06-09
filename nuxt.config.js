@@ -21,7 +21,10 @@ export default {
   ],
 
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
-  plugins: ['@/plugins/vee-validate.js'],
+  plugins: [
+    { src: '@/plugins/vee-validate.js' },
+    { src: '@/plugins/chart.js', mode: 'client' },
+  ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: {
@@ -32,6 +35,7 @@ export default {
       '~/components/portal/shortcuts',
       '~/components/appNotifications',
       '~/components/administration/authControlledApps',
+      '~/components/hrSurveys',
     ],
   },
 

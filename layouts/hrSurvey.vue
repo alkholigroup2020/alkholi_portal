@@ -292,7 +292,7 @@
       </v-container>
     </v-app-bar>
 
-    <v-main class="secondaryBG">
+    <v-main>
       <Nuxt />
     </v-main>
   </v-app>

@@ -8,6 +8,26 @@ const sqlConfigs = require('../configs/sql')
 const hrSQLConfigs = require('../configs/hrSQL')
 const auth = require('../middleware/auth')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
+async function hrDB() {
+  const pool = new sql.ConnectionPool(hrSQLConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
 const uri = `mongodb://${process.env.hrSurvey_dbUser}:${process.env.hrSurvey_dbPassword}@${process.env.hrSurvey_dbServerIP}/`
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -50,27 +70,31 @@ router.post('/get-single-hr-survey', auth, async (req, res) => {
 })
 
 router.post('/get-survey-employee-data', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
+
+  const hrDBConnection = await hrDB()
+
   try {
     // get member picture path
-    await sql.connect(sqlConfigs)
-    const memberPicPath = await sql.query`
+
+    const memberPicPath = await portalDBConnection.request().query(`
         SELECT [portalProfilePicPath]
         FROM [alkholiPortal].[dbo].[usersInfo]
-        where employeeID = ${req.body.code}
-      `
+        where employeeID = '${req.body.code}'
+      `)
+
     let memberPicturePath, hrPicture, portalPicture
+
     // if we have any info on the portal
     if (memberPicPath.recordset.length > 0) {
       // if he has no profile picture on the portal
       if (memberPicPath.recordset[0].portalProfilePicPath === null) {
         // get the info from HR system
-        await sql.close()
-        await sql.connect(hrSQLConfigs)
-        const picPath = await sql.query`
+        const picPath = await hrDBConnection.request().query(`
             SELECT [employee_picture]
             FROM dbo.Pay_employees
-            WHERE employee_code = ${req.body.code}
-          `
+            WHERE employee_code = '${req.body.code}'
+          `)
         memberPicturePath = picPath.recordset[0].employee_picture
         hrPicture = true
         portalPicture = false
@@ -82,13 +106,11 @@ router.post('/get-survey-employee-data', auth, async (req, res) => {
       }
     } else {
       // if we don't have any info on the portal
-      await sql.close()
-      await sql.connect(hrSQLConfigs)
-      const picPath = await sql.query`
+      const picPath = await hrDBConnection.request().query(`
           SELECT [employee_picture]
           FROM dbo.Pay_employees
-          WHERE employee_code = ${req.body.code}
-        `
+          WHERE employee_code = '${req.body.code}'
+        `)
       // if no picture on HR system
       if (picPath.recordset.length <= 0) {
         memberPicturePath = 'anonymousProfilePicture.jpeg'
@@ -108,25 +130,23 @@ router.post('/get-survey-employee-data', auth, async (req, res) => {
       }
     }
     // get member info from HR db
-    await sql.close()
-    await sql.connect(hrSQLConfigs)
-    const memberInfo = await sql.query`
+    const memberInfo = await hrDBConnection.request().query(`
         SELECT [employee_code] ,[branch_code] ,[employee_name_eng] ,[Email] ,[position]
         FROM dbo.Pay_employees
-        WHERE employee_code = ${req.body.code}
-      `
+        WHERE employee_code = '${req.body.code}'
+      `)
     if (memberInfo.recordset.length <= 0) {
       res.status(205).send()
       return
     }
     const employeePositionCode = Number(memberInfo.recordset[0].position)
 
-    const titleInfo = await sql.query`
+    const titleInfo = await hrDBConnection.request().query(`
         SELECT [system_desp_a], [system_desp_e]
         FROM [dbo].[pay_code_tables]
-        where [system_code] =  ${employeePositionCode} and [branch_code] = ${memberInfo.recordset[0].branch_code}
+        where [system_code] =  '${employeePositionCode}' and [branch_code] = '${memberInfo.recordset[0].branch_code}'
         and system_code_type = '21'
-      `
+      `)
     if (titleInfo.recordset.length <= 0) {
       res.status(205).send()
       return
@@ -146,7 +166,8 @@ router.post('/get-survey-employee-data', auth, async (req, res) => {
       message: `${error}`,
     })
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
+    await hrDBConnection.close()
   }
 })
 

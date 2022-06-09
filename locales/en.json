@@ -62,9 +62,9 @@
     },
     "portalAdmins": {
       "tableTitle": "Members of this table will have full control over the portal administration.",
-      "formInput": "",
-      "confirmationTitle": "",
-      "confirmationMessage": ""
+      "formInput": "Add members by employee code ...",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this user?"
     },
     "bCards": {
       "tableTitle": "Members of this table will get access to the 'Business Cards' App.",
@@ -148,6 +148,11 @@
     "appPageNames": {
       "surveysData": "Completed Surveys",
       "surveysSummary": "Results Summary"
+    },
+    "completedSurveys": {
+      "toolbar1": "A total of",
+      "toolbar2": "surveys have been completed.",
+      "anonymous": "Anonymous Employee"
     }
   },
   "errorMessages": {
@@ -210,6 +215,8 @@
     "reset": "Reset",
     "edit": "Edit",
     "export": "Export",
+    "print": "Print",
+    "back": "Go Back",
     "send": "Send"
   }
 }

@@ -30,6 +30,7 @@
     "short-uuid": "^4.2.0",
     "vcards-js": "^2.10.0",
     "vee-validate": "^3.4.14",
+    "vue-chartjs": "^4.1.1",
     "vuetify": "^2.5.5"
   },
   "devDependencies": {

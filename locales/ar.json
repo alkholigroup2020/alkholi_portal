@@ -148,6 +148,11 @@
     "appPageNames": {
       "surveysData": "الإستبيانات المكتملة",
       "surveysSummary": "ملخص النتائج"
+    },
+    "completedSurveys": {
+      "toolbar1": "عدد",
+      "toolbar2": "إستبيان تم إستكماله.",
+      "anonymous": "موظف مجهول"
     }
   },
   "errorMessages": {
@@ -210,6 +215,8 @@
     "reset": "إعادة تعيين الكل",
     "edit": "تعديل",
     "export": "تصدير",
+    "print": "طباعة",
+    "back": "العودة للخلف",
     "send": "إرسال"
   }
 }
