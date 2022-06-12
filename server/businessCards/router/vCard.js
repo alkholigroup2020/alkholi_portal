@@ -6,12 +6,23 @@ const sql = require('mssql')
 const short = require('short-uuid')
 const sqlConfigs = require('../configs/sql')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
 router.get('/vcard', async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
     const uuid = short.uuid()
 
     await sql.connect(sqlConfigs)
-    const employeeData = await sql.query(`
+    const employeeData = await portalDBConnection.request().query(`
       SELECT * FROM businessCards.employeeData WHERE employeeID = '${req.query.employeeID}'
     `)
 
@@ -234,7 +245,7 @@ router.get('/vcard', async (req, res) => {
       message: `${error}`,
     })
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 

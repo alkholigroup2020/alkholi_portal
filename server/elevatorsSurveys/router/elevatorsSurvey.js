@@ -4,7 +4,7 @@ const router = express.Router()
 const { MongoClient } = require('mongodb')
 const nodemailer = require('nodemailer')
 const createCsvWriter = require('csv-writer').createObjectCsvWriter
-const auth = require('../middleware/auth')
+const auth = require('../middleware/authorization')
 
 const uri = `mongodb://${process.env.dbUser}:${process.env.dbPassword}@${process.env.dbServerIP}/`
 const client = new MongoClient(uri, {

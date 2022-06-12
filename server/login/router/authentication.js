@@ -8,6 +8,25 @@ const sqlConfigs = require('../configs/sql')
 const hrSQLConfigs = require('../configs/hrSQL')
 const adAuth = require('../utils/adAuth')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
+async function hrDB() {
+  const pool = new sql.ConnectionPool(hrSQLConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
 class CustomError extends Error {
   constructor(message, errorCode) {
     super(message) // this will replace the default 'message' property in the error - so it always take the message property name
@@ -17,38 +36,38 @@ class CustomError extends Error {
 }
 
 const getMoreInfo = async (userEmail) => {
+  const hrDBConnection = await hrDB()
   try {
     // get more info from HR db
-    await sql.connect(hrSQLConfigs)
-    const moreInfo = await sql.query`
+    const moreInfo = await hrDBConnection.request().query(`
     SELECT [company_code],[employee_code],[branch_code],[employee_name_a],[first_name_a],[second_name_a],
     [third_name_a],[family_name_a],[employee_picture],[employee_name_eng],[first_name_e],[second_name_e],
     [third_name_e],[family_name_e],[Manager_Code],[Email]
     FROM dbo.Pay_employees
-    WHERE Email = ${userEmail}
-  `
+    WHERE Email = '${userEmail}'
+  `)
 
     if (moreInfo.rowsAffected[0] === 0) {
       throw new Error('101')
     }
 
-    const employeeInfo = await sql.query`
+    const employeeInfo = await hrDBConnection.request().query(`
       SELECT [employee_code] ,[branch_code] ,[employee_name_eng] ,[first_name_e],[second_name_e] ,[Email] ,[position]
       FROM dbo.Pay_employees
-      WHERE employee_code = ${moreInfo.recordset[0].employee_code}
-    `
+      WHERE employee_code = '${moreInfo.recordset[0].employee_code}'
+    `)
 
     if (employeeInfo.rowsAffected[0] === 0) {
       throw new Error('101')
     }
 
     const employeePositionCode = Number(employeeInfo.recordset[0].position)
-    const titleInfo = await sql.query`
+    const titleInfo = await hrDBConnection.request().query(`
       SELECT [system_desp_a], [system_desp_e]
       FROM [dbo].[pay_code_tables]
-      WHERE [system_code] =  ${employeePositionCode} and [branch_code] = ${employeeInfo.recordset[0].branch_code}
+      WHERE [system_code] =  '${employeePositionCode}' and [branch_code] = '${employeeInfo.recordset[0].branch_code}'
       AND system_code_type = '21'
-    `
+    `)
 
     if (titleInfo.rowsAffected[0] === 0) {
       throw new Error('102')
@@ -68,20 +87,19 @@ const getMoreInfo = async (userEmail) => {
       throw new CustomError(e.message, 500)
     }
   } finally {
-    await sql.close()
+    await hrDBConnection.close()
   }
 }
 
 const getManagerInfo = async (managerCode) => {
+  const hrDBConnection = await hrDB()
   try {
     // get more info from HR db
-    await sql.connect(hrSQLConfigs)
-
-    const managerInfo = await sql.query`
+    const managerInfo = await hrDBConnection.request().query(`
     SELECT [Email]
     FROM dbo.Pay_employees
-    WHERE employee_code = ${managerCode}
-    `
+    WHERE employee_code = '${managerCode}'
+    `)
 
     if (managerInfo.rowsAffected[0] === 0) {
       throw new Error('101')
@@ -95,7 +113,7 @@ const getManagerInfo = async (managerCode) => {
       throw new CustomError(e.message, 500)
     }
   } finally {
-    await sql.close()
+    await hrDBConnection.close()
   }
 }
 
@@ -106,36 +124,41 @@ const saveToPortalDB = async (
   encryptedPassword,
   token
 ) => {
+  const portalDBConnection = await portalDB()
   try {
-    // connect to the db
-    await sql.connect(sqlConfigs)
-
     // check if the user has a record in usersInfo table
-    const checkUser =
-      await sql.query`exec dbo.userInfo_checkIfExist ${moreInfo.employee_code}`
+    const checkUser = await portalDBConnection
+      .request()
+      .query(`exec dbo.userInfo_checkIfExist '${moreInfo.employee_code}'`)
 
     // save user info in usersInfo table in db
     if (checkUser.recordset[0].employeeMail === 0) {
-      await sql.query`exec dbo.usersInfo_addData ${moreInfo.employee_code},
-      ${user.cn}, ${encryptedPassword}, ${moreInfo.company_code}, ${moreInfo.employee_picture},
-      ${user.mail}, ${moreInfo.branch_code}, ${moreInfo.employee_name_a}, ${moreInfo.Manager_Code},
-      ${managerMail}, ${moreInfo.title}, ${moreInfo.title_a}
-    `
+      await portalDBConnection.request()
+        .query(`exec dbo.usersInfo_addData '${moreInfo.employee_code}',
+      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', '${moreInfo.employee_picture}',
+      '${user.mail}', '${moreInfo.branch_code}', '${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
+      '${managerMail}', '${moreInfo.title}', '${moreInfo.title_a}'
+    `)
     } else {
       // update user data in db
-      await sql.query`exec dbo.usersInfo_updateData ${moreInfo.employee_code},
-      ${user.cn}, ${encryptedPassword}, ${moreInfo.company_code}, ${moreInfo.employee_picture},
-      ${user.mail}, ${moreInfo.branch_code}, ${moreInfo.employee_name_a}, ${moreInfo.Manager_Code},
-      ${managerMail}, ${moreInfo.title}, ${moreInfo.title_a}
-    `
+      await portalDBConnection.request()
+        .query(`exec dbo.usersInfo_updateData '${moreInfo.employee_code}',
+      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', '${moreInfo.employee_picture}',
+      '${user.mail}', '${moreInfo.branch_code}', '${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
+      '${managerMail}', '${moreInfo.title}', '${moreInfo.title_a}'
+    `)
     }
 
     // save the token on db
-    await sql.query`exec dbo.userTokens_addToken ${moreInfo.employee_code}, ${token}`
+    await portalDBConnection
+      .request()
+      .query(
+        `exec dbo.userTokens_addToken '${moreInfo.employee_code}', '${token}'`
+      )
   } catch (e) {
     throw new CustomError(e.message, 500)
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 }
 
@@ -200,12 +223,12 @@ router.post('/login', async (req, res) => {
 })
 
 router.post('/reauthenticate', async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
     // connect to the db & get the user password
-    await sql.connect(sqlConfigs)
-
-    const loggedInUser =
-      await sql.query`exec usersInfo_getGroupID ${req.body.mail}`
+    const loggedInUser = await portalDBConnection
+      .request()
+      .query(`exec usersInfo_getGroupID '${req.body.mail}'`)
 
     const userGroupID = loggedInUser.recordset[0].groupID
 
@@ -248,17 +271,17 @@ router.post('/reauthenticate', async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 
 router.post('/logoff', async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
-    // connect to db
-    await sql.connect(sqlConfigs)
     // delete the token
-    const deletedToken =
-      await sql.query`exec usersInfo_deleteToken ${req.body.token}`
+    const deletedToken = await portalDBConnection
+      .request()
+      .query(`exec usersInfo_deleteToken '${req.body.token}'`)
     if (deletedToken.rowsAffected[0] === 1) {
       res.send()
     } else {
@@ -277,7 +300,7 @@ router.post('/logoff', async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 

@@ -1,24 +1,32 @@
 const sql = require('mssql')
 const sqlConfigs = require('../configs/sql')
 
-const auth = async (req, res, next) => {
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
   try {
-    // throw new Error('authFailed')
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
 
+const auth = async (req, res, next) => {
+  const portalDBConnection = await portalDB()
+  try {
     if (!req.header('Authorization')) throw new Error('authFailed')
     // get user token from the header
     const header = req.header('Authorization')
     const token = header.replace('Bearer ', '')
-    // connect to SQL
-    await sql.connect(sqlConfigs)
+
     // search for the token
-    const isTheTokenExist =
-      await sql.query`exec dbo.userTokens_checkIfExist ${token}`
+    const isTheTokenExist = await portalDBConnection
+      .request()
+      .query(`exec dbo.userTokens_checkIfExist '${token}'`)
     if (isTheTokenExist.recordset[0].token === 1) {
       await sql.close()
       next()
     } else {
-      await sql.close()
       throw new Error('authFailed')
     }
   } catch (e) {
@@ -27,6 +35,8 @@ const auth = async (req, res, next) => {
     res.status(401).json({
       message: `${newErrorString}`,
     })
+  } finally {
+    await portalDBConnection.close()
   }
 }
 

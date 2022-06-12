@@ -6,7 +6,7 @@ const createCsvWriter = require('csv-writer').createObjectCsvWriter
 const sql = require('mssql')
 const sqlConfigs = require('../configs/sql')
 const hrSQLConfigs = require('../configs/hrSQL')
-const auth = require('../middleware/auth')
+const auth = require('../middleware/authorization')
 
 async function portalDB() {
   const pool = new sql.ConnectionPool(sqlConfigs)

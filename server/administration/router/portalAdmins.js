@@ -5,6 +5,25 @@ const sqlConfigs = require('../configs/sql')
 const hrSQLConfigs = require('../configs/hrSQL')
 const auth = require('../middleware/authorization')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
+async function hrDB() {
+  const pool = new sql.ConnectionPool(hrSQLConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
 class CustomError extends Error {
   constructor(message, errorCode) {
     super(message) // this will replace the default 'message' property in the error - so it always take the message property name
@@ -14,23 +33,23 @@ class CustomError extends Error {
 }
 
 router.post('/add-portal-admin', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  const hrDBConnection = await hrDB()
   try {
     // check if the member already exist
-    await sql.connect(sqlConfigs)
-    const checkUser =
-      await sql.query`exec dbo.admin_members_checkIfExist ${req.body.code}`
+    const checkUser = await portalDBConnection
+      .request()
+      .query(`exec dbo.admin_members_checkIfExist '${req.body.code}'`)
 
     if (checkUser.recordset[0].exist === 1) {
       throw new CustomError('memberExist', 500)
     } else {
       // get member picture path
-      await sql.close()
-      await sql.connect(sqlConfigs)
-      const memberPicPath = await sql.query`
+      const memberPicPath = await portalDBConnection.request().query(`
         SELECT [portalProfilePicPath]
         FROM [alkholiPortal].[dbo].[usersInfo]
-        where employeeID = ${req.body.code}
-      `
+        where employeeID = '${req.body.code}'
+      `)
 
       let memberPicturePath, hrPicture, portalPicture
       // if we have any info on the portal
@@ -38,13 +57,11 @@ router.post('/add-portal-admin', auth, async (req, res) => {
         // if he has no profile picture on the portal
         if (memberPicPath.recordset[0].portalProfilePicPath === null) {
           // get the info from HR system
-          await sql.close()
-          await sql.connect(hrSQLConfigs)
-          const picPath = await sql.query`
+          const picPath = await hrDBConnection.request().query(`
             SELECT [employee_picture]
             FROM dbo.Pay_employees
-            WHERE employee_code = ${req.body.code}
-          `
+            WHERE employee_code = '${req.body.code}'
+          `)
           memberPicturePath = picPath.recordset[0].employee_picture
           hrPicture = true
           portalPicture = false
@@ -56,13 +73,11 @@ router.post('/add-portal-admin', auth, async (req, res) => {
         }
       } else {
         // if we don't have any info on the portal
-        await sql.close()
-        await sql.connect(hrSQLConfigs)
-        const picPath = await sql.query`
+        const picPath = await hrDBConnection.request().query(`
           SELECT [employee_picture]
           FROM dbo.Pay_employees
-          WHERE employee_code = ${req.body.code}
-        `
+          WHERE employee_code = '${req.body.code}'
+        `)
         // if no picture on HR system
         if (picPath.recordset.length <= 0) {
           memberPicturePath = 'profile.png'
@@ -83,38 +98,34 @@ router.post('/add-portal-admin', auth, async (req, res) => {
       }
 
       // get member info from HR db
-      await sql.close()
-      await sql.connect(hrSQLConfigs)
-      const memberInfo = await sql.query`
+      const memberInfo = await hrDBConnection.request().query(`
         SELECT [employee_code] ,[branch_code] ,[employee_name_eng] ,[Email] ,[position]
         FROM dbo.Pay_employees
-        WHERE employee_code = ${req.body.code}
-      `
+        WHERE employee_code = '${req.body.code}'
+      `)
 
       if (memberInfo.recordset.length <= 0) {
         throw new CustomError('employeeInfoMessing', 500)
       }
       const employeePositionCode = Number(memberInfo.recordset[0].position)
 
-      const titleInfo = await sql.query`
+      const titleInfo = await hrDBConnection.request().query(`
         SELECT [system_desp_a], [system_desp_e]
         FROM [dbo].[pay_code_tables]
-        where [system_code] =  ${employeePositionCode} and [branch_code] = ${memberInfo.recordset[0].branch_code}
+        where [system_code] =  '${employeePositionCode}' and [branch_code] = '${memberInfo.recordset[0].branch_code}'
         and system_code_type = '21'
-      `
+      `)
 
       if (titleInfo.recordset.length <= 0) {
         throw new CustomError('employeeInfoMessing', 500)
       }
       // save to the db
-      await sql.close()
-      await sql.connect(sqlConfigs)
-      await sql.query`
-        exec dbo.admin_members_addData ${memberInfo.recordset[0].employee_code},
-        ${memberInfo.recordset[0].employee_name_eng}, ${titleInfo.recordset[0].system_desp_e},
-        ${memberPicturePath} , ${memberInfo.recordset[0].Email},
-        ${memberInfo.recordset[0].branch_code}, ${hrPicture}, ${portalPicture}
-      `
+      await portalDBConnection.request().query(`
+        exec dbo.admin_members_addData '${memberInfo.recordset[0].employee_code}',
+        '${memberInfo.recordset[0].employee_name_eng}', '${titleInfo.recordset[0].system_desp_e}',
+        '${memberPicturePath}' , '${memberInfo.recordset[0].Email}',
+        '${memberInfo.recordset[0].branch_code}', ${hrPicture}, ${portalPicture}
+      `)
       // prepare a reply object
       const result = {
         memberInfo: memberInfo.recordset[0],
@@ -138,15 +149,17 @@ router.post('/add-portal-admin', auth, async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
+    await hrDBConnection.close()
   }
 })
 
 router.post('/delete-portal-admin', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
-    await sql.connect(sqlConfigs)
-    const del =
-      await sql.query`exec admin_members_deleteMember ${req.body.code}`
+    const del = await portalDBConnection
+      .request()
+      .query(`exec admin_members_deleteMember '${req.body.code}'`)
     if (del.rowsAffected[0] === 1) {
       res.status(200).json({
         message: `successfullyDeleted`,
@@ -167,7 +180,7 @@ router.post('/delete-portal-admin', auth, async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 

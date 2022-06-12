@@ -8,8 +8,16 @@ const QRCode = require('qrcode')
 const { createCanvas, loadImage } = require('canvas')
 const sqlConfigs = require('../configs/sql')
 const auth = require('../middleware/authorization')
-// const hrSQLConfigs = require('../configs/hrSQL')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
 class CustomError extends Error {
   constructor(message, errorCode) {
     super(message) // this will replace the default 'message' property in the error - so it always take the message property name
@@ -95,13 +103,15 @@ async function generateQR(
 }
 
 const generateID = async (min, max) => {
+  const portalDBConnection = await portalDB()
   try {
     let ID = Math.floor(Math.random() * (max - min)) + min
     // check if the ID was already taken!
-    await sql.connect(sqlConfigs)
-    const employeeIDCheck = await sql.query`
+
+    const employeeIDCheck = await portalDBConnection.request().query(`
       exec [businessCards].[employeeData_checkIfExist] 'A${ID}'
-    `
+    `)
+
     while (employeeIDCheck.recordset[0].exist > 0) {
       ID = Math.floor(Math.random() * (max - min)) + min
     }
@@ -109,7 +119,7 @@ const generateID = async (min, max) => {
   } catch (error) {
     throw new Error(error)
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 }
 
@@ -122,14 +132,15 @@ const saveEmployeeData = async (
   companyLogo,
   employeePicture
 ) => {
+  const portalDBConnection = await portalDB()
   try {
     const qrFileName = `${payload.employeeID}_QR_${qrSize}px.png`
 
     // check if the employee already exist in db or not
-    await sql.connect(sqlConfigs)
-    const employeeCheck = await sql.query`
-    exec businessCards.employeeData_checkIfExist ${payload.employeeID}
-    `
+
+    const employeeCheck = await portalDBConnection.request().query(`
+    exec businessCards.employeeData_checkIfExist '${payload.employeeID}'
+    `)
 
     if (employeeCheck.recordset[0].exist > 0) {
       // the employee has a qr code - update his record
@@ -139,7 +150,7 @@ const saveEmployeeData = async (
       let empImage = employeePicture
 
       if (companyLogo) {
-        const oldCompanyLogo = await sql.query(`
+        const oldCompanyLogo = await portalDBConnection.request().query(`
           SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
         if (
@@ -154,14 +165,14 @@ const saveEmployeeData = async (
           )
         }
       } else {
-        const oldCompanyLogo = await sql.query(`
+        const oldCompanyLogo = await portalDBConnection.request().query(`
           SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
         empComLogo = oldCompanyLogo.recordset[0].companyLogo
       }
 
       if (employeePicture) {
-        const oldEmployeePicture = await sql.query(`
+        const oldEmployeePicture = await portalDBConnection.request().query(`
           SELECT [profilePic] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
 
@@ -177,13 +188,13 @@ const saveEmployeeData = async (
           )
         }
       } else {
-        const oldEmployeePicture = await sql.query(`
+        const oldEmployeePicture = await portalDBConnection.request().query(`
           SELECT [profilePic] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
         empImage = oldEmployeePicture.recordset[0].profilePic
       }
 
-      const oldQrCode = await sql.query(`
+      const oldQrCode = await portalDBConnection.request().query(`
         SELECT [qrCodePath] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
       `)
 
@@ -199,18 +210,18 @@ const saveEmployeeData = async (
         )
       }
 
-      const employeeData = await sql.query`
-        exec businessCards.employeeData_updateData ${payload.employeeID},
-        ${empComLogo}, ${empImage}, ${payload.employeeArabicName},
-        ${payload.employeeEnglishName}, ${payload.employeeArabicTitle},
-        ${payload.employeeEnglishTitle}, ${payload.employeeMobileNumber},
-        ${payload.employeeLandLines}, ${payload.employeeMailAddress}, ${
+      const employeeData = await portalDBConnection.request().query(`
+        exec businessCards.employeeData_updateData '${payload.employeeID}',
+        '${empComLogo}', '${empImage}', '${payload.employeeArabicName}',
+        '${payload.employeeEnglishName}', '${payload.employeeArabicTitle}',
+        '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
+        '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
         payload.employeeWebSite
-      },
-        ${qrFileName}, ${payload.employeeCompany}, ${
+      }',
+        '${qrFileName}', '${payload.employeeCompany}', ${
         payload.faxLine ? `${payload.faxLine}` : null
       }
-      `
+      `)
       if (employeeData.rowsAffected[0] === 1) {
         // generate the QR code and will be saved on disk
         await generateQR(
@@ -224,17 +235,17 @@ const saveEmployeeData = async (
       }
     }
 
-    const employeeData = await sql.query`
-        exec [businessCards].[employeeData_addData] ${payload.employeeID},
-        ${companyLogo}, ${employeePicture}, ${payload.employeeArabicName},
-        ${payload.employeeEnglishName}, ${payload.employeeArabicTitle},
-        ${payload.employeeEnglishTitle}, ${payload.employeeMobileNumber},
-        ${payload.employeeLandLines}, ${payload.employeeMailAddress}, ${
+    const employeeData = await portalDBConnection.request().query(`
+        exec [businessCards].[employeeData_addData] '${payload.employeeID}',
+        '${companyLogo}', '${employeePicture}', '${payload.employeeArabicName}',
+        '${payload.employeeEnglishName}', '${payload.employeeArabicTitle}',
+        '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
+        '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
       payload.employeeWebSite
-    }, ${qrFileName}, ${payload.employeeCompany}, ${
+    }', '${qrFileName}', '${payload.employeeCompany}', ${
       payload.faxLine ? `${payload.faxLine}` : null
     }
-      `
+      `)
     if (employeeData.rowsAffected[0] === 1) {
       // generate the QR code and will be saved on disk
       await generateQR(
@@ -249,7 +260,7 @@ const saveEmployeeData = async (
   } catch (error) {
     throw new Error(error)
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 }
 
@@ -353,18 +364,20 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
     res.status(200).send(saveToDB)
   } catch (error) {
     // delete the newly uploaded files
-    fs.unlinkSync(
-      path.join(
-        __dirname,
-        `../../../uploads/businessCards/${req.files.employeePicture[0].filename}`
-      )
-    )
-    fs.unlinkSync(
-      path.join(
-        __dirname,
-        `../../../uploads/businessCards/${req.files.companyLogo[0].filename}`
-      )
-    )
+
+    // fs.unlinkSync(
+    //   path.join(
+    //     __dirname,
+    //     `../../../uploads/businessCards/${req.files.employeePicture[0].filename}`
+    //   )
+    // )
+
+    // fs.unlinkSync(
+    //   path.join(
+    //     __dirname,
+    //     `../../../uploads/businessCards/${req.files.companyLogo[0].filename}`
+    //   )
+    // )
 
     res.status(500).json({
       message: `${error}`,
@@ -373,17 +386,16 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
 })
 
 router.post('/get-employee-data', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
-    await sql.connect(sqlConfigs)
-
     // check if the employee has a QR code already
-    const employeeCheck = await sql.query`
-      exec [businessCards].[employeeData_checkIfExist] ${req.body.code}
-    `
+    const employeeCheck = await portalDBConnection.request().query(`
+      exec [businessCards].[employeeData_checkIfExist] '${req.body.code}'
+    `)
 
     if (employeeCheck.recordset[0].exist > 0) {
       // if he has QR code, then return the employee data
-      const employeeData = await sql.query(`
+      const employeeData = await portalDBConnection.request().query(`
         SELECT * FROM businessCards.employeeData WHERE employeeID = '${req.body.code}'
       `)
       return res.status(200).send(employeeData.recordset[0])
@@ -403,7 +415,7 @@ router.post('/get-employee-data', auth, async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 

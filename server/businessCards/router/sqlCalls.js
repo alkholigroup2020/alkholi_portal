@@ -5,10 +5,32 @@ const sqlConfigs = require('../configs/sql')
 const hrSQLConfigs = require('../configs/hrSQL')
 const auth = require('../middleware/authorization')
 
-router.post('/sql-call', auth, async (req, res) => {
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
   try {
-    await sql.connect(sqlConfigs)
-    const theCall = await sql.query(`${req.body.query}`)
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
+async function hrDB() {
+  const pool = new sql.ConnectionPool(hrSQLConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
+router.post('/sql-call', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const theCall = await portalDBConnection
+      .request()
+      .query(`${req.body.query}`)
     res.send(theCall.recordset)
   } catch (e) {
     if (!e.statusCode) {
@@ -23,13 +45,16 @@ router.post('/sql-call', auth, async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
+
 router.post('/open-sql-call', async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
-    await sql.connect(sqlConfigs)
-    const theCall = await sql.query(`${req.body.query}`)
+    const theCall = await portalDBConnection
+      .request()
+      .query(`${req.body.query}`)
     res.send(theCall.recordset)
   } catch (e) {
     if (!e.statusCode) {
@@ -44,14 +69,14 @@ router.post('/open-sql-call', async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 
 router.get('/hr-sql-call', auth, async (req, res) => {
+  const hrDBConnection = await hrDB()
   try {
-    await sql.connect(hrSQLConfigs)
-    const theCall = await sql.query(`${req.body.query}`)
+    const theCall = await hrDBConnection.request().query(`${req.body.query}`)
     res.send(theCall.recordset)
   } catch (e) {
     if (!e.statusCode) {
@@ -66,7 +91,7 @@ router.get('/hr-sql-call', auth, async (req, res) => {
       })
     }
   } finally {
-    await sql.close()
+    await hrDBConnection.close()
   }
 })
 

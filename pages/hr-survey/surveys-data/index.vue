@@ -76,14 +76,22 @@ export default {
   layout: 'hrSurvey',
   data() {
     return {
-      doPrint: false,
       surveysCount: 0,
       surveysData: [],
     }
   },
 
-  async created() {
-    await this.getSurveysData()
+  created() {
+    this.$nextTick(async () => {
+      this.$nuxt.$loading.start()
+      await this.getSurveysData()
+      const interval = setInterval(() => {
+        if (this.surveysCount === this.surveysData.length) {
+          clearInterval(interval)
+          this.$nuxt.$loading.finish()
+        }
+      }, 500)
+    })
   },
 
   methods: {

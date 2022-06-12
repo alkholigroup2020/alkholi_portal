@@ -7,6 +7,16 @@ const sql = require('mssql')
 const sqlConfigs = require('../configs/sql')
 const authorize = require('../middleware/authorization.js')
 
+async function portalDB() {
+  const pool = new sql.ConnectionPool(sqlConfigs)
+  try {
+    await pool.connect()
+    return pool
+  } catch (err) {
+    return err
+  }
+}
+
 // attachments storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -42,14 +52,13 @@ router.post(
   authorize,
   upload.single('attachment'),
   async (req, res) => {
+    const portalDBConnection = await portalDB()
     try {
       // delete the profile image from HDD if any
-      await sql.connect(sqlConfigs)
-
-      const profilePic = await sql.query`
+      const profilePic = await portalDBConnection.request().query(`
       SELECT [portalProfilePicPath] from [dbo].[usersInfo]
-      WHERE [employeeID] = ${req.body.employeeCode}
-      `
+      WHERE [employeeID] = '${req.body.employeeCode}'
+      `)
 
       if (profilePic.rowsAffected[0] === 1) {
         if (profilePic.recordset[0].portalProfilePicPath !== null) {
@@ -62,41 +71,68 @@ router.post(
       }
 
       // save the new profile picture path to db
-      await sql.query`exec dbo.usersInfo_updateProfilePicPath
-        ${req.body.employeeCode}, ${req.file.filename}
-      `
+      await portalDBConnection.request()
+        .query(`exec dbo.usersInfo_updateProfilePicPath
+        '${req.body.employeeCode}', '${req.file.filename}'
+      `)
 
       // update authorization tables
-      const checkIfPortalAdmin =
-        await sql.query`exec dbo.admin_members_checkIfExist ${req.body.employeeCode}`
+      const checkIfPortalAdmin = await portalDBConnection
+        .request()
+        .query(`exec dbo.admin_members_checkIfExist '${req.body.employeeCode}'`)
       if (checkIfPortalAdmin.recordset[0].exist === 1) {
-        await sql.query`exec dbo.admin_members_updateData ${
-          req.body.employeeCode
-        }, ${req.file.filename}, ${false}, ${true}`
+        await portalDBConnection
+          .request()
+          .query(
+            `exec dbo.admin_members_updateData '${req.body.employeeCode}', '${
+              req.file.filename
+            }', ${false}, ${true}`
+          )
       }
 
-      const checkIfBusinessCardsAdmin =
-        await sql.query`exec dbo.business_card_admins_checkIfExist ${req.body.employeeCode}`
+      const checkIfBusinessCardsAdmin = await portalDBConnection
+        .request()
+        .query(
+          `exec dbo.business_card_admins_checkIfExist '${req.body.employeeCode}'`
+        )
       if (checkIfBusinessCardsAdmin.recordset[0].exist === 1) {
-        await sql.query`exec dbo.business_card_admins_updateData ${
-          req.body.employeeCode
-        }, ${req.file.filename}, ${false}, ${true}`
+        await portalDBConnection
+          .request()
+          .query(
+            `exec dbo.business_card_admins_updateData '${
+              req.body.employeeCode
+            }', '${req.file.filename}', ${false}, ${true}`
+          )
       }
 
-      const checkIfElevatorsAdmin =
-        await sql.query`exec dbo.elevators_users_checkIfExist ${req.body.employeeCode}`
+      const checkIfElevatorsAdmin = await portalDBConnection
+        .request()
+        .query(
+          `exec dbo.elevators_users_checkIfExist '${req.body.employeeCode}'`
+        )
       if (checkIfElevatorsAdmin.recordset[0].exist === 1) {
-        await sql.query`exec dbo.elevators_users_updateData ${
-          req.body.employeeCode
-        }, ${req.file.filename}, ${false}, ${true}`
+        await portalDBConnection
+          .request()
+          .query(
+            `exec dbo.elevators_users_updateData '${req.body.employeeCode}', '${
+              req.file.filename
+            }', ${false}, ${true}`
+          )
       }
 
-      const checkIfHRSurveysUser =
-        await sql.query`exec dbo.hr_surveys_users_checkIfExist ${req.body.employeeCode}`
+      const checkIfHRSurveysUser = await portalDBConnection
+        .request()
+        .query(
+          `exec dbo.hr_surveys_users_checkIfExist '${req.body.employeeCode}'`
+        )
       if (checkIfHRSurveysUser.recordset[0].exist === 1) {
-        await sql.query`exec dbo.hr_surveys_users_updateData ${
-          req.body.employeeCode
-        }, ${req.file.filename}, ${false}, ${true}`
+        await portalDBConnection
+          .request()
+          .query(
+            `exec dbo.hr_surveys_users_updateData '${
+              req.body.employeeCode
+            }', '${req.file.filename}', ${false}, ${true}`
+          )
       }
 
       // send the reply
@@ -110,19 +146,18 @@ router.post(
         message: `${newErrorString}`,
       })
     } finally {
-      await sql.close()
+      await portalDBConnection.close()
     }
   }
 )
 
 router.post('/get-user-profile', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
   try {
-    // connect to the db
-    await sql.connect(sqlConfigs)
-
     // get the data
-    const userInfo =
-      await sql.query`exec dbo.usersInfo_getProfileData ${req.body.employeeID}`
+    const userInfo = await portalDBConnection
+      .request()
+      .query(`exec dbo.usersInfo_getProfileData '${req.body.employeeID}'`)
 
     const result = userInfo.recordset[0]
 
@@ -134,7 +169,7 @@ router.post('/get-user-profile', authorize, async (req, res) => {
       message: `${newErrorString}`,
     })
   } finally {
-    await sql.close()
+    await portalDBConnection.close()
   }
 })
 
