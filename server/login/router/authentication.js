@@ -135,17 +135,17 @@ const saveToPortalDB = async (
     if (checkUser.recordset[0].employeeMail === 0) {
       await portalDBConnection.request()
         .query(`exec dbo.usersInfo_addData '${moreInfo.employee_code}',
-      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', '${moreInfo.employee_picture}',
-      '${user.mail}', '${moreInfo.branch_code}', '${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
-      '${managerMail}', '${moreInfo.title}', '${moreInfo.title_a}'
+      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', N'${moreInfo.employee_picture}',
+      '${user.mail}', '${moreInfo.branch_code}', N'${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
+      '${managerMail}', '${moreInfo.title}', N'${moreInfo.title_a}'
     `)
     } else {
       // update user data in db
       await portalDBConnection.request()
         .query(`exec dbo.usersInfo_updateData '${moreInfo.employee_code}',
-      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', '${moreInfo.employee_picture}',
-      '${user.mail}', '${moreInfo.branch_code}', '${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
-      '${managerMail}', '${moreInfo.title}', '${moreInfo.title_a}'
+      '${user.cn}', '${encryptedPassword}', '${moreInfo.company_code}', N'${moreInfo.employee_picture}',
+      '${user.mail}', '${moreInfo.branch_code}', N'${moreInfo.employee_name_a}', '${moreInfo.Manager_Code}',
+      '${managerMail}', '${moreInfo.title}', N'${moreInfo.title_a}'
     `)
     }
 

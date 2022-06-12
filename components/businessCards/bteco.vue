@@ -14,7 +14,7 @@
           <v-avatar tile width="210" size="120" class="mt-n1">
             <v-img
               :src="
-                result.companyLogo != null
+                result.companyLogo !== 'undefined'
                   ? `${$config.baseURL}/business-cards-api/business-cards/${result.companyLogo}`
                   : '/bcard-logos/BuildingTec Elevators_BasicLogo_White_Color.png'
               "
@@ -192,7 +192,7 @@ export default {
   },
   mounted() {
     if (this.$nuxt.context.from) {
-      if (this.$nuxt.context.from.path === '/business-cards') {
+      if (this.$nuxt.context.from.path.includes('card-generator')) {
         this.justGenerated = true
       }
     }

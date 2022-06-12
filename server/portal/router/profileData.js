@@ -73,7 +73,7 @@ router.post(
       // save the new profile picture path to db
       await portalDBConnection.request()
         .query(`exec dbo.usersInfo_updateProfilePicPath
-        '${req.body.employeeCode}', '${req.file.filename}'
+        '${req.body.employeeCode}', N'${req.file.filename}'
       `)
 
       // update authorization tables
@@ -84,7 +84,7 @@ router.post(
         await portalDBConnection
           .request()
           .query(
-            `exec dbo.admin_members_updateData '${req.body.employeeCode}', '${
+            `exec dbo.admin_members_updateData '${req.body.employeeCode}', N'${
               req.file.filename
             }', ${false}, ${true}`
           )
@@ -101,7 +101,7 @@ router.post(
           .query(
             `exec dbo.business_card_admins_updateData '${
               req.body.employeeCode
-            }', '${req.file.filename}', ${false}, ${true}`
+            }', N'${req.file.filename}', ${false}, ${true}`
           )
       }
 
@@ -114,9 +114,9 @@ router.post(
         await portalDBConnection
           .request()
           .query(
-            `exec dbo.elevators_users_updateData '${req.body.employeeCode}', '${
-              req.file.filename
-            }', ${false}, ${true}`
+            `exec dbo.elevators_users_updateData '${
+              req.body.employeeCode
+            }', N'${req.file.filename}', ${false}, ${true}`
           )
       }
 
@@ -131,7 +131,7 @@ router.post(
           .query(
             `exec dbo.hr_surveys_users_updateData '${
               req.body.employeeCode
-            }', '${req.file.filename}', ${false}, ${true}`
+            }', N'${req.file.filename}', ${false}, ${true}`
           )
       }
 

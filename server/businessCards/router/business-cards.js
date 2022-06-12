@@ -109,7 +109,7 @@ const generateID = async (min, max) => {
     // check if the ID was already taken!
 
     const employeeIDCheck = await portalDBConnection.request().query(`
-      exec [businessCards].[employeeData_checkIfExist] 'A${ID}'
+      exec [businessCards].[employeeData_checkIfExist] 'X${ID}'
     `)
 
     while (employeeIDCheck.recordset[0].exist > 0) {
@@ -153,9 +153,10 @@ const saveEmployeeData = async (
         const oldCompanyLogo = await portalDBConnection.request().query(`
           SELECT [companyLogo] from [businessCards].[employeeData] WHERE employeeID = '${payload.employeeID}'
         `)
+
         if (
           oldCompanyLogo.recordset.length > 0 &&
-          oldCompanyLogo.recordset[0].companyLogo !== null
+          oldCompanyLogo.recordset[0].companyLogo !== undefined
         ) {
           fs.unlinkSync(
             path.join(
@@ -178,7 +179,7 @@ const saveEmployeeData = async (
 
         if (
           oldEmployeePicture.recordset.length > 0 &&
-          oldEmployeePicture.recordset[0].profilePic !== null
+          oldEmployeePicture.recordset[0].profilePic !== undefined
         ) {
           fs.unlinkSync(
             path.join(
@@ -200,7 +201,7 @@ const saveEmployeeData = async (
 
       if (
         oldQrCode.recordset.length > 0 &&
-        oldQrCode.recordset[0].qrCodePath !== null
+        oldQrCode.recordset[0].qrCodePath !== undefined
       ) {
         fs.unlinkSync(
           path.join(
@@ -212,14 +213,14 @@ const saveEmployeeData = async (
 
       const employeeData = await portalDBConnection.request().query(`
         exec businessCards.employeeData_updateData '${payload.employeeID}',
-        '${empComLogo}', '${empImage}', '${payload.employeeArabicName}',
-        '${payload.employeeEnglishName}', '${payload.employeeArabicTitle}',
+        '${empComLogo}', '${empImage}', N'${payload.employeeArabicName}',
+        '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
         '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
         '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
         payload.employeeWebSite
       }',
         '${qrFileName}', '${payload.employeeCompany}', ${
-        payload.faxLine ? `${payload.faxLine}` : null
+        payload.faxLine ? `'${payload.faxLine}'` : null
       }
       `)
       if (employeeData.rowsAffected[0] === 1) {
@@ -236,16 +237,19 @@ const saveEmployeeData = async (
     }
 
     const employeeData = await portalDBConnection.request().query(`
-        exec [businessCards].[employeeData_addData] '${payload.employeeID}',
-        '${companyLogo}', '${employeePicture}', '${payload.employeeArabicName}',
-        '${payload.employeeEnglishName}', '${payload.employeeArabicTitle}',
+        exec businessCards.employeeData_addData '${payload.employeeID}',
+        '${companyLogo}', '${employeePicture}', N'${
+      payload.employeeArabicName
+    }',
+        '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
         '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
         '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
       payload.employeeWebSite
     }', '${qrFileName}', '${payload.employeeCompany}', ${
-      payload.faxLine ? `${payload.faxLine}` : null
+      payload.faxLine ? `'${payload.faxLine}'` : null
     }
       `)
+
     if (employeeData.rowsAffected[0] === 1) {
       // generate the QR code and will be saved on disk
       await generateQR(
@@ -314,6 +318,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
     let qrLogo
     let companyLogo
     let employeePicture
+
     if (req.files) {
       if (req.files.qrLogo) {
         // convert the logo image to base64

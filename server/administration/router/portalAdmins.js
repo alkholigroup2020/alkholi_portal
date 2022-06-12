@@ -123,7 +123,7 @@ router.post('/add-portal-admin', auth, async (req, res) => {
       await portalDBConnection.request().query(`
         exec dbo.admin_members_addData '${memberInfo.recordset[0].employee_code}',
         '${memberInfo.recordset[0].employee_name_eng}', '${titleInfo.recordset[0].system_desp_e}',
-        '${memberPicturePath}' , '${memberInfo.recordset[0].Email}',
+        N'${memberPicturePath}' , '${memberInfo.recordset[0].Email}',
         '${memberInfo.recordset[0].branch_code}', ${hrPicture}, ${portalPicture}
       `)
       // prepare a reply object
