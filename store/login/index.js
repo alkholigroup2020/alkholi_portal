@@ -123,6 +123,13 @@ export const actions = {
         await dispatch('portal/getUserProfile', undefined, { root: true })
       }
     } catch (error) {
+      const notification = {
+        type: 'error',
+        message: this.app.i18n.t(
+          `errorMessages.login.${error.response.data.message}`
+        ),
+      }
+      dispatch('appNotifications/addNotification', notification, { root: true })
       // logoff user
       const theToken = localStorage.getItem('userToken')
       const tokenPayload = { token: theToken }

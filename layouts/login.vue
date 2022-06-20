@@ -4,7 +4,7 @@
     <v-snackbar
       v-model="showSnack"
       app
-      left
+      right
       top
       color="transparent"
       elevation="0"

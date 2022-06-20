@@ -4,9 +4,9 @@
     <v-snackbar
       v-model="showSnack"
       app
+      top
       right
       timeout="3000"
-      top
       color="transparent"
       elevation="0"
     >
