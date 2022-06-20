@@ -285,7 +285,7 @@ export default {
             }
             await this.$store.dispatch('login/reAuthenticate', payload)
           } else {
-            this.$router.push('/login')
+            this.$router.push(this.localePath('/login'))
           }
         }
       } catch (e) {

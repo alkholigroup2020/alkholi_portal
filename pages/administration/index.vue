@@ -83,6 +83,18 @@
                 ></v-img>
               </v-avatar>
             </div>
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app5')"
+              class="mx-5"
+            >
+              <v-avatar size="40" tile>
+                <v-img
+                  src="/websiteImages/dtr_App.png"
+                  alt="App Image"
+                  style="border-radius: 5px"
+                ></v-img>
+              </v-avatar>
+            </div>
           </div>
         </div>
       </v-col>
@@ -92,18 +104,21 @@
 
     <v-row>
       <v-col cols="12">
-        <p v-if="selectedApp === $t('adminPage.choices.app1')">
+        <div v-if="selectedApp === $t('adminPage.choices.app1')">
           <portalAdmins />
-        </p>
-        <p v-if="selectedApp === $t('adminPage.choices.app2')">
+        </div>
+        <div v-if="selectedApp === $t('adminPage.choices.app2')">
           <businessCardsAdmins />
-        </p>
-        <p v-if="selectedApp === $t('adminPage.choices.app3')">
+        </div>
+        <div v-if="selectedApp === $t('adminPage.choices.app3')">
           <hrSurveysAdmins />
-        </p>
-        <p v-if="selectedApp === $t('adminPage.choices.app4')">
+        </div>
+        <div v-if="selectedApp === $t('adminPage.choices.app4')">
           <elevatorsAdmins />
-        </p>
+        </div>
+        <div v-if="selectedApp === $t('adminPage.choices.app5')">
+          <dtrUsers />
+        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -119,6 +134,7 @@ export default {
         `${this.$t('adminPage.choices.app2')}`,
         `${this.$t('adminPage.choices.app3')}`,
         `${this.$t('adminPage.choices.app4')}`,
+        `${this.$t('adminPage.choices.app5')}`,
       ],
       selectedApp: `${this.$t('adminPage.choices.app1')}`,
     }

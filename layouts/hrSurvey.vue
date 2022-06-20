@@ -383,7 +383,7 @@ export default {
               this.$router.push(this.localePath('/'))
             }
           } else {
-            this.$router.push('/login')
+            this.$router.push(this.localePath('/login'))
           }
         }
       } catch (e) {

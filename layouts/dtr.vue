@@ -109,7 +109,7 @@
         <v-list class="py-0 my-0">
           <v-list-item
             nuxt
-            :to="localePath('/business-cards/card-generator')"
+            :to="localePath('/dtr/dtr-table')"
             exact
             class="py-3"
           >
@@ -118,22 +118,7 @@
             </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">{{
-                $t('businessCards.appPageNames.generator')
-              }}</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-          <v-list-item
-            nuxt
-            :to="localePath('/business-cards/generated-cards')"
-            exact
-            class="py-3"
-          >
-            <v-list-item-action>
-              <v-icon>mdi-credit-card-multiple-outline</v-icon>
-            </v-list-item-action>
-            <v-list-item-content>
-              <v-list-item-title class="primaryText--text">{{
-                $t('businessCards.appPageNames.generated')
+                $t('dtrApp.appPageNames.table')
               }}</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
@@ -294,7 +279,6 @@
 
 <script>
 import { mapState } from 'vuex'
-import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
 
 export default {
   data() {
@@ -308,7 +292,7 @@ export default {
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
-      isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
+      isDTRUser: (state) => state.portal.isDTRUser,
     }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
@@ -324,7 +308,6 @@ export default {
       }
     },
   },
-
   mounted() {
     this.$nextTick(async () => {
       this.$nuxt.$loading.start()
@@ -348,10 +331,10 @@ export default {
       '$i18n.locale',
       (newLocale) => {
         if (newLocale === 'ar') {
-          localize('ar') // to support arabic and english error messages for vee-validate
+          // localize('ar') // to support arabic and english error messages for vee-validate
           this.$vuetify.rtl = true
         } else {
-          localize('en') // to support arabic and english error messages for vee-validate
+          // localize('en') // to support arabic and english error messages for vee-validate
           this.$vuetify.rtl = false
         }
       },
@@ -372,9 +355,8 @@ export default {
               domainName,
             }
             await this.$store.dispatch('login/reAuthenticate', payload)
-
             // check authorization
-            if (!this.isBusinessCardsAdmin) {
+            if (!this.isDTRUser) {
               this.$router.push(this.localePath('/'))
             }
           } else {
@@ -433,5 +415,7 @@ export default {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
 </style>
+
+

@@ -23,6 +23,7 @@
       "oldAttendance": "Attendance System",
       "hrSystem": "HR System",
       "hrSurvey": "HR Survey",
+      "dtrApp": "Daily Time Record",
       "citrix": "Citrix",
       "citrixShortcuts": {
         "internal": "Internal",
@@ -51,14 +52,15 @@
   },
   "adminPage": {
     "layout": {
-      "tab1": "Users Authorization"
+      "tab1": "Applications Access"
     },
     "choices": {
       "title": "Choose the application to set the authorization for.",
-      "app1": "Portal Admins",
-      "app2": "Business Cards",
+      "app1": "Portal Administration",
+      "app2": "Business Cards App",
       "app3": "HR Surveys System",
-      "app4": "Elevators Survey System"
+      "app4": "Elevators Survey System",
+      "app5": "DTR Application"
     },
     "portalAdmins": {
       "tableTitle": "Members of this table will have full control over the portal administration.",
@@ -80,6 +82,12 @@
     },
     "hrSurveys": {
       "tableTitle": "Members of this table will get access to the 'HR Surveys' App.",
+      "formInput": "Add members by employee code ...",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this user?"
+    },
+    "dtrApp": {
+      "tableTitle": "Members of this table will get access to the 'DTR' App.",
       "formInput": "Add members by employee code ...",
       "confirmationTitle": "Confirmation",
       "confirmationMessage": "Are you sure, you want to delete this user?"
@@ -155,6 +163,11 @@
       "anonymous": "Anonymous Employee"
     }
   },
+  "dtrApp": {
+    "appPageNames": {
+      "table": "DTR Table"
+    }
+  },
   "errorMessages": {
     "login": {
       "hrDataMissing": "User's data on HR system is missing!",
@@ -184,6 +197,11 @@
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
         "notFound": "Can't find the admin record!"
+      },
+      "dtrApp": {
+        "memberExist": "This member already exist!",
+        "employeeInfoMessing": "Admin Information is missing on the HR system!",
+        "notFound": "Can't find the admin record!"
       }
     }
   },
@@ -201,6 +219,10 @@
         "successDelete": "Successfully Deleted!"
       },
       "portalAdmins": {
+        "successAdd": "Successfully Added!",
+        "successDelete": "Successfully Deleted!"
+      },
+      "dtrApp": {
         "successAdd": "Successfully Added!",
         "successDelete": "Successfully Deleted!"
       }

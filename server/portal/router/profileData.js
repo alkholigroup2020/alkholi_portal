@@ -135,6 +135,19 @@ router.post(
           )
       }
 
+      const checkIfDRTUser = await portalDBConnection
+        .request()
+        .query(`exec dbo.dtr_users_checkIfExist '${req.body.employeeCode}'`)
+      if (checkIfDRTUser.recordset[0].exist === 1) {
+        await portalDBConnection
+          .request()
+          .query(
+            `exec dbo.dtr_users_updateData '${req.body.employeeCode}', N'${
+              req.file.filename
+            }', ${false}, ${true}`
+          )
+      }
+
       // send the reply
       return res.status(201).json({
         message: 'imgSuccess',

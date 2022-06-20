@@ -305,6 +305,38 @@
               </v-col>
 
               <v-col
+                v-if="isDTRUser"
+                cols="6"
+                sm="4"
+                lg="3"
+                xl="2"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
+              >
+                <div class="d-flex flex-column align-center">
+                  <nuxt-link
+                    :to="`${localePath('/dtr/dtr-table')}`"
+                    class="text-decoration-none"
+                  >
+                    <v-avatar
+                      :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
+                      class="mb-2 main-div"
+                    >
+                      <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
+                      <div class="the-image">
+                        <v-img
+                          alt="app-image"
+                          src="/websiteImages/dtrApp.png"
+                        ></v-img>
+                      </div>
+                    </v-avatar>
+                  </nuxt-link>
+                  <h5 class="text-body-2 text-md-body-1 text-center">
+                    {{ $t('portalPage.shortcuts.dtrApp') }}
+                  </h5>
+                </div>
+              </v-col>
+
+              <v-col
                 v-if="isPortalAdmin"
                 cols="6"
                 sm="4"
@@ -426,12 +458,14 @@ export default {
       spDialog: false,
     }
   },
+
   computed: {
     ...mapState({
       isPortalAdmin: (state) => state.portal.isPortalAdmin,
       isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
       isElevatorsSurveysUser: (state) => state.portal.isElevatorsSurveysUser,
       isHRSurveysUser: (state) => state.portal.isHRSurveysUser,
+      isDTRUser: (state) => state.portal.isDTRUser,
     }),
   },
 

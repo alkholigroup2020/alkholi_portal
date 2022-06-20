@@ -56,6 +56,14 @@ router.post('/get-user-authorizations', authorize, async (req, res) => {
       results.isHRSurveysUser = true
     }
 
+    const isDTRUser = await portalDBConnection
+      .request()
+      .query(`exec dbo.dtr_users_checkIfExist '${req.body.employeeID}'`)
+
+    if (isDTRUser.recordset[0].exist) {
+      results.isDTRUser = true
+    }
+
     res.status(200).send(results)
   } catch (e) {
     const error = e.toString()

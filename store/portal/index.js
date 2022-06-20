@@ -4,6 +4,7 @@ export const state = () => ({
   isBusinessCardsAdmin: undefined,
   isElevatorsSurveysUser: undefined,
   isHRSurveysUser: undefined,
+  isDTRUser: undefined,
 })
 
 export const mutations = {
@@ -35,6 +36,7 @@ export const mutations = {
     state.isBusinessCardsAdmin = data.isBusinessCardsAdmin
     state.isElevatorsSurveysUser = data.isElevatorsSurveysUser
     state.isHRSurveysUser = data.isHRSurveysUser
+    state.isDTRUser = data.isDTRUser
   },
 }
 
