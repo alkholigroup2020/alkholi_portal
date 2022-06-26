@@ -52,7 +52,8 @@
   },
   "adminPage": {
     "layout": {
-      "tab1": "Applications Access"
+      "tab1": "Application Access",
+      "tab2": "DTR Setup"
     },
     "choices": {
       "title": "Choose the application to set the authorization for.",
@@ -90,7 +91,11 @@
       "tableTitle": "Members of this table will get access to the 'DTR' App.",
       "formInput": "Add members by employee code ...",
       "confirmationTitle": "Confirmation",
-      "confirmationMessage": "Are you sure, you want to delete this user?"
+      "confirmationMessage": "Are you sure, you want to delete this user?",
+      "setup": {
+        "mainCompanies": "Main Companies:",
+        "branches": "Branches:"
+      }
     }
   },
   "businessCards": {
@@ -238,7 +243,8 @@
     "edit": "Edit",
     "export": "Export",
     "print": "Print",
-    "back": "Go Back",
+    "home": "Home",
+    "back": "Back",
     "send": "Send"
   }
 }

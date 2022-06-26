@@ -21,7 +21,7 @@
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
             >
-              <v-icon class="mr-2">mdi-keyboard-backspace</v-icon>
+              <v-icon class="mr-2">mdi-arrow-left-bold-outline</v-icon>
               <span>{{ $t('generals.back') }}</span>
             </div>
           </v-btn>

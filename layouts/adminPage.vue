@@ -113,11 +113,26 @@
             class="py-3"
           >
             <v-list-item-action>
-              <v-icon>mdi-account-cog</v-icon>
+              <v-icon>mdi-account-lock-open-outline</v-icon>
             </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">
                 {{ $t('adminPage.layout.tab1') }}
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item
+            nuxt
+            :to="localePath('/administration/dtr-setup')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-cog-outline</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">
+                {{ $t('adminPage.layout.tab2') }}
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
