@@ -10,9 +10,11 @@
 
     <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
       <div
-        class="d-flex align-center px-xl-3"
+        class="d-flex align-center"
         style="width: 100%; height: 50px"
-        :class="$i18n.locale === 'ar' ? 'flex-row-reverse' : ''"
+        :class="
+          $i18n.locale === 'ar' ? 'flex-row-reverse pl-3 pl-xl-16' : ' pl-xl-3'
+        "
       >
         <nuxt-link
           class="text-decoration-none"
@@ -34,20 +36,6 @@
             </div>
           </v-btn>
         </nuxt-link>
-
-        <!-- <v-btn
-          tile
-          depressed
-          height="100%"
-          color="transparent"
-          class="text-subtitle-1 text-capitalize primaryText--text"
-          @click="$router.go(-1)"
-        >
-          <div :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''">
-            <v-icon class="mr-2">mdi-arrow-left-bold-outline</v-icon>
-            <span>{{ $t('generals.back') }}</span>
-          </div>
-        </v-btn> -->
 
         <v-spacer></v-spacer>
       </div>

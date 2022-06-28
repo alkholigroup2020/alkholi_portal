@@ -10,9 +10,11 @@
 
     <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
       <div
-        class="d-flex align-center px-xl-3"
+        class="d-flex align-center"
         style="width: 100%; height: 50px"
-        :class="$i18n.locale === 'ar' ? 'flex-row-reverse' : ''"
+        :class="
+          $i18n.locale === 'ar' ? 'flex-row-reverse pl-3 pl-xl-16' : ' pl-xl-3'
+        "
       >
         <nuxt-link
           class="text-decoration-none"
@@ -35,19 +37,26 @@
           </v-btn>
         </nuxt-link>
 
-        <v-btn
-          tile
-          depressed
-          height="100%"
-          color="transparent"
-          class="text-subtitle-1 text-capitalize primaryText--text"
-          @click="$router.go(-1)"
+        <nuxt-link
+          class="text-decoration-none"
+          style="height: 50px"
+          :to="localePath(`/administration/dtr-setup/divisions/${branch}`)"
         >
-          <div :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''">
-            <v-icon class="mr-2">mdi-arrow-left-bold-outline</v-icon>
-            <span>{{ $t('generals.back') }}</span>
-          </div>
-        </v-btn>
+          <v-btn
+            tile
+            depressed
+            height="100%"
+            color="transparent"
+            class="text-subtitle-1 text-capitalize primaryText--text"
+          >
+            <div
+              :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
+            >
+              <v-icon class="mr-2">mdi-arrow-left-bold-outline</v-icon>
+              <span>{{ $t('generals.back') }}</span>
+            </div>
+          </v-btn>
+        </nuxt-link>
 
         <v-spacer></v-spacer>
       </div>
@@ -56,20 +65,23 @@
     <v-container class="px-3 px-md-8">
       <v-row>
         <v-col
-          v-for="(department, index) in departments"
+          v-for="(department, index) in allDepartments"
           :key="index"
           cols="6"
           md="3"
           class="py-5"
         >
-          <!-- 
-          :to="
+          <v-card
+            elevation="1"
+            color="whiteColor"
+            outlined
+            nuxt
+            :to="
               localePath(
-                `/administration/dtr-setup/departments/${department.system_code}`
+                `/administration/dtr-setup/section/${department.system_code}?department=${department.major_code}&branch=${branch}`
               )
             "
-         -->
-          <v-card elevation="1" color="whiteColor" outlined nuxt>
+          >
             <v-list-item three-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
@@ -79,10 +91,15 @@
                   department.system_desp_e
                 }}</v-list-item-subtitle>
                 <v-list-item-subtitle class="red--text"
-                  >Department:{{ department.system_code }}</v-list-item-subtitle
+                  >Section:{{ department.system_code }}</v-list-item-subtitle
                 >
                 <v-list-item-subtitle class="red--text"
-                  >Section:{{ department.major_code }}</v-list-item-subtitle
+                  >Department:{{ department.major_code }}</v-list-item-subtitle
+                >
+                <v-list-item-subtitle
+                  >Employees Count:{{
+                    department.employeesCount
+                  }}</v-list-item-subtitle
                 >
               </v-list-item-content>
             </v-list-item>
@@ -103,7 +120,7 @@ export default {
   data() {
     return {
       overlay: false,
-      departments: [],
+      allDepartments: [],
       branch: undefined,
     }
   },
@@ -120,15 +137,76 @@ export default {
         const departments = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.department}'`,
+            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
+                    WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.department}'`,
           }
         )
         if (departments.status === 200) {
-          this.departments = departments.data
+          await this.filterIncomingData(departments.data)
           this.overlay = false
         }
       } catch (e) {
         this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+    async filterIncomingData(data) {
+      try {
+        const X = []
+
+        for await (const element of data) {
+          let counter = 0
+
+          const employees = await this.$axios.post(
+            `${this.$config.baseURL}/administration-api/hr-sql-call`,
+            {
+              query: `SELECT employee_code FROM [MenaITech].[dbo].[Pay_employees] where branch_code='${this.branch}' 
+                        and department='${element.major_code}' and section='${element.system_code}'`,
+            }
+          )
+
+          if (employees.status === 200) {
+            if (employees.data.length > 0) {
+              // if employees founded in the department
+
+              for await (const ele of employees.data) {
+                // check if the employee still active
+                const checkEmployeeStatus = await this.$axios.post(
+                  `${this.$config.baseURL}/administration-api/hr-sql-call`,
+                  {
+                    query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
+                            where employee_code='${ele.employee_code}'`,
+                  }
+                )
+
+                if (checkEmployeeStatus.status === 200) {
+                  if (checkEmployeeStatus.data[0].theFlag === 0) {
+                    // employee is not terminated
+                    counter += 1
+                  }
+                  element.employeesCount = counter
+                }
+              }
+              X.push(element)
+            } else {
+              // no employees founded in the department
+              element.employeesCount = 0
+              X.push(element)
+            }
+          }
+        }
+
+        this.allDepartments = X
+      } catch (e) {
         const error = e.toString()
         const newErrorString = error.replaceAll('Error: ', '')
         const notification = {
