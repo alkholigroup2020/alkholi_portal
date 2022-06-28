@@ -8,14 +8,16 @@
       ></v-progress-circular>
     </v-overlay>
 
-    <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
-      <div
-        class="d-flex align-center"
-        style="width: 100%; height: 50px"
-        :class="
-          $i18n.locale === 'ar' ? 'flex-row-reverse pl-3 pl-xl-16' : ' pl-xl-3'
-        "
-      >
+    <v-toolbar
+      class="d-print-none"
+      :class="
+        $i18n.locale === 'ar' ? 'flex-row-reverse px-3 px-xl-16' : 'px-xl-3'
+      "
+      color="mainBG"
+      height="50"
+      flat
+    >
+      <div class="d-flex align-center" style="width: 100%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -39,6 +41,18 @@
 
         <v-spacer></v-spacer>
       </div>
+      <v-spacer></v-spacer>
+      <div
+        v-if="$vuetify.breakpoint.mdAndUp"
+        :class="
+          $i18n.locale === 'ar'
+            ? 'd-flex flex-row-reverse justify-start align-center px-3'
+            : 'd-flex justify-end align-center px-16'
+        "
+        style="width: 100%; height: 50px"
+      >
+        <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
+      </div>
     </v-toolbar>
 
     <v-container class="px-3 px-md-8">
@@ -57,7 +71,7 @@
             nuxt
             :to="
               localePath(
-                `/administration/dtr-setup/departments/${division.system_code}?branch=${branch}`
+                `/administration/dtr-setup/departments/${division.system_code}?branch=${branch}&division=${division.system_desp_e}`
               )
             "
           >
@@ -70,7 +84,9 @@
                   division.system_desp_e
                 }}</v-list-item-subtitle>
                 <v-list-item-subtitle
-                  >Sys Code:{{ division.system_code }}</v-list-item-subtitle
+                  >division code:{{
+                    division.system_code
+                  }}</v-list-item-subtitle
                 >
                 <v-list-item-subtitle
                   >Major Code:{{ division.major_code }}</v-list-item-subtitle

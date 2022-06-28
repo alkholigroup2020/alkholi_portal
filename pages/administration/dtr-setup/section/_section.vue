@@ -8,14 +8,16 @@
       ></v-progress-circular>
     </v-overlay>
 
-    <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
-      <div
-        class="d-flex align-center"
-        style="width: 100%; height: 50px"
-        :class="
-          $i18n.locale === 'ar' ? 'flex-row-reverse pl-3 pl-xl-16' : ' pl-xl-3'
-        "
-      >
+    <v-toolbar
+      class="d-print-none"
+      color="mainBG"
+      height="50"
+      :class="
+        $i18n.locale === 'ar' ? 'flex-row-reverse px-3 px-xl-16' : 'px-xl-3'
+      "
+      flat
+    >
+      <div class="d-flex align-center" style="width: 100%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -63,37 +65,32 @@
     </v-toolbar>
 
     <div class="pa-5">
-      <template>
-        <v-data-table
-          :headers="headers"
-          :items="employees"
-          :items-per-page="10"
-          class="elevation-1"
-        >
-          <!-- v-slot:item.employee_picture="{ item }" -->
-          <template #[`item.employee_picture`]="{ item }">
-            <v-avatar
-              v-if="item.employee_picture"
-              style="border: 0.5px #000046 solid"
-              size="40"
-            >
-              <v-img
-                :src="`https://hr.alkholi.com/MenaITech/application/hrms/MenaImages/Employees_Pictures/${item.employee_picture}`"
-                alt="Profile Image"
-              ></v-img>
-            </v-avatar>
-            <v-avatar v-else style="border: 0.5px #000046 solid" size="40">
-              <v-img
-                :src="`/generalPictures/profile.png`"
-                alt="Profile Image"
-              ></v-img>
-            </v-avatar>
-          </template>
-        </v-data-table>
-      </template>
+      <v-data-table
+        :headers="headers"
+        :items="employees"
+        :items-per-page="10"
+        class="elevation-1"
+      >
+        <template #[`item.employee_picture`]="{ item }">
+          <v-avatar
+            v-if="item.employee_picture"
+            style="border: 0.5px #000046 solid"
+            size="40"
+          >
+            <v-img
+              :src="`https://hr.alkholi.com/MenaITech/application/hrms/MenaImages/Employees_Pictures/${item.employee_picture}`"
+              alt="Profile Image"
+            ></v-img>
+          </v-avatar>
+          <v-avatar v-else style="border: 0.5px #000046 solid" size="40">
+            <v-img
+              :src="`/generalPictures/profile.png`"
+              alt="Profile Image"
+            ></v-img>
+          </v-avatar>
+        </template>
+      </v-data-table>
     </div>
-
-    <pre class="pa-5">{{ employees[0] }}</pre>
   </div>
 </template>
 

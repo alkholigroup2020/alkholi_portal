@@ -8,14 +8,16 @@
       ></v-progress-circular>
     </v-overlay>
 
-    <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
-      <div
-        class="d-flex align-center"
-        style="width: 100%; height: 50px"
-        :class="
-          $i18n.locale === 'ar' ? 'flex-row-reverse pl-3 pl-xl-16' : ' pl-xl-3'
-        "
-      >
+    <v-toolbar
+      class="d-print-none"
+      color="mainBG"
+      height="50"
+      :class="
+        $i18n.locale === 'ar' ? 'flex-row-reverse px-3 px-xl-16' : 'px-xl-3'
+      "
+      flat
+    >
+      <div class="d-flex align-center" style="width: 100%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -60,10 +62,28 @@
 
         <v-spacer></v-spacer>
       </div>
+      <v-spacer></v-spacer>
+      <div
+        v-if="$vuetify.breakpoint.mdAndUp"
+        :class="
+          $i18n.locale === 'ar'
+            ? 'd-flex flex-row-reverse justify-start align-center px-3'
+            : 'd-flex justify-end align-center px-16'
+        "
+        style="width: 100%; height: 50px"
+      >
+        <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
+        <div class="px-2">
+          <v-icon color="primaryText">mdi-arrow-right-thin</v-icon>
+        </div>
+        <h6 class="text-body-1 primaryText--Text">
+          {{ divisionName }}
+        </h6>
+      </div>
     </v-toolbar>
 
     <v-container class="px-3 px-md-8">
-      <v-row>
+      <v-row v-if="allDepartments.length > 0">
         <v-col
           v-for="(department, index) in allDepartments"
           :key="index"
@@ -90,11 +110,11 @@
                 <v-list-item-subtitle>{{
                   department.system_desp_e
                 }}</v-list-item-subtitle>
-                <v-list-item-subtitle class="red--text"
-                  >Section:{{ department.system_code }}</v-list-item-subtitle
+                <v-list-item-subtitle
+                  >Department:{{ department.system_code }}</v-list-item-subtitle
                 >
-                <v-list-item-subtitle class="red--text"
-                  >Department:{{ department.major_code }}</v-list-item-subtitle
+                <v-list-item-subtitle
+                  >Division:{{ department.major_code }}</v-list-item-subtitle
                 >
                 <v-list-item-subtitle
                   >Employees Count:{{
@@ -106,6 +126,13 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-row v-else>
+        <v-col>
+          <h5 class="text-h5 pa-5">
+            {{ $t('adminPage.dtrApp.setup.noDepartments') }}
+          </h5>
+        </v-col>
+      </v-row>
     </v-container>
   </div>
 </template>
@@ -114,19 +141,21 @@
 export default {
   layout: 'adminPage',
   asyncData({ params }) {
-    const department = params.departments
-    return { department }
+    const divisionCode = params.departments
+    return { divisionCode }
   },
   data() {
     return {
       overlay: false,
       allDepartments: [],
       branch: undefined,
+      divisionName: undefined,
     }
   },
   created() {
     if (this.$nuxt.context.query.branch) {
       this.branch = this.$nuxt.context.query.branch
+      this.divisionName = this.$nuxt.context.query.division
     }
     this.getDepartmentsPerDivision()
   },
@@ -138,11 +167,12 @@ export default {
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
             query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
-                    WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.department}'`,
+                    WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.divisionCode}'`,
           }
         )
         if (departments.status === 200) {
-          await this.filterIncomingData(departments.data)
+          this.allDepartments = departments.data
+          // await this.filterIncomingData(departments.data)
           this.overlay = false
         }
       } catch (e) {

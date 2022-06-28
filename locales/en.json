@@ -94,7 +94,8 @@
       "confirmationMessage": "Are you sure, you want to delete this user?",
       "setup": {
         "mainCompanies": "Main Companies:",
-        "branches": "Branches:"
+        "branches": "Branches:",
+        "noDepartments": "No Departments..."
       }
     }
   },

@@ -94,7 +94,8 @@
       "confirmationMessage": "هل ترغب في إزالة هذا العضو بالفعل؟",
       "setup": {
         "mainCompanies": "الشركات الرئيسية:",
-        "branches": "الفـــروع:"
+        "branches": "الفـــروع:",
+        "noDepartments": "لا توجــد إدارات..."
       }
     }
   },
