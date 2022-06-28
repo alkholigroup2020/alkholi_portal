@@ -95,7 +95,8 @@
       "setup": {
         "mainCompanies": "الشركات الرئيسية:",
         "branches": "الفـــروع:",
-        "noDepartments": "لا توجــد إدارات..."
+        "noDepartments": "لا توجــد إدارات...",
+        "noProjects": "لا توجــد مشروعــات..."
       }
     }
   },

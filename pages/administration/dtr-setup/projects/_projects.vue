@@ -38,7 +38,11 @@
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
-          :to="localePath(`/administration/dtr-setup/divisions/${branch}`)"
+          :to="
+            localePath(
+              `/administration/dtr-setup/departments/${divisionCode}?branch=${branch}&divisionName=${divisionName}`
+            )
+          "
         >
           <v-btn
             tile
@@ -72,9 +76,11 @@
         <div class="px-2">
           <v-icon color="primaryText">mdi-arrow-right-thin</v-icon>
         </div>
-        <h6 class="text-body-1 primaryText--Text">
-          {{ divisionName }}
-        </h6>
+        <h6 class="text-body-1 primaryText--Text">{{ divisionName }}</h6>
+        <div class="px-2">
+          <v-icon color="primaryText">mdi-arrow-right-thin</v-icon>
+        </div>
+        <h6 class="text-body-1 primaryText--Text">{{ departmentName }}</h6>
       </div>
     </v-toolbar>
 
@@ -82,54 +88,55 @@
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
           <div>
-            <p class="text-h5 mb-1">Departments</p>
+            <p class="text-h5 mb-1">Projects</p>
             <hr />
             <hr />
           </div>
         </v-col>
       </v-row>
-      <v-row v-if="allDepartments.length > 0">
+      <v-row v-if="allProjects.length > 0">
         <v-col
-          v-for="(department, index) in allDepartments"
+          v-for="(project, index) in allProjects"
           :key="index"
           cols="6"
           md="3"
           class="py-5"
         >
-          <v-card
-            elevation="1"
-            color="whiteColor"
-            outlined
-            min-height="100"
-            nuxt
-            :to="
+          <!-- 
+          :to="
               localePath(
                 `/administration/dtr-setup/projects/${department.system_code}?branch=${branch}&division=${divisionCode}&divisionName=${divisionName}&departmentName=${department.system_desp_e}`
               )
             "
+         -->
+          <v-card
+            elevation="1"
+            color="whiteColor"
+            outlined
+            nuxt
+            min-height="150"
           >
             <v-list-item three-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
-                  department.system_desp_e
+                  project.system_desp_e
                 }}</v-list-item-subtitle>
 
                 <v-list-item-subtitle>{{
-                  department.system_desp_a
+                  project.system_desp_a
                 }}</v-list-item-subtitle>
 
                 <v-list-item-subtitle
-                  >Department:{{ department.system_code }}</v-list-item-subtitle
+                  >system_code: {{ project.system_code }}</v-list-item-subtitle
                 >
 
                 <v-list-item-subtitle
-                  >Division:{{ department.major_code }}</v-list-item-subtitle
+                  >major_code: {{ project.major_code }}</v-list-item-subtitle
                 >
 
                 <v-list-item-subtitle
-                  >Employees Count:{{
-                    department.employeesCount
-                  }}</v-list-item-subtitle
+                  >section_code:
+                  {{ project.section_code }}</v-list-item-subtitle
                 >
               </v-list-item-content>
             </v-list-item>
@@ -139,7 +146,7 @@
       <v-row v-else>
         <v-col>
           <h5 class="text-h6 pa-5">
-            {{ $t('adminPage.dtrApp.setup.noDepartments') }}
+            {{ $t('adminPage.dtrApp.setup.noProjects') }}
           </h5>
         </v-col>
       </v-row>
@@ -151,38 +158,42 @@
 export default {
   layout: 'adminPage',
   asyncData({ params }) {
-    const divisionCode = params.departments
-    return { divisionCode }
+    const departmentCode = params.projects
+    return { departmentCode }
   },
   data() {
     return {
       overlay: false,
-      allDepartments: [],
+      allProjects: [],
       branch: undefined,
+      divisionCode: undefined,
       divisionName: undefined,
+      departmentName: undefined,
     }
   },
   created() {
     if (this.$nuxt.context.query) {
       this.branch = this.$nuxt.context.query.branch
+      this.divisionCode = this.$nuxt.context.query.division
       this.divisionName = this.$nuxt.context.query.divisionName
+      this.departmentName = this.$nuxt.context.query.departmentName
     }
-    this.getDepartmentsPerDivision()
+    this.getProjectsPerDepartment()
   },
+
   methods: {
-    async getDepartmentsPerDivision() {
+    async getProjectsPerDepartment() {
       this.overlay = true
       try {
-        const departments = await this.$axios.post(
+        const projects = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
-                    WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.divisionCode}'`,
+            query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='71'  
+                    and major_code='${this.divisionCode}' and section_code='${this.departmentCode}'`,
           }
         )
-        if (departments.status === 200) {
-          this.allDepartments = departments.data
-          // await this.filterIncomingData(departments.data)
+        if (projects.status === 200) {
+          this.allProjects = projects.data
           this.overlay = false
         }
       } catch (e) {
@@ -199,66 +210,9 @@ export default {
         )
       }
     },
-    async filterIncomingData(data) {
-      try {
-        const X = []
-
-        for await (const element of data) {
-          let counter = 0
-
-          const employees = await this.$axios.post(
-            `${this.$config.baseURL}/administration-api/hr-sql-call`,
-            {
-              query: `SELECT employee_code FROM [MenaITech].[dbo].[Pay_employees] where branch_code='${this.branch}' 
-                        and department='${element.major_code}' and section='${element.system_code}'`,
-            }
-          )
-
-          if (employees.status === 200) {
-            if (employees.data.length > 0) {
-              // if employees founded in the department
-
-              for await (const ele of employees.data) {
-                // check if the employee still active
-                const checkEmployeeStatus = await this.$axios.post(
-                  `${this.$config.baseURL}/administration-api/hr-sql-call`,
-                  {
-                    query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
-                            where employee_code='${ele.employee_code}'`,
-                  }
-                )
-
-                if (checkEmployeeStatus.status === 200) {
-                  if (checkEmployeeStatus.data[0].theFlag === 0) {
-                    // employee is not terminated
-                    counter += 1
-                  }
-                  element.employeesCount = counter
-                }
-              }
-              X.push(element)
-            } else {
-              // no employees founded in the department
-              element.employeesCount = 0
-              X.push(element)
-            }
-          }
-        }
-
-        this.allDepartments = X
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
-    },
   },
 }
 </script>
+
+<style>
+</style>

@@ -1,11 +1,7 @@
 <template>
   <div>
     <v-overlay :value="overlay">
-      <v-progress-circular
-        indeterminate
-        size="80"
-        color=""
-      ></v-progress-circular>
+      <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
 
     <v-toolbar
@@ -57,6 +53,15 @@
 
     <v-container class="px-3 px-md-8">
       <v-row>
+        <v-col class="pt-5 pb-0" cols="12">
+          <div>
+            <p class="text-h5 mb-1">Divisions</p>
+            <hr />
+            <hr />
+          </div>
+        </v-col>
+      </v-row>
+      <v-row>
         <v-col
           v-for="(division, index) in divisions"
           :key="index"
@@ -69,20 +74,23 @@
             color="whiteColor"
             outlined
             nuxt
+            min-height="100"
             :to="
               localePath(
-                `/administration/dtr-setup/departments/${division.system_code}?branch=${branch}&division=${division.system_desp_e}`
+                `/administration/dtr-setup/departments/${division.system_code}?branch=${branch}&divisionName=${division.system_desp_e}`
               )
             "
           >
             <v-list-item three-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
-                  division.system_desp_a
-                }}</v-list-item-subtitle>
-                <v-list-item-subtitle>{{
                   division.system_desp_e
                 }}</v-list-item-subtitle>
+
+                <v-list-item-subtitle>{{
+                  division.system_desp_a
+                }}</v-list-item-subtitle>
+
                 <v-list-item-subtitle
                   >division code:{{
                     division.system_code

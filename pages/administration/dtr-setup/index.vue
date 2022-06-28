@@ -1,11 +1,7 @@
 <template>
   <div>
     <v-overlay :value="overlay">
-      <v-progress-circular
-        indeterminate
-        size="80"
-        color=""
-      ></v-progress-circular>
+      <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
 
     <v-container class="px-3 px-md-8">

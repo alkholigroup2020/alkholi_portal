@@ -95,7 +95,8 @@
       "setup": {
         "mainCompanies": "Main Companies:",
         "branches": "Branches:",
-        "noDepartments": "No Departments..."
+        "noDepartments": "No Departments Here...",
+        "noProjects": "No Projects Here..."
       }
     }
   },
