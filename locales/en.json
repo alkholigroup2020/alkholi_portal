@@ -96,7 +96,8 @@
         "mainCompanies": "Main Companies:",
         "branches": "Branches:",
         "noDepartments": "No Departments Here...",
-        "noProjects": "No Projects Here..."
+        "noProjects": "No Projects Here...",
+        "noSubProjects": "No Sub-Projects Here..."
       }
     }
   },
