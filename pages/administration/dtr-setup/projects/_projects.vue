@@ -13,7 +13,7 @@
       "
       flat
     >
-      <div class="d-flex align-center" style="width: 100%; height: 50px">
+      <div class="d-flex align-center" style="width: 25%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -70,7 +70,7 @@
             ? 'd-flex flex-row-reverse justify-start align-center px-3'
             : 'd-flex justify-end align-center px-16'
         "
-        style="width: 100%; height: 50px"
+        style="width: 75%; height: 50px"
       >
         <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
         <div class="px-2">
@@ -112,9 +112,9 @@
                 `/administration/dtr-setup/sub-projects/${project.system_code}?branch=${branch}&division=${divisionCode}&department=${departmentCode}&divisionName=${divisionName}&departmentName=${departmentName}&projectName=${project.system_desp_e}`
               )
             "
-            min-height="150"
+            height="100"
           >
-            <v-list-item three-line>
+            <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
                   project.system_desp_e
@@ -124,7 +124,7 @@
                   project.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >system_code: {{ project.system_code }}</v-list-item-subtitle
                 >
 
@@ -135,14 +135,14 @@
                 <v-list-item-subtitle
                   >section_code:
                   {{ project.section_code }}</v-list-item-subtitle
-                >
+                > -->
               </v-list-item-content>
             </v-list-item>
           </v-card>
         </v-col>
       </v-row>
       <v-row v-else>
-        <v-col>
+        <v-col v-if="overlay === false">
           <h5 class="text-h6 pa-5">
             {{ $t('adminPage.dtrApp.setup.noProjects') }}
           </h5>

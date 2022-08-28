@@ -89,9 +89,10 @@
             >
               <v-avatar size="40" tile>
                 <v-img
-                  src="/websiteImages/dtr_App.png"
+                  src="/websiteImages/dtrApp.jpg"
                   alt="App Image"
-                  style="border-radius: 5px"
+                  contain
+                  style="border-radius: 5px; background-color: white"
                 ></v-img>
               </v-avatar>
             </div>

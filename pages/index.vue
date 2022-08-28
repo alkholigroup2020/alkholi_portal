@@ -325,7 +325,8 @@
                       <div class="the-image">
                         <v-img
                           alt="app-image"
-                          src="/websiteImages/dtrApp.png"
+                          contain
+                          src="/websiteImages/dtr_App.jpg"
                         ></v-img>
                       </div>
                     </v-avatar>

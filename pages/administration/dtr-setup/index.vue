@@ -81,6 +81,7 @@
                 `/administration/dtr-setup/divisions/${branch.branch_code}`
               )
             "
+            height="180"
           >
             <v-list-item three-line>
               <v-list-item-content>

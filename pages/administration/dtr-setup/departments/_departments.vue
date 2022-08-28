@@ -13,7 +13,7 @@
       "
       flat
     >
-      <div class="d-flex align-center" style="width: 100%; height: 50px">
+      <div class="d-flex align-center" style="width: 25%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -66,7 +66,7 @@
             ? 'd-flex flex-row-reverse justify-start align-center px-3'
             : 'd-flex justify-end align-center px-16'
         "
-        style="width: 100%; height: 50px"
+        style="width: 75%; height: 50px"
       >
         <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
         <div class="px-2">
@@ -88,6 +88,7 @@
           </div>
         </v-col>
       </v-row>
+
       <v-row v-if="allDepartments.length > 0">
         <v-col
           v-for="(department, index) in allDepartments"
@@ -100,7 +101,7 @@
             elevation="1"
             color="whiteColor"
             outlined
-            min-height="100"
+            height="100"
             nuxt
             :to="
               localePath(
@@ -108,7 +109,7 @@
               )
             "
           >
-            <v-list-item three-line>
+            <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
                   department.system_desp_e
@@ -118,7 +119,7 @@
                   department.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Department:{{ department.system_code }}</v-list-item-subtitle
                 >
 
@@ -130,14 +131,15 @@
                   >Employees Count:{{
                     department.employeesCount
                   }}</v-list-item-subtitle
-                >
+                > -->
               </v-list-item-content>
             </v-list-item>
           </v-card>
         </v-col>
       </v-row>
+
       <v-row v-else>
-        <v-col>
+        <v-col v-if="overlay === false">
           <h5 class="text-h6 pa-5">
             {{ $t('adminPage.dtrApp.setup.noDepartments') }}
           </h5>

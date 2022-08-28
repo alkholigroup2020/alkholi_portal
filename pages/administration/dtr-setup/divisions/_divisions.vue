@@ -13,7 +13,7 @@
       height="50"
       flat
     >
-      <div class="d-flex align-center" style="width: 100%; height: 50px">
+      <div class="d-flex align-center" style="width: 25%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -45,7 +45,7 @@
             ? 'd-flex flex-row-reverse justify-start align-center px-3'
             : 'd-flex justify-end align-center px-16'
         "
-        style="width: 100%; height: 50px"
+        style="width: 75%; height: 50px"
       >
         <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
       </div>
@@ -74,14 +74,14 @@
             color="whiteColor"
             outlined
             nuxt
-            min-height="100"
+            height="100"
             :to="
               localePath(
                 `/administration/dtr-setup/departments/${division.system_code}?branch=${branch}&divisionName=${division.system_desp_e}`
               )
             "
           >
-            <v-list-item three-line>
+            <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
                   division.system_desp_e
@@ -91,14 +91,14 @@
                   division.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >division code:{{
                     division.system_code
                   }}</v-list-item-subtitle
                 >
                 <v-list-item-subtitle
                   >Major Code:{{ division.major_code }}</v-list-item-subtitle
-                >
+                > -->
               </v-list-item-content>
             </v-list-item>
           </v-card>
@@ -131,7 +131,8 @@ export default {
         const divisions = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='41'`,
+            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
+            WHERE branch_code='${this.branch}' and system_code_type='41'`,
           }
         )
         if (divisions.status === 200) {

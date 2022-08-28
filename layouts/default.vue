@@ -362,6 +362,7 @@ export default {
     height: 100%;
     position: absolute;
     z-index: 5;
+    background-color: white;
   }
 }
 </style>

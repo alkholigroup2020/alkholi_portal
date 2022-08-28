@@ -13,7 +13,7 @@
       "
       flat
     >
-      <div class="d-flex align-center" style="width: 100%; height: 50px">
+      <div class="d-flex align-center" style="width: 25%; height: 50px">
         <nuxt-link
           class="text-decoration-none"
           style="height: 50px"
@@ -62,15 +62,17 @@
 
         <v-spacer></v-spacer>
       </div>
+
       <v-spacer></v-spacer>
+
       <div
         v-if="$vuetify.breakpoint.mdAndUp"
         :class="
           $i18n.locale === 'ar'
-            ? 'd-flex flex-row-reverse justify-start align-center px-3'
-            : 'd-flex justify-end align-center px-16'
+            ? 'd-flex flex-row-reverse justify-start align-center px-3 '
+            : 'd-flex justify-end align-center px-16 '
         "
-        style="width: 100%; height: 50px"
+        style="width: 75%; height: 50px"
       >
         <h6 class="text-body-1 primaryText--Text">{{ branch }}</h6>
         <div class="px-2">
@@ -106,8 +108,8 @@
           md="3"
           class="py-5"
         >
-          <v-card elevation="1" color="whiteColor" outlined min-height="150">
-            <v-list-item three-line>
+          <v-card elevation="1" color="whiteColor" outlined height="100">
+            <v-list-item two-line>
               <v-list-item-content>
                 <v-list-item-subtitle>{{
                   subProject.system_desp_e
@@ -117,7 +119,7 @@
                   subProject.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >system_code:
                   {{ subProject.system_code }}</v-list-item-subtitle
                 >
@@ -134,14 +136,14 @@
                 <v-list-item-subtitle
                   >division_code:
                   {{ subProject.division_code }}</v-list-item-subtitle
-                >
+                > -->
               </v-list-item-content>
             </v-list-item>
           </v-card>
         </v-col>
       </v-row>
       <v-row v-else>
-        <v-col>
+        <v-col v-if="overlay === false">
           <h5 class="text-h6 pa-5">
             {{ $t('adminPage.dtrApp.setup.noSubProjects') }}
           </h5>
