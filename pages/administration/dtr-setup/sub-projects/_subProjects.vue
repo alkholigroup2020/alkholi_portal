@@ -251,15 +251,19 @@ export default {
       this.overlay = true
       try {
         const allEmployees = []
-        // and department='${element.major_code}' and Division='${element.division_code}' and section='${element.section_code}' and unit='3'
         const getEmployeesData = await (async () => {
           for await (const element of this.allSubProjects) {
             const queryResult = await this.$axios.post(
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
               {
-                query: `SELECT employee_code, employee_name_eng, employee_name_a, position, nationality, employee_picture, Manager_Code, Email
-                        FROM [MenaITech].[dbo].[Pay_employees] WHERE branch_code='${this.branch}' 
-                        and department='${element.major_code}' and Division='${element.division_code}' and section='${element.section_code}'`,
+                query: `
+                SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+                FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
+                WHERE A.employee_code=B.employee_code
+                AND A.branch_code='${this.branch}' AND A.department='${element.major_code}' AND A.Division='${element.division_code}' 
+                AND A.section='${element.section_code}' AND A.Unit='${element.system_code}'
+                AND B.stop_val_flag='0'
+                `,
               }
             )
             if (queryResult.status === 200) {
@@ -268,50 +272,11 @@ export default {
               })
             }
           }
+          this.allEmployeesResult = allEmployees
         })
         await getEmployeesData()
-        await this.filterEmployees(allEmployees)
         this.showTable = true
         this.overlay = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
-    },
-
-    async filterEmployees(data) {
-      try {
-        if (data.length > 0) {
-          // if employees founded in the division
-          const activeEmployees = []
-          for await (const ele of data) {
-            // check if the employee still active
-            const checkEmployeeStatus = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
-              {
-                query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
-                      where employee_code='${ele.employee_code}'`,
-              }
-            )
-
-            if (checkEmployeeStatus.status === 200) {
-              if (checkEmployeeStatus.data[0].theFlag === 0) {
-                // employee is active
-                activeEmployees.push(ele)
-              }
-            }
-          }
-          this.allEmployeesResult = activeEmployees
-        }
       } catch (e) {
         this.overlay = false
         const error = e.toString()

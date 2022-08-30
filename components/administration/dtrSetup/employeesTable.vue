@@ -3,7 +3,7 @@
     <v-data-table
       :headers="headers"
       :items="allEmployeesResult"
-      :items-per-page="10000"
+      :items-per-page="100"
       class="elevation-1"
     >
       <template #[`item.employee_picture`]="{ item }">

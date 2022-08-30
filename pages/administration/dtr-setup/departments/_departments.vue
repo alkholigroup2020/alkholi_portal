@@ -241,37 +241,25 @@ export default {
     async listAllEmployees() {
       this.overlay = true
       try {
-        //
         const allEmployees = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT employee_code, employee_name_eng, employee_name_a, position, nationality, employee_picture, Manager_Code, Email 
-            FROM [MenaITech].[dbo].[Pay_employees] WHERE branch_code='${this.branch}' and department='${this.divisionCode}'`,
+            query: `
+              SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+              FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
+              WHERE A.employee_code=B.employee_code
+              AND A.branch_code='${this.branch}' AND A.department='${this.divisionCode}' 
+              AND B.stop_val_flag='0'
+            `,
           }
         )
 
-        if (allEmployees.data.length > 0) {
-          // if employees founded in the division
-          const activeEmployees = []
-          for await (const ele of allEmployees.data) {
-            // check if the employee still active
-            const checkEmployeeStatus = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
-              {
-                query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
-                            where employee_code='${ele.employee_code}'`,
-              }
-            )
-
-            if (checkEmployeeStatus.status === 200) {
-              if (checkEmployeeStatus.data[0].theFlag === 0) {
-                // employee is active
-                activeEmployees.push(ele)
-              }
-            }
+        if (allEmployees.status === 200) {
+          if (allEmployees.data.length > 0) {
+            this.allEmployeesResult = allEmployees.data
           }
-          this.allEmployeesResult = activeEmployees
         }
+
         this.showTable = true
         this.overlay = false
       } catch (e) {
