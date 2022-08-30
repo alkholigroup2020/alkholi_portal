@@ -146,17 +146,17 @@
                   project.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Division: {{ project.major_code }}</v-list-item-subtitle
-                >
+                > -->
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Department: {{ project.section_code }}</v-list-item-subtitle
-                >
+                > -->
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Project: {{ project.system_code }}</v-list-item-subtitle
-                >
+                > -->
               </v-list-item-content>
             </v-list-item>
           </v-card>

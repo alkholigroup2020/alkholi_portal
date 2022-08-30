@@ -143,13 +143,13 @@
                   department.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Department:{{ department.system_code }}</v-list-item-subtitle
-                >
+                > -->
 
-                <v-list-item-subtitle
+                <!-- <v-list-item-subtitle
                   >Division:{{ department.major_code }}</v-list-item-subtitle
-                >
+                > -->
 
                 <!-- <v-list-item-subtitle
                   >Employees Count:{{

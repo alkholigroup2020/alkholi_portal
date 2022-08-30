@@ -89,13 +89,13 @@
                   division.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <v-list-item-subtitle>
+                <!-- <v-list-item-subtitle>
                   Location Code:{{ division.major_code }}
-                </v-list-item-subtitle>
+                </v-list-item-subtitle> -->
 
-                <v-list-item-subtitle>
+                <!-- <v-list-item-subtitle>
                   Division Code:{{ division.system_code }}
-                </v-list-item-subtitle>
+                </v-list-item-subtitle> -->
               </v-list-item-content>
             </v-list-item>
           </v-card>
