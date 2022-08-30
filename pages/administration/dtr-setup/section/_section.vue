@@ -134,7 +134,9 @@ export default {
         const employees = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT employee_code, employee_name_eng, employee_name_a, position, nationality, employee_picture, Manager_Code, Email FROM [MenaITech].[dbo].[Pay_employees] where branch_code='${this.branch}' and department='${this.department}' and section='${this.section}'`,
+            query: `SELECT employee_code, employee_name_eng, employee_name_a, position, nationality, employee_picture, Manager_Code, 
+            Email FROM [MenaITech].[dbo].[Pay_employees] where branch_code='${this.branch}' and department='${this.department}' 
+            and section='${this.section}'`,
           }
         )
         if (employees.status === 200) {

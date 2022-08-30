@@ -5,12 +5,10 @@
     </v-overlay>
 
     <v-toolbar
-      class="d-print-none"
+      class="d-print-none px-0 px-md-5"
       color="mainBG"
       height="50"
-      :class="
-        $i18n.locale === 'ar' ? 'flex-row-reverse px-3 px-xl-16' : 'px-xl-3'
-      "
+      :class="$i18n.locale === 'ar' ? 'flex-row-reverse ' : ''"
       flat
     >
       <div class="d-flex align-center" style="width: 25%; height: 50px">
@@ -24,7 +22,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -49,7 +47,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 mx-2"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -67,8 +65,8 @@
         v-if="$vuetify.breakpoint.mdAndUp"
         :class="
           $i18n.locale === 'ar'
-            ? 'd-flex flex-row-reverse justify-start align-center px-3'
-            : 'd-flex justify-end align-center px-16'
+            ? 'd-flex flex-row-reverse justify-start align-center'
+            : 'd-flex justify-end align-center'
         "
         style="width: 75%; height: 50px"
       >
@@ -84,14 +82,38 @@
       </div>
     </v-toolbar>
 
-    <v-container class="px-3 px-md-8">
+    <v-container fluid class="px-5 px-md-9">
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
-          <div>
-            <p class="text-h5 mb-1">Projects</p>
-            <hr />
-            <hr />
+          <div class="d-md-flex mb-1">
+            <p class="text-h5 mb-0">Projects</p>
+            <v-spacer></v-spacer>
+            <div class="d-md-flex">
+              <v-btn
+                text
+                outlined
+                depressed
+                max-width="100%"
+                :disabled="allProjects.length <= 0"
+                class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
+                @click="listAllEmployees"
+                >List all employees under -
+                <span class="font-weight-medium"
+                  >&nbsp;{{ departmentName }}&nbsp;</span
+                >
+                - department</v-btn
+              >
+              <v-btn
+                text
+                outlined
+                depressed
+                class="text-capitalize px-2 text-body-2"
+                >Assign an admin</v-btn
+              >
+            </div>
           </div>
+          <hr />
+          <hr />
         </v-col>
       </v-row>
       <v-row v-if="allProjects.length > 0">
@@ -124,18 +146,17 @@
                   project.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <!-- <v-list-item-subtitle
-                  >system_code: {{ project.system_code }}</v-list-item-subtitle
+                <v-list-item-subtitle
+                  >Division: {{ project.major_code }}</v-list-item-subtitle
                 >
 
                 <v-list-item-subtitle
-                  >major_code: {{ project.major_code }}</v-list-item-subtitle
+                  >Department: {{ project.section_code }}</v-list-item-subtitle
                 >
 
                 <v-list-item-subtitle
-                  >section_code:
-                  {{ project.section_code }}</v-list-item-subtitle
-                > -->
+                  >Project: {{ project.system_code }}</v-list-item-subtitle
+                >
               </v-list-item-content>
             </v-list-item>
           </v-card>
@@ -143,9 +164,18 @@
       </v-row>
       <v-row v-else>
         <v-col v-if="overlay === false">
-          <h5 class="text-h6 pa-5">
+          <h5 class="text-h6">
             {{ $t('adminPage.dtrApp.setup.noProjects') }}
           </h5>
+        </v-col>
+      </v-row>
+
+      <v-row v-if="showTable">
+        <v-col v-if="allEmployeesResult.length > 0">
+          <employeesTable :all-employees-result="allEmployeesResult" />
+        </v-col>
+        <v-col v-else>
+          <p class="text-h6">No Employees Under This Department!</p>
         </v-col>
       </v-row>
     </v-container>
@@ -162,11 +192,13 @@ export default {
   data() {
     return {
       overlay: false,
+      showTable: false,
       allProjects: [],
       branch: undefined,
       divisionCode: undefined,
       divisionName: undefined,
       departmentName: undefined,
+      allEmployeesResult: [],
     }
   },
   created() {
@@ -193,6 +225,85 @@ export default {
         if (projects.status === 200) {
           this.allProjects = projects.data
           this.overlay = false
+        }
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async listAllEmployees() {
+      this.overlay = true
+      try {
+        const allEmployees = []
+        const getEmployeesData = await (async () => {
+          for await (const element of this.allProjects) {
+            const queryResult = await this.$axios.post(
+              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              {
+                query: `SELECT employee_code, employee_name_eng, employee_name_a, position, nationality, employee_picture, Manager_Code, Email
+                        FROM [MenaITech].[dbo].[Pay_employees] WHERE branch_code='${this.branch}' and department='${this.divisionCode}'
+                        and Division='${element.system_code}'`,
+              }
+            )
+            if (queryResult.status === 200) {
+              queryResult.data.forEach((e) => {
+                allEmployees.push(e)
+              })
+            }
+          }
+        })
+        await getEmployeesData()
+        await this.filterEmployees(allEmployees)
+        this.showTable = true
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async filterEmployees(data) {
+      try {
+        if (data.length > 0) {
+          // if employees founded in the division
+          const activeEmployees = []
+          for await (const ele of data) {
+            // check if the employee still active
+            const checkEmployeeStatus = await this.$axios.post(
+              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              {
+                query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
+                      where employee_code='${ele.employee_code}'`,
+              }
+            )
+
+            if (checkEmployeeStatus.status === 200) {
+              if (checkEmployeeStatus.data[0].theFlag === 0) {
+                // employee is active
+                activeEmployees.push(ele)
+              }
+            }
+          }
+          this.allEmployeesResult = activeEmployees
         }
       } catch (e) {
         this.overlay = false

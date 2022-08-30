@@ -5,10 +5,8 @@
     </v-overlay>
 
     <v-toolbar
-      class="d-print-none"
-      :class="
-        $i18n.locale === 'ar' ? 'flex-row-reverse px-3 px-xl-16' : 'px-xl-3'
-      "
+      class="d-print-none px-0 px-md-5"
+      :class="$i18n.locale === 'ar' ? 'flex-row-reverse ' : ''"
       color="mainBG"
       height="50"
       flat
@@ -24,7 +22,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -42,8 +40,8 @@
         v-if="$vuetify.breakpoint.mdAndUp"
         :class="
           $i18n.locale === 'ar'
-            ? 'd-flex flex-row-reverse justify-start align-center px-3'
-            : 'd-flex justify-end align-center px-16'
+            ? 'd-flex flex-row-reverse justify-start align-center'
+            : 'd-flex justify-end align-center'
         "
         style="width: 75%; height: 50px"
       >
@@ -51,7 +49,7 @@
       </div>
     </v-toolbar>
 
-    <v-container class="px-3 px-md-8">
+    <v-container fluid class="px-5 px-md-9">
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
           <div>
@@ -91,14 +89,13 @@
                   division.system_desp_a
                 }}</v-list-item-subtitle>
 
-                <!-- <v-list-item-subtitle
-                  >division code:{{
-                    division.system_code
-                  }}</v-list-item-subtitle
-                >
-                <v-list-item-subtitle
-                  >Major Code:{{ division.major_code }}</v-list-item-subtitle
-                > -->
+                <v-list-item-subtitle>
+                  Location Code:{{ division.major_code }}
+                </v-list-item-subtitle>
+
+                <v-list-item-subtitle>
+                  Division Code:{{ division.system_code }}
+                </v-list-item-subtitle>
               </v-list-item-content>
             </v-list-item>
           </v-card>

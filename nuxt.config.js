@@ -35,6 +35,7 @@ export default {
       '~/components/portal/shortcuts',
       '~/components/appNotifications',
       '~/components/administration/authControlledApps',
+      '~/components/administration/dtrSetup',
       '~/components/hrSurveys',
     ],
   },

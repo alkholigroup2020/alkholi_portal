@@ -157,7 +157,7 @@
     </v-navigation-drawer>
 
     <v-app-bar app color="primary" flat height="60">
-      <v-container fluid class="py-0 fill-height px-xl-16">
+      <v-container fluid class="py-0 fill-height">
         <!-- hamburger icon -->
         <v-app-bar-nav-icon
           v-if="$vuetify.breakpoint.mdAndDown"
