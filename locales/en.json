@@ -95,9 +95,15 @@
       "setup": {
         "mainCompanies": "Main Companies:",
         "branches": "Branches:",
-        "noDepartments": "No Departments Here...",
-        "noProjects": "No Projects Here...",
-        "noSubProjects": "No Sub-Projects Here..."
+        "divisionsTitle": "Divisions",
+        "departmentsTitle": "Departments",
+        "projectsTitle": "Projects",
+        "subProjectsTitle": "Sub-Projects",
+        "subProjectTitle": "Sub-Project",
+        "noDepartments": "No departments under this division!",
+        "noProjects": "No projects under this department!",
+        "noSubProjects": "No sub-projects under this project!",
+        "noEmployees": "No employees under this hierarchy section!"
       }
     }
   },

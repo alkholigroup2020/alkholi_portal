@@ -53,7 +53,9 @@
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
           <div>
-            <p class="text-h5 mb-1">Divisions</p>
+            <p class="text-h5 mb-1">
+              {{ $t('adminPage.dtrApp.setup.divisionsTitle') }}
+            </p>
             <hr />
             <hr />
           </div>
@@ -79,7 +81,7 @@
               )
             "
           >
-            <v-list-item two-line>
+            <v-list-item two-line class="text-body-1 font-weight-medium">
               <v-list-item-content>
                 <v-list-item-subtitle>{{
                   division.system_desp_e

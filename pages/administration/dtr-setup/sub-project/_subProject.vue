@@ -96,7 +96,9 @@
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
           <div class="d-md-flex mb-1">
-            <p class="text-h5 mb-1">{{ subProjectName }}</p>
+            <p class="text-h5 mb-1">
+              {{ $t('adminPage.dtrApp.setup.subProjectTitle') }}
+            </p>
             <v-spacer></v-spacer>
             <div class="d-md-flex">
               <v-btn
@@ -104,7 +106,7 @@
                 outlined
                 depressed
                 class="text-capitalize px-2 text-body-2"
-                >Assign an admin</v-btn
+                >Assign An Administrator</v-btn
               >
             </div>
           </div>
@@ -118,7 +120,9 @@
           <employeesTable :all-employees-result="allEmployeesResult" />
         </v-col>
         <v-col v-else>
-          <p class="text-h6">No Employees Under This Sub-Project!</p>
+          <h5 class="text-body-1 px-1 py-3 red--text">
+            {{ $t('adminPage.dtrApp.setup.noEmployees') }}
+          </h5>
         </v-col>
       </v-row>
     </v-container>
