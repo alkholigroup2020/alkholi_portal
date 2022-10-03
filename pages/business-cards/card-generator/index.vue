@@ -136,6 +136,7 @@
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 :label="$t('businessCards.cardGenerator.empArName')"
                 dense
+                dir="rtl"
                 :error-messages="errors[0]"
               ></v-text-field>
             </ValidationProvider>
@@ -161,6 +162,7 @@
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 :label="$t('businessCards.cardGenerator.empArTitle')"
                 dense
+                dir="rtl"
                 :error-messages="errors[0]"
               ></v-text-field>
             </ValidationProvider>
@@ -455,6 +457,7 @@ export default {
         'UPMOC',
         'AMOS & SBTMC Manager',
         'AKSTRA Consulting',
+        'MX Reality',
       ],
       showSnack: false,
       companyLogo: null,

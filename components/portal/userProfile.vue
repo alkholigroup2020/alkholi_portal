@@ -4,7 +4,6 @@
     rounded="lg"
     color="transparent"
     class="d-flex flex-column"
-    height="54vh"
   >
     <div class="d-flex justify-center pb-5 pt-8">
       <v-avatar
@@ -44,7 +43,7 @@
         {{ employeeCode }}
       </p>
     </div>
-    <div v-if="qrFileName" class="d-flex justify-center mt-3">
+    <div v-if="qrFileName" class="d-flex justify-center mt-3 mb-5">
       <a
         :href="`${$config.baseURL}/business-card/${employeeCode}`"
         target="_blank"

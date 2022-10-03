@@ -22,6 +22,8 @@
     />
 
     <upmoc v-if="result.company == 'UPMOC'" :result="result" />
+
+    <mxReality v-if="result.company == 'MX Reality'" :result="result" />
   </div>
 </template>
 
