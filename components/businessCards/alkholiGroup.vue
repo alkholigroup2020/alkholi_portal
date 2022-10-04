@@ -219,22 +219,22 @@
             </div></v-col
           >
         </v-row>
-        <v-row class="px-8 mt-5">
+        <v-row class="px-5 mt-5">
           <v-col cols="3" class="d-flex justify-center align-center">
-            <v-img contain eager src="/bcard-logos/AKSTRA TRADING.png"></v-img>
+            <v-img contain eager src="/bcard-logos/Alkholi Trading.png"></v-img>
           </v-col>
           <v-col cols="3" class="d-flex justify-center align-center">
             <v-img
               contain
               eager
-              src="/bcard-logos/AKSTAR TECHNOLOGIES.png"
+              src="/bcard-logos/Alkholi Technologies.png"
             ></v-img>
           </v-col>
           <v-col cols="3" class="d-flex justify-center align-center">
             <v-img
               contain
               eager
-              src="/bcard-logos/AKSTRA HEALTHCARE.png"
+              src="/bcard-logos/Alkholi Healthcare.png"
             ></v-img>
           </v-col>
           <v-col cols="3" class="d-flex justify-center align-center">
@@ -245,10 +245,10 @@
             ></v-img>
           </v-col>
         </v-row>
-        <v-row class="px-1 mt-5">
+        <v-row class="px-0 mt-5 pb-1">
           <v-col
             cols="2"
-            class="px-2 d-flex justify-center align-center mt-n2"
+            class="px-1 d-flex justify-center align-center mt-n2"
             offset="1"
           >
             <v-img
