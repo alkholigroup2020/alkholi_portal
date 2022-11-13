@@ -265,16 +265,20 @@
               src="/bcard-logos/UPC.png"
             ></v-img>
           </v-col>
+
+          <v-col cols="2" class="px-2 d-flex justify-center">
+            <v-img contain eager src="/bcard-logos/AKTEK.png"></v-img>
+          </v-col>
+
           <v-col cols="2" class="px-2 d-flex justify-center align-center">
             <v-img
               contain
               eager
+              max-width="32"
               src="/bcard-logos/Logo BuildingTek_transparent bg.png"
             ></v-img>
           </v-col>
-          <v-col cols="2" class="px-2 d-flex justify-center">
-            <v-img contain eager src="/bcard-logos/AKTEK.png"></v-img>
-          </v-col>
+
           <v-col cols="2" class="px-2 d-flex justify-center align-center">
             <v-img contain eager src="/bcard-logos/AMOS.png"></v-img>
           </v-col>

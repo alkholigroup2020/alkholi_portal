@@ -201,6 +201,7 @@
             <v-img
               contain
               eager
+              max-width="32"
               src="/bcard-logos/Logo BuildingTek_transparent bg.png"
             ></v-img>
           </v-col>

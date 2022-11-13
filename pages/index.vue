@@ -399,9 +399,9 @@ export default {
           url: 'https://kap.alkholi.com/',
         },
         {
-          imgURL: '/websiteImages/etas.png',
+          imgURL: '/websiteImages/hrw-1.png',
           title: this.$t('portalPage.shortcuts.oldAttendance'),
-          url: 'http://attendance.alkholi.com/eTAS/eTas.aspx',
+          url: 'http://attendance.alkholi.com/ess',
         },
         {
           imgURL: '/websiteImages/hrms.png',
