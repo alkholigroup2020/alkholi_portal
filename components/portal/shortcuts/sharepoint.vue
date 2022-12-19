@@ -8,7 +8,7 @@
       >
         <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
         <div class="the-image">
-          <v-img alt="app-image" :src="sp_data.imgURL"></v-img>
+          <v-img alt="app-image" contain :src="sp_data.imgURL"></v-img>
         </div>
       </v-avatar>
     </a>

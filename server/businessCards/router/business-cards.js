@@ -156,7 +156,7 @@ const saveEmployeeData = async (
 
         if (
           oldCompanyLogo.recordset.length > 0 &&
-          oldCompanyLogo.recordset[0].companyLogo !== undefined
+          oldCompanyLogo.recordset[0].companyLogo !== 'undefined'
         ) {
           fs.unlinkSync(
             path.join(
@@ -179,7 +179,7 @@ const saveEmployeeData = async (
 
         if (
           oldEmployeePicture.recordset.length > 0 &&
-          oldEmployeePicture.recordset[0].profilePic !== undefined
+          oldEmployeePicture.recordset[0].profilePic !== 'undefined'
         ) {
           fs.unlinkSync(
             path.join(
@@ -201,7 +201,7 @@ const saveEmployeeData = async (
 
       if (
         oldQrCode.recordset.length > 0 &&
-        oldQrCode.recordset[0].qrCodePath !== undefined
+        oldQrCode.recordset[0].qrCodePath !== 'undefined'
       ) {
         fs.unlinkSync(
           path.join(
@@ -215,12 +215,13 @@ const saveEmployeeData = async (
         exec businessCards.employeeData_updateData '${payload.employeeID}',
         '${empComLogo}', '${empImage}', N'${payload.employeeArabicName}',
         '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
-        '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
-        '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
-        payload.employeeWebSite
-      }',
+        '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',${
+        payload.employeeLandLines
+          ? `'${payload.employeeLandLines}'`
+          : 'undefined'
+      }, '${payload.employeeMailAddress}', '${payload.employeeWebSite}',
         '${qrFileName}', '${payload.employeeCompany}', ${
-        payload.faxLine ? `'${payload.faxLine}'` : null
+        payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
       }
       `)
       if (employeeData.rowsAffected[0] === 1) {
@@ -243,10 +244,14 @@ const saveEmployeeData = async (
     }',
         '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
         '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
-        '${payload.employeeLandLines}', '${payload.employeeMailAddress}', '${
+        ${
+          payload.employeeLandLines
+            ? `'${payload.employeeLandLines}'`
+            : 'undefined'
+        }, '${payload.employeeMailAddress}', '${
       payload.employeeWebSite
     }', '${qrFileName}', '${payload.employeeCompany}', ${
-      payload.faxLine ? `'${payload.faxLine}'` : null
+      payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
     }
       `)
 
@@ -269,7 +274,6 @@ const saveEmployeeData = async (
 }
 
 // attachments upload
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, '../../../uploads/businessCards'))
@@ -300,7 +304,6 @@ const upload = multer({
   fileFilter,
   limits: { fileSize: 5120000 },
 })
-
 const allFiles = upload.fields([
   { name: 'qrLogo', maxCount: 1 },
   { name: 'companyLogo', maxCount: 1 },
@@ -308,11 +311,12 @@ const allFiles = upload.fields([
 ])
 
 router.post('/save-employee-data', auth, allFiles, async (req, res) => {
+  console.log('🚀 req.body ==>', req.body)
   try {
     const qrBackgroundColor = req.body.bgColor
     const qrFrontColor = req.body.frColor
     let qrSize = req.body.qrSize
-    if (qrSize === 'null') {
+    if (qrSize === 'undefined') {
       qrSize = '300'
     }
     let qrLogo
@@ -350,7 +354,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
     )
 
     // if no employee ID is defined
-    if (req.body.employeeID === 'null') {
+    if (req.body.employeeID === 'undefined') {
       const uniqueID = await generateID(10001, 99999)
       const employeeData = req.body
       employeeData.employeeID = `X${uniqueID}`

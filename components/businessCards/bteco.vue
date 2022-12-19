@@ -100,7 +100,11 @@
               </p>
             </a>
           </v-col>
-          <v-col cols="12" class="d-flex justify-center pb-1">
+          <v-col
+            v-if="firstLandLineNumber != 'undefined'"
+            cols="12"
+            class="d-flex justify-center pb-1"
+          >
             <a :href="`tel:00966${firstLandLineNumber}`" class="textColor">
               <p class="mb-0">
                 <span class="font-weight-bold">T.&nbsp;</span> +966

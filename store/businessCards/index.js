@@ -1,5 +1,5 @@
 export const state = () => ({
-  userCardID: null,
+  userCardID: undefined,
 })
 
 export const mutations = {
@@ -14,7 +14,7 @@ export const actions = {
       const FormData = require('form-data')
       const dataToSend = new FormData()
 
-      if (payload.employeeID !== null) {
+      if (payload.employeeID !== undefined) {
         dataToSend.append('employeeID', payload.employeeID.toUpperCase())
       } else {
         dataToSend.append('employeeID', payload.employeeID)

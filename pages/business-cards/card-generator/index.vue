@@ -17,7 +17,7 @@
       <v-form @submit.prevent="handleSubmit(generateCard)">
         <v-row>
           <v-col class="py-2" cols="12" md="5">
-            <ValidationProvider rules="required">
+            <ValidationProvider>
               <v-text-field
                 v-model="employeeID"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -446,9 +446,9 @@ export default {
   layout: 'businessCards',
   data() {
     return {
-      result: null,
-      employeeID: null,
-      company: null,
+      result: undefined,
+      employeeID: undefined,
+      company: undefined,
       companies: [
         'Alkholi Group',
         'Alkholi Holding',
@@ -460,23 +460,23 @@ export default {
         'MX Reality',
       ],
       showSnack: false,
-      companyLogo: null,
-      qrLogo: null,
+      companyLogo: undefined,
+      qrLogo: undefined,
       bgColor: '#FFFFFFFF',
       frColor: '#07074eFF',
-      qrSize: null,
+      qrSize: undefined,
       bgColorDialog: false,
       frColorDialog: false,
-      employeePicture: null,
-      employeeArabicName: null,
-      employeeEnglishName: null,
-      employeeArabicTitle: null,
-      employeeEnglishTitle: null,
-      employeeMobileNumber: null,
-      employeeLandLines: null,
-      employeeMailAddress: null,
-      employeeWebSite: null,
-      employeeFaxLine: null,
+      employeePicture: undefined,
+      employeeArabicName: undefined,
+      employeeEnglishName: undefined,
+      employeeArabicTitle: undefined,
+      employeeEnglishTitle: undefined,
+      employeeMobileNumber: undefined,
+      employeeLandLines: undefined,
+      employeeMailAddress: undefined,
+      employeeWebSite: undefined,
+      employeeFaxLine: undefined,
     }
   },
   computed: {
@@ -550,7 +550,7 @@ export default {
         this.employeeFaxLine =
         this.qrSize =
         this.employeeLandLines =
-          null
+          undefined
       this.bgColor = '#FFFFFFFF'
       this.frColor = '#07074eFF'
 
