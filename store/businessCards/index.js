@@ -36,6 +36,7 @@ export const actions = {
       dataToSend.append('frColor', payload.frColor)
       dataToSend.append('qrSize', payload.qrSize)
       dataToSend.append('faxLine', payload.faxLine)
+      dataToSend.append('creator', payload.creator)
 
       const serverCall = await this.$axios({
         method: 'post',
@@ -51,6 +52,46 @@ export const actions = {
       const notification = {
         type: 'error',
         message: error.response.data.message,
+      }
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
+    }
+  },
+  async deleteBusinessCard({ commit, dispatch }, payload) {
+    const A = localStorage.getItem('userAccount')
+    const B = localStorage.getItem('employeeCode')
+    const C = localStorage.getItem('userFullName')
+
+    const callData = {
+      adminAccount: A,
+      adminID: B,
+      adminName: C,
+      bCardID: payload.code,
+      qrFileName: payload.file,
+      employeeCardName: payload.name,
+    }
+
+    try {
+      const serverCall = await this.$axios.post(
+        `${this.$config.baseURL}/business-cards-api/delete-business-card`,
+        callData
+      )
+      if (serverCall.status === 200) {
+        const notification = {
+          type: 'success',
+          message: this.app.i18n.t(`successMessages.successDelete`),
+        }
+        await dispatch('appNotifications/addNotification', notification, {
+          root: true,
+        })
+      }
+    } catch (error) {
+      const notification = {
+        type: 'error',
+        message: this.app.i18n.t(
+          `errorMessages.${error.response.data.message}`
+        ),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,

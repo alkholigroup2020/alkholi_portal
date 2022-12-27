@@ -52,7 +52,7 @@
   },
   "adminPage": {
     "layout": {
-      "tab1": "Application Access",
+      "tab1": "Applications Access",
       "tab2": "DTR Setup"
     },
     "choices": {
@@ -109,8 +109,9 @@
   },
   "businessCards": {
     "appPageNames": {
-      "generator": "Generate A Card",
-      "generated": "Generated Cards"
+      "generator": "Issue a new card",
+      "generated": "Generated cards",
+      "logs": "Activity Logs"
     },
     "cardGenerator": {
       "title": "Generate a new business card",
@@ -145,7 +146,18 @@
       "employeeEmail": "Email Address",
       "employeeTitle": "Title",
       "employeeQR": "QR Download",
-      "employeeBCard": "Business Card"
+      "employeeBCard": "Business Card",
+      "confirmationTitle": "Confirmation",
+      "confirmationMessage": "Are you sure, you want to delete this business card?"
+    },
+    "activityLogs": {
+      "searchLabel": "Search by action, business card ID, or employee's name ...",
+      "dateTitle": "Date",
+      "timeTitle": "Time",
+      "adminName": "Admin",
+      "theAction": "Action",
+      "bCardID": "Employee ID",
+      "bCardName": "Employee's Name"
     }
   },
   "elevatorsSurvey": {
@@ -183,6 +195,7 @@
     }
   },
   "errorMessages": {
+    "notFound": "Can't find the admin record!",
     "login": {
       "hrDataMissing": "User's data on HR system is missing!",
       "hrTitleMissing": "User's title on HR system is missing!",
@@ -220,6 +233,8 @@
     }
   },
   "successMessages": {
+    "successAdd": "Successfully Added!",
+    "successDelete": "Successfully Deleted!",
     "portal": {
       "imgSuccess": "Image uploaded successfully!"
     },
@@ -254,6 +269,7 @@
     "print": "Print",
     "home": "Home",
     "back": "Back",
-    "send": "Send"
+    "send": "Send",
+    "delete": "Delete"
   }
 }

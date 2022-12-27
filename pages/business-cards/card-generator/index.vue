@@ -494,6 +494,7 @@ export default {
       try {
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
+          const creator = localStorage.getItem('userFullName')
           const employeeData = {
             employeeID: this.employeeID,
             companyLogo: this.companyLogo,
@@ -512,6 +513,7 @@ export default {
             frColor: this.frColor,
             qrSize: this.qrSize,
             faxLine: this.employeeFaxLine,
+            creator,
           }
           await this.$store.dispatch(
             'businessCards/saveEmployeeData',

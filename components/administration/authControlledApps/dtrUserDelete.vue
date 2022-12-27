@@ -12,21 +12,34 @@
       </v-card-title>
 
       <v-card-text class="pb-0">
-        <p class="text-subtitle-1 pt-3 pb-8 mb-0 text-center">
+        <p
+          class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
+        >
           {{ $t('adminPage.dtrApp.confirmationMessage') }}
         </p>
       </v-card-text>
 
-      <v-divider></v-divider>
-
-      <v-card-actions>
+      <v-card-actions class="pb-10">
         <v-spacer></v-spacer>
-        <v-btn color="error darken-1" text @click="dialog = false">
-          {{ $t('generals.no') }}
-        </v-btn>
-        <v-btn color="success darken-1" text @click="deleteDTRUser()">
+        <v-btn
+          outlined
+          class="px-8 mx-2 text-capitalize"
+          color="success darken-1"
+          text
+          @click="deleteDTRUser()"
+        >
           {{ $t('generals.yes') }}
         </v-btn>
+        <v-btn
+          outlined
+          class="px-8 text-capitalize"
+          color="error darken-1"
+          text
+          @click="dialog = false"
+        >
+          {{ $t('generals.no') }}
+        </v-btn>
+        <v-spacer></v-spacer>
       </v-card-actions>
     </v-card>
   </v-dialog>

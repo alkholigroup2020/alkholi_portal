@@ -134,10 +134,14 @@ const saveEmployeeData = async (
 ) => {
   const portalDBConnection = await portalDB()
   try {
+    // for the log record
+    const D = new Date()
+    const theDate = `${D.getFullYear()}-${D.getMonth() + 1}-${D.getDate()}`
+    const theTime = D.getHours() + ':' + D.getMinutes() + ':' + D.getSeconds()
+
     const qrFileName = `${payload.employeeID}_QR_${qrSize}px.png`
 
     // check if the employee already exist in db or not
-
     const employeeCheck = await portalDBConnection.request().query(`
     exec businessCards.employeeData_checkIfExist '${payload.employeeID}'
     `)
@@ -145,7 +149,6 @@ const saveEmployeeData = async (
     if (employeeCheck.recordset[0].exist > 0) {
       // the employee has a qr code - update his record
       // delete old files from the disk
-
       let empComLogo = companyLogo
       let empImage = employeePicture
 
@@ -224,6 +227,14 @@ const saveEmployeeData = async (
         payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
       }
       `)
+
+      // write the log record
+      await portalDBConnection.request().query(
+        `exec [businessCards].[logging] '${theDate}' , '${theTime}',
+        '${payload.creator}', 'Update', '${payload.employeeID}',
+        '${payload.employeeEnglishName}'`
+      )
+
       if (employeeData.rowsAffected[0] === 1) {
         // generate the QR code and will be saved on disk
         await generateQR(
@@ -254,6 +265,13 @@ const saveEmployeeData = async (
       payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
     }
       `)
+
+    // write the log record
+    await portalDBConnection.request().query(
+      `exec [businessCards].[logging] '${theDate}' , '${theTime}',
+      '${payload.creator}', 'Creation', '${payload.employeeID}',
+        '${payload.employeeEnglishName}'`
+    )
 
     if (employeeData.rowsAffected[0] === 1) {
       // generate the QR code and will be saved on disk
@@ -311,7 +329,6 @@ const allFiles = upload.fields([
 ])
 
 router.post('/save-employee-data', auth, allFiles, async (req, res) => {
-  console.log('🚀 req.body ==>', req.body)
   try {
     const qrBackgroundColor = req.body.bgColor
     const qrFrontColor = req.body.frColor
@@ -367,6 +384,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
         companyLogo,
         employeePicture
       )
+
       return res.status(200).send(saveToDB)
     }
 
@@ -411,6 +429,54 @@ router.post('/get-employee-data', auth, async (req, res) => {
     }
 
     throw new CustomError('noData', 501)
+  } catch (e) {
+    if (!e.statusCode) {
+      const error = e.toString()
+      const newErrorString = error.replaceAll('Error: ', '')
+      res.status(500).json({
+        message: `${newErrorString}`,
+      })
+    } else {
+      res.status(e.statusCode).json({
+        message: `${e.message}`,
+      })
+    }
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
+router.post('/delete-business-card', auth, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const del = await portalDBConnection
+      .request()
+      .query(`exec businessCards.employeeData_deleteData '${req.body.bCardID}'`)
+    if (del.rowsAffected[0] === 1) {
+      // delete the QR code file
+      const filePath = path.join(
+        __dirname,
+        `../../../uploads/businessCards/${req.body.qrFileName}`
+      )
+      fs.unlinkSync(filePath)
+
+      // write the log record
+      const D = new Date()
+      const theDate = `${D.getFullYear()}-${D.getMonth() + 1}-${D.getDate()}`
+      const theTime = D.getHours() + ':' + D.getMinutes() + ':' + D.getSeconds()
+
+      await portalDBConnection.request().query(
+        `exec [businessCards].[logging] '${theDate}' , '${theTime}',
+          '${req.body.adminName}', 'Deletion', '${req.body.bCardID}',
+          '${req.body.employeeCardName}'`
+      )
+
+      res.status(200).json({
+        message: `successfullyDeleted`,
+      })
+    } else {
+      throw new CustomError('notFound', 500)
+    }
   } catch (e) {
     if (!e.statusCode) {
       const error = e.toString()

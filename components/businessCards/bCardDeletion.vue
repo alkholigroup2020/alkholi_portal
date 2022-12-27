@@ -8,25 +8,26 @@
 
     <v-card>
       <v-card-title class="text-subtitle-1 primary_5">
-        {{ $t('adminPage.elevators.confirmationTitle') }}
+        {{ $t('businessCards.generatedCards.confirmationTitle') }}
       </v-card-title>
 
       <v-card-text class="pb-0">
         <p
           class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
         >
-          {{ $t('adminPage.elevators.confirmationMessage') }}
+          {{ $t('businessCards.generatedCards.confirmationMessage') }}
         </p>
       </v-card-text>
 
       <v-card-actions class="pb-10">
         <v-spacer></v-spacer>
+
         <v-btn
           outlined
           class="px-8 mx-2 text-capitalize"
           color="success darken-1"
           text
-          @click="deleteElevatorsAdmin()"
+          @click="deleteBusinessCard()"
         >
           {{ $t('generals.yes') }}
         </v-btn>
@@ -53,6 +54,14 @@ export default {
       type: String,
       default: '',
     },
+    file: {
+      type: String,
+      default: '',
+    },
+    name: {
+      type: String,
+      default: '',
+    },
   },
   data() {
     return {
@@ -60,18 +69,18 @@ export default {
     }
   },
   methods: {
-    async deleteElevatorsAdmin() {
+    async deleteBusinessCard() {
       try {
         this.dialog = false
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
-          await this.$store.dispatch(
-            'administration/elevatorsAdmins/deleteElevatorsAdmin',
-            { code: this.employee }
-          )
-          await this.$store.dispatch(
-            'administration/elevatorsAdmins/getElevatorsAdmins'
-          )
+          await this.$store.dispatch('businessCards/deleteBusinessCard', {
+            code: this.employee,
+            file: this.file,
+            name: this.name,
+          })
+          // notify the parent to update the generated cards list
+          this.$emit('updateCards')
           this.$nuxt.$loading.finish()
         })
       } catch (e) {

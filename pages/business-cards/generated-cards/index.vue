@@ -1,5 +1,8 @@
 <template>
   <v-container fluid>
+    <v-overlay :value="overlay">
+      <v-progress-circular indeterminate size="60"></v-progress-circular>
+    </v-overlay>
     <!-- title -->
     <v-row>
       <v-col cols="12" class="mx-5 mx-md-15">
@@ -59,6 +62,9 @@
                 </th>
                 <th class="text-center text-subtitle-2 primaryText--text">
                   {{ $t('generals.edit') }}
+                </th>
+                <th class="text-center text-subtitle-2 primaryText--text">
+                  {{ $t('generals.delete') }}
                 </th>
               </tr>
             </thead>
@@ -122,9 +128,14 @@
                   </nuxt-link>
                 </td>
                 <!-- delete confirmation -->
-                <!-- <portal-admins-delete-confirmation
-                  :memberID="member.employeeID"
-                /> -->
+                <td>
+                  <bCardDeletion
+                    :employee="member.employeeID"
+                    :file="member.qrCodePath"
+                    :name="member.fullName_e"
+                    @updateCards="getGeneratedCards"
+                  />
+                </td>
               </tr>
             </tbody>
           </template>
@@ -141,6 +152,7 @@ export default {
     return {
       bCards: [],
       searchTerm: '',
+      overlay: false,
     }
   },
   computed: {
@@ -163,6 +175,7 @@ export default {
   methods: {
     async getGeneratedCards() {
       try {
+        this.overlay = true
         const generatedCards = await this.$axios.post(
           `${this.$config.baseURL}/business-cards-api/sql-call`,
           {
@@ -170,6 +183,7 @@ export default {
           }
         )
         this.bCards = generatedCards.data
+        this.overlay = false
       } catch (e) {
         const error = e.toString()
         const newErrorString = error.replaceAll('Error: ', '')

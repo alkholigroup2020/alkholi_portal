@@ -137,6 +137,21 @@
               }}</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+          <v-list-item
+            nuxt
+            :to="localePath('/business-cards/activity-logs')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-format-columns</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">{{
+                $t('businessCards.appPageNames.logs')
+              }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
         </v-list>
 
         <!-- footer -->

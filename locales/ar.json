@@ -110,7 +110,8 @@
   "businessCards": {
     "appPageNames": {
       "generator": "كارت جديد",
-      "generated": "كروت تم إصدارها"
+      "generated": "كروت تم إصدارها",
+      "logs": "سجلات التطبيق"
     },
     "cardGenerator": {
       "title": "إنشاء كارت تعريف جديد",
@@ -145,7 +146,18 @@
       "employeeEmail": "البريد الإلكتروني",
       "employeeTitle": "المسمى الوظيفي",
       "employeeQR": "تحميل الملف",
-      "employeeBCard": "الكارت الشخصي"
+      "employeeBCard": "الكارت الشخصي",
+      "confirmationTitle": "رسالة تأكيد",
+      "confirmationMessage": "هل ترغب في إزالة هذا العنصر؟"
+    },
+    "activityLogs": {
+      "searchLabel": "البحث بإستخدام الرقم الوظيفي، نوع الحركة، أو الإسم ...",
+      "dateTitle": "التاريخ",
+      "timeTitle": "الوقت",
+      "adminName": "مسؤول النظام",
+      "theAction": "نوع الحركة",
+      "bCardID": "رقم الموظف",
+      "bCardName": "إسم الموظف"
     }
   },
   "elevatorsSurvey": {
@@ -183,6 +195,7 @@
     }
   },
   "errorMessages": {
+    "notFound": "لا توجد بيانات تخص هذا الموظف!",
     "login": {
       "hrDataMissing": "بيـانات الموظـف غير مكتملـة ببـرنامج المـوارد البشـرية!",
       "hrTitleMissing": "المـسمى الوظـيفي غير مـوجود ببـرنامج المـوارد البشـرية!",
@@ -220,6 +233,8 @@
     }
   },
   "successMessages": {
+    "successAdd": "تمت الإضافة بنجاح!",
+    "successDelete": "تمت الإزالة بنجاح!",
     "portal": {
       "imgSuccess": "تم تحديث الصورة بنجاح!"
     },
@@ -254,6 +269,7 @@
     "print": "طباعة",
     "back": "العودة للخلف",
     "home": "البــداية",
-    "send": "إرسال"
+    "send": "إرسال",
+    "delete": "حذف"
   }
 }
