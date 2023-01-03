@@ -76,6 +76,11 @@
       </div>
     </v-toolbar>
 
+    <drtAdminPopup
+      v-if="showDTRAdminPopup"
+      @resetPopupValue="showDTRAdminPopup = false"
+    />
+
     <v-container fluid class="px-5 px-md-9">
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
@@ -95,7 +100,7 @@
                   class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
                   style="direction: ltr"
                   @click="listAllEmployees"
-                  >List all employees under -
+                  >List all under -
                   <span class="font-weight-medium"
                     >&nbsp;{{ divisionName }}&nbsp;</span
                   >
@@ -106,7 +111,8 @@
                   outlined
                   depressed
                   class="text-capitalize px-2 text-body-2"
-                  >Assign An Administrator</v-btn
+                  @click="showDTRAdminPopup = true"
+                  >Assign An Admin</v-btn
                 >
               </div>
             </div>
@@ -202,6 +208,7 @@ export default {
       branch: undefined,
       divisionName: undefined,
       allEmployeesResult: [],
+      showDTRAdminPopup: false,
     }
   },
   created() {

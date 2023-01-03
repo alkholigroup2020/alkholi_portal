@@ -1,6 +1,6 @@
 <template>
   <!-- overlay needs to be manually added with the v-if condition -->
-  <v-overlay v-if="loading" :color="bgColor" z-index="100" opacity="100">
+  <v-overlay v-if="loading" :color="bgColor" z-index="1000" opacity="100">
     <div class="radar-spinner" :style="spinnerStyle">
       <div
         v-for="(cs, index) in circlesStyles"

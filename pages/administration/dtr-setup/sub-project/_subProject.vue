@@ -92,6 +92,11 @@
       </div>
     </v-toolbar>
 
+    <drtAdminPopup
+      v-if="showDTRAdminPopup"
+      @resetPopupValue="showDTRAdminPopup = false"
+    />
+
     <v-container fluid class="px-5 px-md-9">
       <v-row>
         <v-col class="pt-5 pb-0" cols="12">
@@ -106,7 +111,8 @@
                 outlined
                 depressed
                 class="text-capitalize px-2 text-body-2"
-                >Assign An Administrator</v-btn
+                @click="showDTRAdminPopup = true"
+                >Assign An Admin</v-btn
               >
             </div>
           </div>
@@ -150,6 +156,7 @@ export default {
       divisionName: undefined,
       departmentName: undefined,
       projectName: undefined,
+      showDTRAdminPopup: false,
       subProjectName: undefined,
     }
   },

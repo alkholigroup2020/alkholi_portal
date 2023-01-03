@@ -6,6 +6,7 @@ const elevatorsSurveyAdmins = require('./router/elevatorsSurveyAdmins.js')
 const hrSurveys = require('./router/hrSurveys.js')
 const dtrUsers = require('./router/dtrUsers.js')
 const sqlCalls = require('./router/sqlCalls.js')
+const dtrSetup = require('./router/dtrSetup.js')
 
 api.use(express.json())
 api.use(express.urlencoded({ extended: true }))
@@ -15,6 +16,7 @@ api.use(elevatorsSurveyAdmins)
 api.use(hrSurveys)
 api.use(dtrUsers)
 api.use(sqlCalls)
+api.use(dtrSetup)
 
 module.exports = {
   path: '/administration-api',

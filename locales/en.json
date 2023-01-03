@@ -103,7 +103,12 @@
         "noDepartments": "No departments under this division!",
         "noProjects": "No projects under this department!",
         "noSubProjects": "No sub-projects under this project!",
-        "noEmployees": "No employees under this hierarchy section!"
+        "noEmployees": "No employees under this hierarchy section!",
+        "assignmentTitle": "Assign an Admin",
+        "employeeName": "Name",
+        "employeeTitle": "Title",
+        "employeeEmail": "Email",
+        "branchCode": "Company Name"
       }
     }
   },
@@ -229,6 +234,9 @@
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
         "notFound": "Can't find the admin record!"
+      },
+      "dtrSetup": {
+        "employeeInfoMessing": "Employee Information is missing on the HR system!"
       }
     }
   },
