@@ -21,8 +21,10 @@
         <v-col
           v-for="(company, index) in companies"
           :key="index"
-          cols="6"
-          md="3"
+          cols="12"
+          md="6"
+          lg="5"
+          xl="3"
           class="py-5"
         >
           <v-card
@@ -70,7 +72,14 @@
 
       <!-- branches -->
       <v-row>
-        <v-col v-for="(branch, i) in branches" :key="i" cols="12" md="6" lg="3">
+        <v-col
+          v-for="(branch, i) in branches"
+          :key="i"
+          cols="12"
+          md="6"
+          lg="5"
+          xl="3"
+        >
           <v-card
             elevation="1"
             color="whiteColor"

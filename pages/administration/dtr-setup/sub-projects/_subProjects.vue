@@ -90,16 +90,58 @@
 
     <drtAdminPopup
       v-if="showDTRAdminPopup"
-      @resetPopupValue="showDTRAdminPopup = false"
+      :brach="branch"
+      :division="divisionCode"
+      :department="new Array(projectCode)"
+      :section="subProjectsCodes"
+      @resetPopupValue="popupClosed"
     />
+
+    <!-- <hr class="red" />
+    <div class="d-flex">
+      <v-spacer></v-spacer>
+      <div>Branch code is ==> {{ branch }}</div>
+      <v-spacer></v-spacer>
+      <div>Department code is ==> {{ divisionCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Division code is ==> {{ projectCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Sub-Project codes are ==> {{ subProjectsCodes }}</div>
+      <v-spacer></v-spacer>
+    </div>
+    <hr class="red" /> -->
+
+    <div v-if="dtrAdmins.length > 0">
+      <p class="text-h5 pt-3 mb-0 px-5 px-md-9">Admins Table</p>
+      <hr class="mx-5 mx-md-9" />
+      <hr class="mx-5 mx-md-9" />
+      <adminsTable :admins="dtrAdmins" />
+      <hr class="mx-5 mx-md-9 mt-5" />
+      <hr class="mx-5 mx-md-9" />
+    </div>
 
     <v-container fluid class="px-5 px-md-9">
       <v-row>
-        <v-col class="pt-5 pb-0" cols="12">
+        <v-col class="pt-3 pb-0" cols="12">
           <div class="d-md-flex mb-1">
             <p class="text-h5 mb-1">
               {{ $t('adminPage.dtrApp.setup.subProjectsTitle') }}
             </p>
+            <v-spacer></v-spacer>
+
+            <div>
+              <v-text-field
+                v-model="searchTerm"
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                append-icon="mdi-magnify"
+                single-line
+                outlined
+                hide-details
+                dense
+                class="mt-n1"
+              ></v-text-field>
+            </div>
+
             <v-spacer></v-spacer>
 
             <div class="d-md-flex">
@@ -123,6 +165,7 @@
                 outlined
                 depressed
                 class="text-capitalize px-2 text-body-2"
+                :disabled="allSubProjects.length <= 0"
                 @click="showDTRAdminPopup = true"
                 >Assign An Admin</v-btn
               >
@@ -133,9 +176,9 @@
         </v-col>
       </v-row>
 
-      <v-row v-if="allSubProjects.length > 0">
+      <v-row v-if="subProjectsArray.length > 0">
         <v-col
-          v-for="(subProject, index) in allSubProjects"
+          v-for="(subProject, index) in subProjectsArray"
           :key="index"
           cols="6"
           md="3"
@@ -220,7 +263,10 @@ export default {
       overlay: false,
       showTable: false,
       allSubProjects: [],
+      subProjectsCodes: [],
       allEmployeesResult: [],
+      searchTerm: '',
+      dtrAdmins: [],
       branch: undefined,
       divisionCode: undefined,
       departmentCode: undefined,
@@ -230,7 +276,21 @@ export default {
       projectName: undefined,
     }
   },
-  created() {
+  computed: {
+    subProjectsArray() {
+      return this.allSubProjects.filter((singleSubProject) => {
+        return (
+          singleSubProject.system_desp_e
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase()) ||
+          singleSubProject.system_desp_a
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase())
+        )
+      })
+    },
+  },
+  async created() {
     if (this.$nuxt.context.query) {
       this.branch = this.$nuxt.context.query.branch
       this.divisionCode = this.$nuxt.context.query.division
@@ -239,7 +299,8 @@ export default {
       this.departmentName = this.$nuxt.context.query.departmentName
       this.projectName = this.$nuxt.context.query.projectName
     }
-    this.getSubProjectsPerProject()
+    await this.getSubProjectsPerProject()
+    await this.getDTRAdmins()
   },
   methods: {
     async getSubProjectsPerProject() {
@@ -255,6 +316,10 @@ export default {
         )
         if (subProjects.status === 200) {
           this.allSubProjects = subProjects.data
+          for await (const element of this.allSubProjects) {
+            this.subProjectsCodes.push(element.system_code)
+          }
+
           this.overlay = false
         }
       } catch (e) {
@@ -301,6 +366,84 @@ export default {
         await getEmployeesData()
         this.allEmployeesResult = allEmployees
         this.showTable = true
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async getDTRAdmins() {
+      try {
+        this.overlay = true
+
+        // I need to find a better way instead of looping nad make all of these sql requests
+
+        // for await (const element of this.subProjectsCodes) {
+        //   const queryResult = await this.$axios.post(
+        //     `${this.$config.baseURL}/administration-api/sql-call`,
+        //     {
+        //       query: `
+        //         SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+        //         WHERE branchName='${this.branch}'
+        //         AND divisionCode='${this.divisionCode}'
+        //         AND departmentCode='${this.projectCode}'
+        //         AND sectionCode ='${element}'
+        //         AND subsectionCode='undefined'
+        //         `,
+        //     }
+        //   )
+        //   if (queryResult.status === 200) {
+        //     this.dtrAdmins = queryResult.data
+        //   }
+        // }
+
+        const queryResult = await this.$axios.post(
+          `${this.$config.baseURL}/administration-api/sql-call`,
+          {
+            query: `
+                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+                WHERE branchName='${this.branch}' 
+                AND divisionCode='${this.divisionCode}' 
+                AND departmentCode='${this.projectCode}'
+                AND sectionCode ='${this.subProjectsCodes[0]}'
+                AND subsectionCode='undefined'
+                `,
+          }
+        )
+        if (queryResult.status === 200) {
+          this.dtrAdmins = queryResult.data
+        }
+
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async popupClosed() {
+      try {
+        await this.getDTRAdmins()
+        this.showDTRAdminPopup = false
         this.overlay = false
       } catch (e) {
         this.overlay = false

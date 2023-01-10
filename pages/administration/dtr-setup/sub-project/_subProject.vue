@@ -94,12 +94,42 @@
 
     <drtAdminPopup
       v-if="showDTRAdminPopup"
-      @resetPopupValue="showDTRAdminPopup = false"
+      :brach="branch"
+      :division="divisionCode"
+      :department="new Array(projectCode)"
+      :section="new Array(departmentCode)"
+      :subsection="subProjectCode"
+      @resetPopupValue="popupClosed"
     />
+
+    <!-- <hr class="red" />
+    <div class="d-flex">
+      <v-spacer></v-spacer>
+      <div>Branch code is ==> {{ branch }}</div>
+      <v-spacer></v-spacer>
+      <div>Department code is ==> {{ divisionCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Division code is ==> {{ projectCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Section code is ==> {{ departmentCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Unit or Sub-project code is ==> {{ subProjectCode }}</div>
+      <v-spacer></v-spacer>
+    </div>
+    <hr class="red" /> -->
+
+    <div v-if="dtrAdmins.length > 0">
+      <p class="text-h5 pt-3 mb-0 px-5 px-md-9">Admins Table</p>
+      <hr class="mx-5 mx-md-9" />
+      <hr class="mx-5 mx-md-9" />
+      <adminsTable :admins="dtrAdmins" />
+      <hr class="mx-5 mx-md-9 mt-5" />
+      <hr class="mx-5 mx-md-9" />
+    </div>
 
     <v-container fluid class="px-5 px-md-9">
       <v-row>
-        <v-col class="pt-5 pb-0" cols="12">
+        <v-col class="pt-3 pb-0" cols="12">
           <div class="d-md-flex mb-1">
             <p class="text-h5 mb-1">
               {{ $t('adminPage.dtrApp.setup.subProjectTitle') }}
@@ -111,6 +141,7 @@
                 outlined
                 depressed
                 class="text-capitalize px-2 text-body-2"
+                :disabled="allEmployeesResult.length <= 0"
                 @click="showDTRAdminPopup = true"
                 >Assign An Admin</v-btn
               >
@@ -149,6 +180,7 @@ export default {
       overlay: false,
       showTable: false,
       allEmployeesResult: [],
+      dtrAdmins: [],
       branch: undefined,
       divisionCode: undefined,
       departmentCode: undefined,
@@ -161,7 +193,7 @@ export default {
     }
   },
 
-  created() {
+  async created() {
     if (this.$nuxt.context.query) {
       this.branch = this.$nuxt.context.query.branch
       this.divisionCode = this.$nuxt.context.query.division
@@ -172,19 +204,50 @@ export default {
       this.projectName = this.$nuxt.context.query.projectName
       this.subProjectName = this.$nuxt.context.query.subProjectName
     }
-    this.getAllEmployeesPerSubProject()
+    await this.getAllEmployeesPerSubProject()
+    await this.getDTRAdmins()
   },
 
   methods: {
-    async getAllEmployeesPerSubProject() {
-      this.overlay = true
+    async getDTRAdmins() {
       try {
+        this.overlay = true
+        const queryResult = await this.$axios.post(
+          `${this.$config.baseURL}/administration-api/sql-call`,
+          {
+            query: `
+                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+                WHERE branchName='${this.branch}' 
+                AND divisionCode='${this.divisionCode}' 
+                AND departmentCode='${this.projectCode}'
+                AND sectionCode ='${this.departmentCode}'
+                AND subsectionCode='${this.subProjectCode}'
+                `,
+          }
+        )
+        if (queryResult.status === 200) {
+          this.dtrAdmins = queryResult.data
+        }
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+    async getAllEmployeesPerSubProject() {
+      try {
+        this.overlay = true
         const allEmployees = []
         const getEmployeesData = await (async () => {
-          // for await (const element of this.allSubProjects) {
-
-          // A.department='3' AND A.Division='28' AND A.section='7'  AND A.Unit='12'
-
           const queryResult = await this.$axios.post(
             `${this.$config.baseURL}/administration-api/hr-sql-call`,
             {
@@ -203,11 +266,29 @@ export default {
               allEmployees.push(e)
             })
           }
-          // }
         })
         await getEmployeesData()
         this.allEmployeesResult = allEmployees
         this.showTable = true
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+    async popupClosed() {
+      try {
+        await this.getDTRAdmins()
+        this.showDTRAdminPopup = false
         this.overlay = false
       } catch (e) {
         this.overlay = false

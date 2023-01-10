@@ -78,17 +78,53 @@
 
     <drtAdminPopup
       v-if="showDTRAdminPopup"
-      @resetPopupValue="showDTRAdminPopup = false"
+      :brach="branch"
+      :division="divisionCode"
+      @resetPopupValue="popupClosed"
     />
+
+    <!-- <hr class="red" />
+    <div class="d-flex">
+      <v-spacer></v-spacer>
+      <div>Branch code is ==> {{ branch }}</div>
+      <v-spacer></v-spacer>
+      <div>Department code is ==> {{ divisionCode }}</div>
+      <v-spacer></v-spacer>
+    </div>
+    <hr class="red" /> -->
+
+    <div v-if="dtrAdmins.length > 0">
+      <p class="text-h5 pt-3 mb-0 px-5 px-md-9">Admins Table</p>
+      <hr class="mx-5 mx-md-9" />
+      <hr class="mx-5 mx-md-9" />
+      <adminsTable :admins="dtrAdmins" />
+      <hr class="mx-5 mx-md-9 mt-5" />
+      <hr class="mx-5 mx-md-9" />
+    </div>
 
     <v-container fluid class="px-5 px-md-9">
       <v-row>
-        <v-col class="pt-5 pb-0" cols="12">
+        <v-col class="pt-3 pb-0" cols="12">
           <div>
             <div class="d-md-flex mb-1">
               <p class="text-h5 mb-1">
                 {{ $t('adminPage.dtrApp.setup.departmentsTitle') }}
               </p>
+              <v-spacer></v-spacer>
+
+              <div>
+                <v-text-field
+                  v-model="searchTerm"
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  append-icon="mdi-magnify"
+                  single-line
+                  outlined
+                  hide-details
+                  dense
+                  class="mt-n1"
+                ></v-text-field>
+              </div>
+
               <v-spacer></v-spacer>
               <div class="d-md-flex">
                 <v-btn
@@ -110,6 +146,7 @@
                   text
                   outlined
                   depressed
+                  :disabled="allDepartments.length <= 0"
                   class="text-capitalize px-2 text-body-2"
                   @click="showDTRAdminPopup = true"
                   >Assign An Admin</v-btn
@@ -122,9 +159,9 @@
         </v-col>
       </v-row>
 
-      <v-row v-if="allDepartments.length > 0">
+      <v-row v-if="departmentsArray.length > 0">
         <v-col
-          v-for="(department, index) in allDepartments"
+          v-for="(department, index) in departmentsArray"
           :key="index"
           cols="6"
           md="3"
@@ -204,6 +241,8 @@ export default {
     return {
       overlay: false,
       showTable: false,
+      searchTerm: '',
+      dtrAdmins: [],
       allDepartments: [],
       branch: undefined,
       divisionName: undefined,
@@ -211,12 +250,28 @@ export default {
       showDTRAdminPopup: false,
     }
   },
-  created() {
+  computed: {
+    departmentsArray() {
+      return this.allDepartments.filter((singleDepartment) => {
+        return (
+          singleDepartment.system_desp_e
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase()) ||
+          singleDepartment.system_desp_a
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase())
+        )
+      })
+    },
+  },
+  async created() {
     if (this.$nuxt.context.query) {
       this.branch = this.$nuxt.context.query.branch
       this.divisionName = this.$nuxt.context.query.divisionName
     }
-    this.getDepartmentsPerDivision()
+
+    await this.getDepartmentsPerDivision()
+    await this.getDTRAdmins()
   },
   methods: {
     async getDepartmentsPerDivision() {
@@ -250,6 +305,7 @@ export default {
         )
       }
     },
+
     async listAllEmployees() {
       this.overlay = true
       try {
@@ -288,6 +344,62 @@ export default {
         )
       }
     },
+
+    async getDTRAdmins() {
+      try {
+        this.overlay = true
+        const queryResult = await this.$axios.post(
+          `${this.$config.baseURL}/administration-api/sql-call`,
+          {
+            query: `
+                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+                WHERE branchName='${this.branch}' 
+                AND divisionCode='${this.divisionCode}' 
+                AND departmentCode='undefined'
+                AND sectionCode ='undefined'
+                AND subsectionCode='undefined'
+                `,
+          }
+        )
+        if (queryResult.status === 200) {
+          this.dtrAdmins = queryResult.data
+        }
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async popupClosed() {
+      try {
+        await this.getDTRAdmins()
+        this.showDTRAdminPopup = false
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
     // async filterIncomingData(data) {
     //   try {
     //     const X = []

@@ -3,21 +3,21 @@
     <v-data-table
       :headers="headers"
       :items="allEmployeesResult"
-      :items-per-page="10"
+      :items-per-page="5"
       class="elevation-1"
     >
       <template #[`item.employee_picture`]="{ item }">
         <v-avatar
           v-if="item.employee_picture"
           style="border: 0.5px #000046 solid"
-          size="40"
+          size="33"
         >
           <v-img
             :src="`https://hr.alkholi.com/MenaITech/application/hrms/MenaImages/Employees_Pictures/${item.employee_picture}`"
             alt="Profile Image"
           ></v-img>
         </v-avatar>
-        <v-avatar v-else style="border: 0.5px #000046 solid" size="40">
+        <v-avatar v-else style="border: 0.5px #000046 solid" size="33">
           <v-img
             :src="`/generalPictures/profile.png`"
             alt="Profile Image"

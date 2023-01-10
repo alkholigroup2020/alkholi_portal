@@ -84,17 +84,56 @@
 
     <drtAdminPopup
       v-if="showDTRAdminPopup"
-      @resetPopupValue="showDTRAdminPopup = false"
+      :brach="branch"
+      :division="divisionCode"
+      :department="projectsCodes"
+      @resetPopupValue="popupClosed"
     />
+
+    <!-- <hr class="red" />
+    <div class="d-flex">
+      <v-spacer></v-spacer>
+      <div>Branch code is ==> {{ branch }}</div>
+      <v-spacer></v-spacer>
+      <div>Department code is ==> {{ divisionCode }}</div>
+      <v-spacer></v-spacer>
+      <div>Project codes are ==> {{ projectsCodes }}</div>
+    </div>
+    <hr class="red" /> -->
+
+    <div v-if="dtrAdmins.length > 0">
+      <p class="text-h5 pt-3 mb-0 px-5 px-md-9">Admins Table</p>
+      <hr class="mx-5 mx-md-9" />
+      <hr class="mx-5 mx-md-9" />
+      <adminsTable :admins="dtrAdmins" />
+      <hr class="mx-5 mx-md-9 mt-5" />
+      <hr class="mx-5 mx-md-9" />
+    </div>
 
     <v-container fluid class="px-5 px-md-9">
       <v-row>
-        <v-col class="pt-5 pb-0" cols="12">
+        <v-col class="pt-3 pb-0" cols="12">
           <div class="d-md-flex mb-1">
             <p class="text-h5 mb-1">
               {{ $t('adminPage.dtrApp.setup.projectsTitle') }}
             </p>
             <v-spacer></v-spacer>
+
+            <div>
+              <v-text-field
+                v-model="searchTerm"
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                append-icon="mdi-magnify"
+                single-line
+                outlined
+                hide-details
+                dense
+                class="mt-n1"
+              ></v-text-field>
+            </div>
+
+            <v-spacer></v-spacer>
+
             <div class="d-md-flex">
               <v-btn
                 text
@@ -115,6 +154,7 @@
                 text
                 outlined
                 depressed
+                :disabled="allProjects.length <= 0"
                 class="text-capitalize px-2 text-body-2"
                 @click="showDTRAdminPopup = true"
                 >Assign An Admin</v-btn
@@ -125,9 +165,9 @@
           <hr />
         </v-col>
       </v-row>
-      <v-row v-if="allProjects.length > 0">
+      <v-row v-if="projectsArray.length > 0">
         <v-col
-          v-for="(project, index) in allProjects"
+          v-for="(project, index) in projectsArray"
           :key="index"
           cols="6"
           md="3"
@@ -206,22 +246,40 @@ export default {
       overlay: false,
       showTable: false,
       allProjects: [],
+      searchTerm: '',
       branch: undefined,
       divisionCode: undefined,
       divisionName: undefined,
       departmentName: undefined,
       allEmployeesResult: [],
+      projectsCodes: [],
+      dtrAdmins: [],
       showDTRAdminPopup: false,
     }
   },
-  created() {
+  computed: {
+    projectsArray() {
+      return this.allProjects.filter((singleProject) => {
+        return (
+          singleProject.system_desp_e
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase()) ||
+          singleProject.system_desp_a
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase())
+        )
+      })
+    },
+  },
+  async created() {
     if (this.$nuxt.context.query) {
       this.branch = this.$nuxt.context.query.branch
       this.divisionCode = this.$nuxt.context.query.division
       this.divisionName = this.$nuxt.context.query.divisionName
       this.departmentName = this.$nuxt.context.query.departmentName
     }
-    this.getProjectsPerDepartment()
+    await this.getProjectsPerDepartment()
+    await this.getDTRAdmins()
   },
 
   methods: {
@@ -231,12 +289,16 @@ export default {
         const projects = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/hr-sql-call`,
           {
-            query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='71'  
-                    and major_code='${this.divisionCode}' and section_code='${this.departmentCode}'`,
+            query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables] 
+            WHERE branch_code='${this.branch}' and system_code_type='71'  
+            and major_code='${this.divisionCode}' and section_code='${this.departmentCode}'`,
           }
         )
         if (projects.status === 200) {
           this.allProjects = projects.data
+          for await (const element of this.allProjects) {
+            this.projectsCodes.push(element.system_code)
+          }
           this.overlay = false
         }
       } catch (e) {
@@ -280,6 +342,84 @@ export default {
         await getEmployeesData()
         this.allEmployeesResult = allEmployees
         this.showTable = true
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async getDTRAdmins() {
+      try {
+        this.overlay = true
+
+        // I need to find a better way instead of looping nad make all of these sql requests
+
+        // for await (const element of this.projectsCodes) {
+        //   const queryResult = await this.$axios.post(
+        //     `${this.$config.baseURL}/administration-api/sql-call`,
+        //     {
+        //       query: `
+        //         SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+        //         WHERE branchName='${this.branch}'
+        //         AND divisionCode='${this.divisionCode}'
+        //         AND departmentCode='${element}'
+        //         AND sectionCode ='undefined'
+        //         AND subsectionCode='undefined'
+        //         `,
+        //     }
+        //   )
+        //   if (queryResult.status === 200) {
+        //     this.dtrAdmins = queryResult.data
+        //   }
+        // }
+
+        const queryResult = await this.$axios.post(
+          `${this.$config.baseURL}/administration-api/sql-call`,
+          {
+            query: `
+                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+                WHERE branchName='${this.branch}' 
+                AND divisionCode='${this.divisionCode}' 
+                AND departmentCode='${this.projectsCodes[0]}'
+                AND sectionCode ='undefined'
+                AND subsectionCode='undefined'
+                `,
+          }
+        )
+        if (queryResult.status === 200) {
+          this.dtrAdmins = queryResult.data
+        }
+
+        this.overlay = false
+      } catch (e) {
+        this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    async popupClosed() {
+      try {
+        await this.getDTRAdmins()
+        this.showDTRAdminPopup = false
         this.overlay = false
       } catch (e) {
         this.overlay = false
