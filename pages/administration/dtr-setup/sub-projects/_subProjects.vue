@@ -92,8 +92,8 @@
       v-if="showDTRAdminPopup"
       :brach="branch"
       :division="divisionCode"
-      :department="new Array(projectCode)"
-      :section="subProjectsCodes"
+      :department="departmentCode"
+      :project="projectCode"
       @resetPopupValue="popupClosed"
     />
 
@@ -102,11 +102,19 @@
       <v-spacer></v-spacer>
       <div>Branch code is ==> {{ branch }}</div>
       <v-spacer></v-spacer>
-      <div>Department code is ==> {{ divisionCode }}</div>
+      <div>Division code is ==> {{ divisionCode }}</div>
       <v-spacer></v-spacer>
-      <div>Division code is ==> {{ projectCode }}</div>
+      <div>Department code is ==> {{ departmentCode }}</div>
       <v-spacer></v-spacer>
-      <div>Sub-Project codes are ==> {{ subProjectsCodes }}</div>
+      <div>Project code is ==> {{ projectCode }}</div>
+      <v-spacer></v-spacer>
+      <div>
+        Sub-Project codes are ==>
+
+        {{
+          `${subProjectsCodes[0]} , ${subProjectsCodes[1]} , ${subProjectsCodes[2]} , ...`
+        }}
+      </div>
       <v-spacer></v-spacer>
     </div>
     <hr class="red" /> -->
@@ -146,7 +154,7 @@
 
             <div class="d-md-flex">
               <v-btn
-                text
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 outlined
                 depressed
                 max-width="100%"
@@ -154,21 +162,47 @@
                 :disabled="allSubProjects.length <= 0"
                 class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
                 @click="listAllEmployees"
-                >List all under -
-                <span class="font-weight-medium"
-                  >&nbsp;{{ projectName }}&nbsp;</span
-                >
-                - Project</v-btn
               >
+                <v-icon
+                  size="18"
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  >mdi-format-list-bulleted</v-icon
+                >
+
+                <span
+                  :class="
+                    $vuetify.theme.dark
+                      ? 'white--text mx-2'
+                      : 'primary--text mx-2'
+                  "
+                >
+                  List all under -
+                  <span class="font-weight-medium"
+                    >&nbsp;{{ projectName }}&nbsp;</span
+                  >
+                  - Project
+                </span>
+              </v-btn>
               <v-btn
-                text
                 outlined
                 depressed
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 class="text-capitalize px-2 text-body-2"
                 :disabled="allSubProjects.length <= 0"
                 @click="showDTRAdminPopup = true"
-                >Assign An Admin</v-btn
               >
+                <v-icon small :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  >mdi-vector-link</v-icon
+                >
+                <span
+                  :class="
+                    $vuetify.theme.dark
+                      ? 'white--text mx-2'
+                      : 'primary--text mx-2'
+                  "
+                  >Assign An Admin</span
+                >
+              </v-btn>
             </div>
           </div>
           <hr />
@@ -311,7 +345,8 @@ export default {
           {
             query: `SELECT system_desp_a, system_desp_e, system_code, major_code, section_code, division_code
                     FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='72'  
-                    and major_code='${this.divisionCode}' and section_code='${this.departmentCode}' and division_code ='${this.projectCode}'`,
+                    and major_code='${this.divisionCode}' and section_code='${this.departmentCode}' 
+                    and division_code ='${this.projectCode}'`,
           }
         )
         if (subProjects.status === 200) {
@@ -350,7 +385,8 @@ export default {
                 SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                 FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                 WHERE A.employee_code=B.employee_code
-                AND A.branch_code='${this.branch}' AND A.department='${element.major_code}' AND A.Division='${element.division_code}' 
+                AND A.branch_code='${this.branch}' AND A.department='${element.major_code}' 
+                AND A.Division='${element.division_code}' 
                 AND A.section='${element.section_code}' AND A.Unit='${element.system_code}'
                 AND B.stop_val_flag='0'
                 `,
@@ -386,38 +422,17 @@ export default {
       try {
         this.overlay = true
 
-        // I need to find a better way instead of looping nad make all of these sql requests
-
-        // for await (const element of this.subProjectsCodes) {
-        //   const queryResult = await this.$axios.post(
-        //     `${this.$config.baseURL}/administration-api/sql-call`,
-        //     {
-        //       query: `
-        //         SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-        //         WHERE branchName='${this.branch}'
-        //         AND divisionCode='${this.divisionCode}'
-        //         AND departmentCode='${this.projectCode}'
-        //         AND sectionCode ='${element}'
-        //         AND subsectionCode='undefined'
-        //         `,
-        //     }
-        //   )
-        //   if (queryResult.status === 200) {
-        //     this.dtrAdmins = queryResult.data
-        //   }
-        // }
-
         const queryResult = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/sql-call`,
           {
             query: `
-                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-                WHERE branchName='${this.branch}' 
-                AND divisionCode='${this.divisionCode}' 
-                AND departmentCode='${this.projectCode}'
-                AND sectionCode ='${this.subProjectsCodes[0]}'
-                AND subsectionCode='undefined'
-                `,
+              SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+              WHERE branchName='${this.branch}' 
+              AND divisionCode='${this.divisionCode}' 
+              AND departmentCode='${this.departmentCode}'
+              AND projectCode ='${this.projectCode}'
+              AND subprojectCode='undefined'
+            `,
           }
         )
         if (queryResult.status === 200) {

@@ -96,9 +96,9 @@
       v-if="showDTRAdminPopup"
       :brach="branch"
       :division="divisionCode"
-      :department="new Array(projectCode)"
-      :section="new Array(departmentCode)"
-      :subsection="subProjectCode"
+      :department="departmentCode"
+      :project="projectCode"
+      :subproject="subProjectCode"
       @resetPopupValue="popupClosed"
     />
 
@@ -107,13 +107,13 @@
       <v-spacer></v-spacer>
       <div>Branch code is ==> {{ branch }}</div>
       <v-spacer></v-spacer>
-      <div>Department code is ==> {{ divisionCode }}</div>
+      <div>Division code is ==> {{ divisionCode }}</div>
       <v-spacer></v-spacer>
-      <div>Division code is ==> {{ projectCode }}</div>
+      <div>Department code is ==> {{ departmentCode }}</div>
       <v-spacer></v-spacer>
-      <div>Section code is ==> {{ departmentCode }}</div>
+      <div>Project code is ==> {{ projectCode }}</div>
       <v-spacer></v-spacer>
-      <div>Unit or Sub-project code is ==> {{ subProjectCode }}</div>
+      <div>Sub-project code is ==> {{ subProjectCode }}</div>
       <v-spacer></v-spacer>
     </div>
     <hr class="red" /> -->
@@ -137,14 +137,25 @@
             <v-spacer></v-spacer>
             <div class="d-md-flex">
               <v-btn
-                text
                 outlined
                 depressed
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 class="text-capitalize px-2 text-body-2"
                 :disabled="allEmployeesResult.length <= 0"
                 @click="showDTRAdminPopup = true"
-                >Assign An Admin</v-btn
               >
+                <v-icon small :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  >mdi-vector-link</v-icon
+                >
+                <span
+                  :class="
+                    $vuetify.theme.dark
+                      ? 'white--text mx-2'
+                      : 'primary--text mx-2'
+                  "
+                  >Assign An Admin</span
+                >
+              </v-btn>
             </div>
           </div>
           <hr />
@@ -216,13 +227,13 @@ export default {
           `${this.$config.baseURL}/administration-api/sql-call`,
           {
             query: `
-                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-                WHERE branchName='${this.branch}' 
-                AND divisionCode='${this.divisionCode}' 
-                AND departmentCode='${this.projectCode}'
-                AND sectionCode ='${this.departmentCode}'
-                AND subsectionCode='${this.subProjectCode}'
-                `,
+              SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
+              WHERE branchName='${this.branch}' 
+              AND divisionCode='${this.divisionCode}' 
+              AND departmentCode='${this.departmentCode}'
+              AND projectCode ='${this.projectCode}'
+              AND subProjectCode='${this.subProjectCode}'
+            `,
           }
         )
         if (queryResult.status === 200) {
@@ -255,7 +266,8 @@ export default {
                 SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                 FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                 WHERE A.employee_code=B.employee_code
-                AND A.branch_code='${this.branch}' AND A.department='${this.divisionCode}' AND A.Division='${this.projectCode}' 
+                AND A.branch_code='${this.branch}' AND A.department='${this.divisionCode}' 
+                AND A.Division='${this.projectCode}' 
                 AND A.section='${this.departmentCode}' AND A.Unit='${this.subProjectCode}'
                 AND B.stop_val_flag='0'
                 `,

@@ -88,7 +88,7 @@
       <v-spacer></v-spacer>
       <div>Branch code is ==> {{ branch }}</div>
       <v-spacer></v-spacer>
-      <div>Department code is ==> {{ divisionCode }}</div>
+      <div>Division code is ==> {{ divisionCode }}</div>
       <v-spacer></v-spacer>
     </div>
     <hr class="red" /> -->
@@ -128,29 +128,55 @@
               <v-spacer></v-spacer>
               <div class="d-md-flex">
                 <v-btn
-                  text
                   outlined
                   max-width="100%"
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
                   depressed
                   :disabled="allDepartments.length <= 0"
                   class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
                   style="direction: ltr"
                   @click="listAllEmployees"
-                  >List all under -
-                  <span class="font-weight-medium"
-                    >&nbsp;{{ divisionName }}&nbsp;</span
-                  >
-                  - division</v-btn
                 >
+                  <v-icon
+                    size="18"
+                    :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                    >mdi-format-list-bulleted</v-icon
+                  >
+                  <span
+                    :class="
+                      $vuetify.theme.dark
+                        ? 'white--text mx-2'
+                        : 'primary--text mx-2'
+                    "
+                    >List all under -
+                    <span class="font-weight-medium"
+                      >&nbsp;{{ divisionName }}&nbsp;</span
+                    >
+                    - division</span
+                  >
+                </v-btn>
                 <v-btn
-                  text
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
                   outlined
                   depressed
                   :disabled="allDepartments.length <= 0"
                   class="text-capitalize px-2 text-body-2"
                   @click="showDTRAdminPopup = true"
-                  >Assign An Admin</v-btn
                 >
+                  <v-icon
+                    small
+                    :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                    >mdi-vector-link</v-icon
+                  >
+                  <span
+                    :class="
+                      $vuetify.theme.dark
+                        ? 'white--text mx-2'
+                        : 'primary--text mx-2'
+                    "
+                    >Assign An Admin</span
+                  >
+                </v-btn>
               </div>
             </div>
             <hr />
@@ -287,8 +313,6 @@ export default {
         if (departments.status === 200) {
           this.allDepartments = departments.data
 
-          // await this.filterIncomingData(departments.data)
-
           this.overlay = false
         }
       } catch (e) {
@@ -356,8 +380,8 @@ export default {
                 WHERE branchName='${this.branch}' 
                 AND divisionCode='${this.divisionCode}' 
                 AND departmentCode='undefined'
-                AND sectionCode ='undefined'
-                AND subsectionCode='undefined'
+                AND projectCode ='undefined'
+                AND subProjectCode='undefined'
                 `,
           }
         )
@@ -399,67 +423,6 @@ export default {
         )
       }
     },
-
-    // async filterIncomingData(data) {
-    //   try {
-    //     const X = []
-
-    //     for await (const element of data) {
-    //       let counter = 0
-
-    //       const employees = await this.$axios.post(
-    //         `${this.$config.baseURL}/administration-api/hr-sql-call`,
-    //         {
-    //           query: `SELECT employee_code FROM [MenaITech].[dbo].[Pay_employees] where branch_code='${this.branch}'
-    //                     and department='${element.major_code}' and section='${element.system_code}'`,
-    //         }
-    //       )
-
-    //       if (employees.status === 200) {
-    //         if (employees.data.length > 0) {
-    //           // if employees founded in the department
-
-    //           for await (const ele of employees.data) {
-    //             // check if the employee still active
-    //             const checkEmployeeStatus = await this.$axios.post(
-    //               `${this.$config.baseURL}/administration-api/hr-sql-call`,
-    //               {
-    //                 query: `SELECT stop_val_flag AS theFlag FROM [dbo].[pay_emp_finance]
-    //                         where employee_code='${ele.employee_code}'`,
-    //               }
-    //             )
-
-    //             if (checkEmployeeStatus.status === 200) {
-    //               if (checkEmployeeStatus.data[0].theFlag === 0) {
-    //                 // employee is not terminated
-    //                 counter += 1
-    //               }
-    //               element.employeesCount = counter
-    //             }
-    //           }
-    //           X.push(element)
-    //         } else {
-    //           // no employees founded in the department
-    //           element.employeesCount = 0
-    //           X.push(element)
-    //         }
-    //       }
-    //     }
-
-    //     this.allDepartments = X
-    //   } catch (e) {
-    //     const error = e.toString()
-    //     const newErrorString = error.replaceAll('Error: ', '')
-    //     const notification = {
-    //       type: 'error',
-    //       message: newErrorString,
-    //     }
-    //     await this.$store.dispatch(
-    //       'appNotifications/addNotification',
-    //       notification
-    //     )
-    //   }
-    // },
   },
 }
 </script>

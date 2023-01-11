@@ -86,7 +86,7 @@
       v-if="showDTRAdminPopup"
       :brach="branch"
       :division="divisionCode"
-      :department="projectsCodes"
+      :department="departmentCode"
       @resetPopupValue="popupClosed"
     />
 
@@ -95,9 +95,16 @@
       <v-spacer></v-spacer>
       <div>Branch code is ==> {{ branch }}</div>
       <v-spacer></v-spacer>
-      <div>Department code is ==> {{ divisionCode }}</div>
+      <div>Division code is ==> {{ divisionCode }}</div>
       <v-spacer></v-spacer>
-      <div>Project codes are ==> {{ projectsCodes }}</div>
+      <div>Department code is ==> {{ departmentCode }}</div>
+      <v-spacer></v-spacer>
+      <div>
+        Project codes are ==>
+        {{
+          `${projectsCodes[0]} , ${projectsCodes[1]} , ${projectsCodes[2]} , ...`
+        }}
+      </div>
     </div>
     <hr class="red" /> -->
 
@@ -136,7 +143,7 @@
 
             <div class="d-md-flex">
               <v-btn
-                text
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 outlined
                 depressed
                 max-width="100%"
@@ -144,21 +151,47 @@
                 :disabled="allProjects.length <= 0"
                 class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
                 @click="listAllEmployees"
-                >List all under -
-                <span class="font-weight-medium"
-                  >&nbsp;{{ departmentName }}&nbsp;</span
-                >
-                - department</v-btn
               >
+                <v-icon
+                  size="18"
+                  :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  >mdi-format-list-bulleted</v-icon
+                >
+
+                <span
+                  :class="
+                    $vuetify.theme.dark
+                      ? 'white--text mx-2'
+                      : 'primary--text mx-2'
+                  "
+                >
+                  List all under -
+                  <span class="font-weight-medium"
+                    >&nbsp;{{ departmentName }}&nbsp;</span
+                  >
+                  - department
+                </span>
+              </v-btn>
               <v-btn
-                text
                 outlined
                 depressed
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 :disabled="allProjects.length <= 0"
                 class="text-capitalize px-2 text-body-2"
                 @click="showDTRAdminPopup = true"
-                >Assign An Admin</v-btn
               >
+                <v-icon small :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                  >mdi-vector-link</v-icon
+                >
+                <span
+                  :class="
+                    $vuetify.theme.dark
+                      ? 'white--text mx-2'
+                      : 'primary--text mx-2'
+                  "
+                  >Assign An Admin</span
+                >
+              </v-btn>
             </div>
           </div>
           <hr />
@@ -296,6 +329,7 @@ export default {
         )
         if (projects.status === 200) {
           this.allProjects = projects.data
+
           for await (const element of this.allProjects) {
             this.projectsCodes.push(element.system_code)
           }
@@ -361,28 +395,6 @@ export default {
     async getDTRAdmins() {
       try {
         this.overlay = true
-
-        // I need to find a better way instead of looping nad make all of these sql requests
-
-        // for await (const element of this.projectsCodes) {
-        //   const queryResult = await this.$axios.post(
-        //     `${this.$config.baseURL}/administration-api/sql-call`,
-        //     {
-        //       query: `
-        //         SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-        //         WHERE branchName='${this.branch}'
-        //         AND divisionCode='${this.divisionCode}'
-        //         AND departmentCode='${element}'
-        //         AND sectionCode ='undefined'
-        //         AND subsectionCode='undefined'
-        //         `,
-        //     }
-        //   )
-        //   if (queryResult.status === 200) {
-        //     this.dtrAdmins = queryResult.data
-        //   }
-        // }
-
         const queryResult = await this.$axios.post(
           `${this.$config.baseURL}/administration-api/sql-call`,
           {
@@ -390,9 +402,9 @@ export default {
                 SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
                 WHERE branchName='${this.branch}' 
                 AND divisionCode='${this.divisionCode}' 
-                AND departmentCode='${this.projectsCodes[0]}'
-                AND sectionCode ='undefined'
-                AND subsectionCode='undefined'
+                AND departmentCode='${this.departmentCode}'
+                AND projectCode ='undefined'
+                AND subProjectCode='undefined'
                 `,
           }
         )
