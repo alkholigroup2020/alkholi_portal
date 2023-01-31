@@ -1,6 +1,13 @@
 <template>
   <div v-if="show">
-    <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
+    <v-toolbar
+      class="d-print-none"
+      color="mainBG"
+      height="50"
+      :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
+      style="position: fixed"
+      flat
+    >
       <div
         class="d-flex align-center px-xl-16"
         style="width: 100%; height: 50px"
@@ -42,6 +49,8 @@
         </v-btn> -->
       </div>
     </v-toolbar>
+
+    <div style="height: 50px"></div>
 
     <v-container>
       <v-row class="pt-3 pt-md-5 px-sm-5 px-xl-12 d-print-none">
@@ -118,6 +127,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
   layout: 'hrSurvey',
 
@@ -134,6 +144,11 @@ export default {
       profilePic: '',
       employeeName: '',
     }
+  },
+  computed: {
+    ...mapState({
+      barWidth: (state) => state.portal.toolbarWidth,
+    }),
   },
   created() {
     this.$nextTick(async () => {

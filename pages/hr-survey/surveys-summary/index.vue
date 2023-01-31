@@ -1,6 +1,13 @@
 <template>
   <div>
-    <v-toolbar class="d-print-none" color="mainBG" height="50" flat>
+    <v-toolbar
+      class="d-print-none"
+      color="mainBG"
+      height="50"
+      :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
+      style="position: fixed"
+      flat
+    >
       <div
         class="d-flex align-center px-xl-16"
         style="width: 100%; height: 50px"
@@ -32,6 +39,8 @@
         <v-icon color="primary" class="ml-2">mdi-printer-outline</v-icon>
       </v-btn> -->
     </v-toolbar>
+
+    <div style="height: 50px"></div>
 
     <div class="pb-3 pb-md-5 px-3 px-sm-5 px-xl-12 py-0">
       <div v-for="(Q, index) in filteredData" :key="index">
@@ -74,6 +83,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
   layout: 'hrSurvey',
   data() {
@@ -83,6 +93,11 @@ export default {
       exportingData: [],
     }
   },
+  computed: {
+    ...mapState({
+      barWidth: (state) => state.portal.toolbarWidth,
+    }),
+  },
   created() {
     this.$nextTick(async () => {
       this.$nuxt.$loading.start()
@@ -90,6 +105,7 @@ export default {
       this.$nuxt.$loading.finish()
     })
   },
+
   methods: {
     async constructExportedData() {
       try {

@@ -5,6 +5,7 @@ export const state = () => ({
   isElevatorsSurveysUser: undefined,
   isHRSurveysUser: undefined,
   isDTRUser: undefined,
+  toolbarWidth: undefined,
 })
 
 export const mutations = {
@@ -37,6 +38,9 @@ export const mutations = {
     state.isElevatorsSurveysUser = data.isElevatorsSurveysUser
     state.isHRSurveysUser = data.isHRSurveysUser
     state.isDTRUser = data.isDTRUser
+  },
+  SET_TOOLBAR_WIDTH(state, data) {
+    state.toolbarWidth = data
   },
 }
 
@@ -132,6 +136,19 @@ export const actions = {
       const theToken = localStorage.getItem('userToken')
       const tokenPayload = { token: theToken }
       await dispatch('login/logoff', tokenPayload, { root: true })
+    }
+  },
+  async setToolbarsWidth({ commit, dispatch }, payload) {
+    try {
+      await commit('SET_TOOLBAR_WIDTH', payload)
+    } catch (error) {
+      const notification = {
+        type: 'error',
+        message: error,
+      }
+      await dispatch('appNotifications/addNotification', notification, {
+        root: true,
+      })
     }
   },
 }

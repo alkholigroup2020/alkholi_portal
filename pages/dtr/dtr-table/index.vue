@@ -3,12 +3,20 @@
     <v-overlay :value="overlay">
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
-    <h1 class="pa-3">{{ $t('dtrApp.appPageNames.table') }}</h1>
+    <v-toolbar
+      color="mainBG"
+      height="50px"
+      :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
+      style="position: fixed"
+      flat
+    ></v-toolbar>
+    <div style="height: 50px"></div>
     <pre>{{ allEmployeesData }}</pre>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
   layout: 'dtr',
   data() {
@@ -16,6 +24,11 @@ export default {
       allEmployeesData: [],
       overlay: false,
     }
+  },
+  computed: {
+    ...mapState({
+      barWidth: (state) => state.portal.toolbarWidth,
+    }),
   },
   mounted() {
     this.getAssignedEmployees()
@@ -39,7 +52,7 @@ export default {
 
         for await (const element of employeeSections.data) {
           const branchName = element.branchName
-
+          // if the admin was assigned on the division level
           if (
             element.departmentCode === 'undefined' &&
             element.projectCode === 'undefined' &&
@@ -49,7 +62,7 @@ export default {
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
               {
                 query: `
-                  SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+                  SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                   FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                   WHERE A.employee_code=B.employee_code
                   AND A.branch_code='${branchName}' AND A.department='${element.divisionCode}' 
@@ -59,10 +72,12 @@ export default {
             )
             if (allEmployeesInDivision.status === 200) {
               allEmployeesInDivision.data.forEach((e) => {
-                allEmployees.push(e.employee_code)
+                allEmployees.push(e)
               })
             }
-          } else if (
+          }
+          // if the admin was assigned on the department level
+          else if (
             element.projectCode === 'undefined' &&
             element.subProjectCode === 'undefined'
           ) {
@@ -79,7 +94,7 @@ export default {
                 const queryResult = await this.$axios.post(
                   `${this.$config.baseURL}/administration-api/hr-sql-call`,
                   {
-                    query: `SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+                    query: `SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                         FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                         WHERE A.employee_code=B.employee_code
                         AND A.branch_code='${branchName}' AND A.department='${project.major_code}' 
@@ -89,12 +104,14 @@ export default {
                 )
                 if (queryResult.status === 200) {
                   queryResult.data.forEach((e) => {
-                    allEmployees.push(e.employee_code)
+                    allEmployees.push(e)
                   })
                 }
               }
             }
-          } else if (element.subProjectCode === 'undefined') {
+          }
+          // if the admin was assigned on the project level
+          else if (element.subProjectCode === 'undefined') {
             // get all sub-projects first
             const subProjects = await this.$axios.post(
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
@@ -111,7 +128,7 @@ export default {
                   `${this.$config.baseURL}/administration-api/hr-sql-call`,
                   {
                     query: `
-                      SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+                      SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                       FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                       WHERE A.employee_code=B.employee_code
                       AND A.branch_code='${branchName}' AND A.department='${el.major_code}' 
@@ -123,17 +140,19 @@ export default {
                 )
                 if (queryResult.status === 200) {
                   queryResult.data.forEach((e) => {
-                    allEmployees.push(e.employee_code)
+                    allEmployees.push(e)
                   })
                 }
               }
             }
-          } else {
+          }
+          // if the admin was assigned on the sub-project level
+          else {
             const queryResult = await this.$axios.post(
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
               {
                 query: `
-                SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
+                SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                 FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                 WHERE A.employee_code=B.employee_code
                 AND A.branch_code='${element.branchName}' AND A.department='${element.divisionCode}' 
@@ -145,7 +164,7 @@ export default {
             )
             if (queryResult.status === 200) {
               queryResult.data.forEach((e) => {
-                allEmployees.push(e.employee_code)
+                allEmployees.push(e)
               })
             }
           }
@@ -170,3 +189,4 @@ export default {
   },
 }
 </script>
+

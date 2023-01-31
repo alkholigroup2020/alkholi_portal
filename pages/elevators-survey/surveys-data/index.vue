@@ -1,6 +1,12 @@
 <template>
   <div>
-    <v-toolbar color="mainBG" height="50" flat>
+    <v-toolbar
+      color="mainBG"
+      height="50px"
+      :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
+      flat
+      style="position: fixed"
+    >
       <div class="d-flex mx-xl-16" style="width: 100%; height: 50px">
         <v-spacer></v-spacer>
         <div>
@@ -21,6 +27,8 @@
       </div>
     </v-toolbar>
 
+    <div style="height: 50px"></div>
+
     <div hidden>
       <a
         ref="fileDownload"
@@ -31,21 +39,22 @@
     </div>
 
     <div class="pb-1 pt-3 pt-md-5 px-1 px-md-3">
-      <v-card elevation="0" outlined>
-        <v-data-table
-          :headers="headers"
-          :items="surveysData"
-          :items-per-page="10"
-          class="elevation-0"
-          :loading="surveysData.length > 0 ? false : true"
-          loading-text="Loading data ..."
-        ></v-data-table>
-      </v-card>
+      <!-- <v-card elevation="0" outlined> -->
+      <!-- class="elevation-0" -->
+      <v-data-table
+        :headers="headers"
+        :items="surveysData"
+        :items-per-page="10"
+        :loading="surveysData.length > 0 ? false : true"
+        loading-text="Loading data ..."
+      ></v-data-table>
+      <!-- </v-card> -->
     </div>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
   layout: 'elevatorsSurvey',
   data() {
@@ -127,6 +136,12 @@ export default {
       ],
     }
   },
+  computed: {
+    ...mapState({
+      barWidth: (state) => state.portal.toolbarWidth,
+    }),
+  },
+
   mounted() {
     this.getClientsData()
   },

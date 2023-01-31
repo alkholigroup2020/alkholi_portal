@@ -362,6 +362,10 @@ export default {
     )
   },
   mounted() {
+    if (process.browser) {
+      // eslint-disable-next-line nuxt/no-globals-in-created
+      window.addEventListener('resize', this.setToolbarsWidth)
+    }
     this.$nextTick(async () => {
       this.$nuxt.$loading.start()
       await this.reAuthenticate()
@@ -373,6 +377,7 @@ export default {
         }
         const profilePicPath = localStorage.getItem('profilePicPath')
         this.profilePicPath = profilePicPath
+        this.setToolbarsWidth()
         this.show = true
         this.$nuxt.$loading.finish()
       }, 100)
@@ -447,6 +452,25 @@ export default {
         localStorage.setItem('colorMode', 'dark')
       } else {
         localStorage.setItem('colorMode', 'light')
+      }
+    },
+    async setToolbarsWidth() {
+      try {
+        await this.$store.dispatch(
+          'portal/setToolbarsWidth',
+          window.innerWidth - 256
+        )
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
       }
     },
   },

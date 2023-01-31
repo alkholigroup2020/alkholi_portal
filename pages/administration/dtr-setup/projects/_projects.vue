@@ -9,6 +9,8 @@
       color="mainBG"
       height="50"
       :class="$i18n.locale === 'ar' ? 'flex-row-reverse ' : ''"
+      :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
+      style="position: fixed"
       flat
     >
       <div class="d-flex align-center" style="width: 25%; height: 50px">
@@ -81,6 +83,8 @@
         <h6 class="text-body-1 primaryText--Text">{{ departmentName }}</h6>
       </div>
     </v-toolbar>
+
+    <div style="height: 50px"></div>
 
     <drtAdminPopup
       v-if="showDTRAdminPopup"
@@ -268,6 +272,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   layout: 'adminPage',
   asyncData({ params }) {
@@ -291,6 +297,9 @@ export default {
     }
   },
   computed: {
+    ...mapState({
+      barWidth: (state) => state.portal.toolbarWidth,
+    }),
     projectsArray() {
       return this.allProjects.filter((singleProject) => {
         return (
