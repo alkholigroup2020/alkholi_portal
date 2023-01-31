@@ -105,35 +105,35 @@
             </v-row>
             <!-- roles -->
             <v-row class="ma-0 px-1">
-              <v-col cols="12" sm="2">
+              <v-col cols="12" sm="3">
                 <v-checkbox
                   v-model="isAdmin"
-                  :disabled="optionsEnabled"
+                  :disabled="optionsEnabled || isApprover"
                   label="DTR Admin"
                 ></v-checkbox>
               </v-col>
-              <v-col cols="12" sm="2">
+              <v-col cols="12" sm="3">
                 <v-checkbox
                   v-model="isApprover"
-                  :disabled="optionsEnabled"
-                  label="Approver"
+                  :disabled="optionsEnabled || isAdmin"
+                  label="Site Manager"
                 ></v-checkbox>
               </v-col>
-              <v-col cols="12" sm="2">
+              <v-col cols="12" sm="3">
                 <v-checkbox
                   v-model="isManpowerAdmin"
                   :disabled="optionsEnabled"
                   label="Manpower"
                 ></v-checkbox>
               </v-col>
-              <v-col cols="12" sm="2">
+              <v-col cols="12" sm="3">
                 <v-checkbox
                   v-model="isMigrator"
                   :disabled="optionsEnabled"
                   label="Migrator"
                 ></v-checkbox>
               </v-col>
-              <v-col cols="12" sm="2">
+              <v-col cols="12" sm="3" hidden>
                 <v-checkbox
                   v-model="isReportsAdmin"
                   :disabled="optionsEnabled"
@@ -224,7 +224,7 @@ export default {
       isApprover: false,
       isManpowerAdmin: false,
       isMigrator: false,
-      isReportsAdmin: false,
+      isReportsAdmin: true,
       optionsEnabled: true,
       adminCode: '',
       employeeName: '',
