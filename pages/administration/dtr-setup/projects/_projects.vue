@@ -10,7 +10,7 @@
       height="50"
       :class="$i18n.locale === 'ar' ? 'flex-row-reverse ' : ''"
       :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
-      style="position: fixed"
+      style="position: fixed; z-index: 2"
       flat
     >
       <div class="d-flex align-center" style="width: 25%; height: 50px">

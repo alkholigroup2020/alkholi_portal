@@ -10,7 +10,7 @@
       color="mainBG"
       height="50"
       :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
-      style="position: fixed"
+      style="position: fixed; z-index: 2"
       flat
     >
       <div class="d-flex align-center" style="width: 25%; height: 50px">
