@@ -37,6 +37,7 @@ export default {
       '~/components/administration/authControlledApps',
       '~/components/administration/dtrSetup',
       '~/components/hrSurveys',
+      '~/components/dtr/dtr-table',
     ],
   },
 
