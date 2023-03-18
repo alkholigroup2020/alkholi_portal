@@ -91,10 +91,6 @@ export default {
     }
   },
 
-  // created() {
-  //   this.getDateRange()
-  // },
-
   methods: {
     getEventColor(event) {
       return event.color

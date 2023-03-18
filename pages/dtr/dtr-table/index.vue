@@ -13,7 +13,7 @@
       <div class="d-flex align-center px-5" style="width: 100%">
         <v-spacer></v-spacer>
         <div v-if="!calenderIsExpanded" class="d-flex align-center">
-          <p class="mb-0 pr-3">
+          <p class="mb-0 pr-3 grey--text text--darken-2">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
           <v-btn
@@ -40,7 +40,19 @@
           </v-btn>
         </div>
         <div v-else>
-          <p>Select Another Range</p>
+          <div class="d-flex align-center">
+            <v-btn
+              text
+              small
+              outlined
+              color="grey darken-2"
+              class="mx-1"
+              @click="refreshPage"
+            >
+              <v-icon small> mdi-calendar-multiselect-outline </v-icon>
+              <span class="text-capitalize">Change time period</span>
+            </v-btn>
+          </div>
         </div>
       </div>
     </v-toolbar>
@@ -336,9 +348,6 @@ export default {
           this.endDate = `${currentYear + 1}-01-20`
         }
       }
-
-      console.log(this.startDate)
-      console.log(this.endDate)
     },
 
     updateCalenderOpenStatus() {
@@ -461,6 +470,10 @@ export default {
         default:
           break
       }
+    },
+
+    refreshPage() {
+      this.$router.go(0)
     },
   },
 }
