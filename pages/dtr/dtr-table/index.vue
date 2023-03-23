@@ -3,6 +3,7 @@
     <v-overlay :value="overlay">
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
+
     <v-toolbar
       color="mainBG"
       height="50px"
@@ -13,42 +14,19 @@
       <div class="d-flex align-center px-5" style="width: 100%">
         <v-spacer></v-spacer>
         <div v-if="!calenderIsExpanded" class="d-flex align-center">
-          <p class="mb-0 pr-3 grey--text text--darken-2">
+          <p class="mb-0 pr-3">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
-          <v-btn
-            fab
-            text
-            x-small
-            outlined
-            color="grey darken-2"
-            class="mx-1"
-            @click="prev"
-          >
+          <v-btn fab x-small outlined class="mx-1" @click="prev">
             <v-icon small> mdi-chevron-left </v-icon>
           </v-btn>
-          <v-btn
-            fab
-            text
-            x-small
-            outlined
-            color="grey darken-2"
-            class="mx-1"
-            @click="next"
-          >
+          <v-btn fab x-small outlined class="mx-1" @click="next">
             <v-icon small> mdi-chevron-right </v-icon>
           </v-btn>
         </div>
         <div v-else>
           <div class="d-flex align-center">
-            <v-btn
-              text
-              small
-              outlined
-              color="grey darken-2"
-              class="mx-1"
-              @click="refreshPage"
-            >
+            <v-btn small outlined class="mx-1" @click="refreshPage">
               <v-icon small> mdi-calendar-multiselect-outline </v-icon>
               <span class="text-capitalize">Change time period</span>
             </v-btn>
@@ -56,7 +34,9 @@
         </div>
       </div>
     </v-toolbar>
+
     <div style="height: 50px"></div>
+
     <v-container>
       <v-row justify="center" class="py-3 py-md-10 px-3 px-md-12">
         <v-expansion-panels inset>
@@ -65,7 +45,10 @@
             :key="index"
           >
             <!-- header -->
-            <v-expansion-panel-header disable-icon-rotate>
+            <v-expansion-panel-header
+              disable-icon-rotate
+              :class="$vuetify.theme.dark ? 'mainBG' : ''"
+            >
               <div class="d-flex align-center">
                 <div>
                   <v-avatar
@@ -101,10 +84,12 @@
             </v-expansion-panel-header>
             <!-- content -->
             <v-expansion-panel-content>
-              <theCalender
-                :start="startDate"
-                :end="endDate"
-                :code="employee.employee_code"
+              <employeeCalendar
+                :start-date="
+                  new Date(activeStartYear, activeStartMonth - 1, 21)
+                "
+                :end-date="new Date(activeEndYear, activeEndMonth - 1, 20)"
+                :employee-code="employee.employee_code"
                 @calenderIsExpanded="updateCalenderOpenStatus"
               />
             </v-expansion-panel-content>
@@ -126,6 +111,10 @@ export default {
       calenderIsExpanded: false,
       startDate: '',
       endDate: '',
+      activeStartMonth: 0,
+      activeStartYear: 0,
+      activeEndMonth: 0,
+      activeEndYear: 0,
     }
   },
 
@@ -171,7 +160,7 @@ export default {
                   SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                   FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                   WHERE A.employee_code=B.employee_code
-                  AND A.branch_code='${branchName}' AND A.department='${element.divisionCode}' 
+                  AND A.branch_code='${branchName}' AND A.department='${element.divisionCode}'
                   AND B.stop_val_flag='0'
                 `,
               }
@@ -190,8 +179,8 @@ export default {
             const projects = await this.$axios.post(
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
               {
-                query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables] 
-                WHERE branch_code='${branchName}' and system_code_type='71'  
+                query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables]
+                WHERE branch_code='${branchName}' and system_code_type='71'
                 and major_code='${element.divisionCode}' and section_code='${element.departmentCode}'`,
               }
             )
@@ -203,8 +192,8 @@ export default {
                     query: `SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                         FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                         WHERE A.employee_code=B.employee_code
-                        AND A.branch_code='${branchName}' AND A.department='${project.major_code}' 
-                        AND A.Division='${project.system_code}' 
+                        AND A.branch_code='${branchName}' AND A.department='${project.major_code}'
+                        AND A.Division='${project.system_code}'
                         AND B.stop_val_flag='0'`,
                   }
                 )
@@ -223,8 +212,8 @@ export default {
               `${this.$config.baseURL}/administration-api/hr-sql-call`,
               {
                 query: `SELECT system_desp_a, system_desp_e, system_code, major_code, section_code, division_code
-                    FROM [dbo].[pay_code_tables] WHERE branch_code='${element.branchName}' and system_code_type='72'  
-                    and major_code='${element.divisionCode}' and section_code='${element.departmentCode}' 
+                    FROM [dbo].[pay_code_tables] WHERE branch_code='${element.branchName}' and system_code_type='72'
+                    and major_code='${element.divisionCode}' and section_code='${element.departmentCode}'
                     and division_code ='${element.projectCode}'`,
               }
             )
@@ -237,8 +226,8 @@ export default {
                       SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                       FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                       WHERE A.employee_code=B.employee_code
-                      AND A.branch_code='${branchName}' AND A.department='${el.major_code}' 
-                      AND A.Division='${el.division_code}' 
+                      AND A.branch_code='${branchName}' AND A.department='${el.major_code}'
+                      AND A.Division='${el.division_code}'
                       AND A.section='${el.section_code}' AND A.Unit='${el.system_code}'
                       AND B.stop_val_flag='0'
                     `,
@@ -261,8 +250,8 @@ export default {
                 SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                 FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
                 WHERE A.employee_code=B.employee_code
-                AND A.branch_code='${element.branchName}' AND A.department='${element.divisionCode}' 
-                AND A.Division='${element.projectCode}' 
+                AND A.branch_code='${element.branchName}' AND A.department='${element.divisionCode}'
+                AND A.Division='${element.projectCode}'
                 AND A.section='${element.departmentCode}' AND A.Unit='${element.subProjectCode}'
                 AND B.stop_val_flag='0'
                 `,
@@ -294,60 +283,83 @@ export default {
     },
 
     getDateRange() {
-      // const testDate = '2023-01-05T07:24:54.056Z'
+      /**
+       * Returns the start and end date of a season based on the current date
+       * An object with `startDate` and `endDate` properties in the format of DD-MM-YYYY
+       */
+
+      // Get the current day, month, and year as numbers
       const currentDay = Number(new Date().toISOString().substring(8, 10))
       const currentMonth = Number(new Date().toISOString().substring(5, 7))
       const currentYear = Number(new Date().toISOString().substring(0, 4))
 
+      // Calculate the start and end dates based on the current date and season
+      let startDate, endDate
       if (currentMonth === 1) {
+        // Winter season
         if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear - 1}-12-21`
-          this.endDate = `${currentYear}-01-20`
+          // Before start date
+          startDate = `21-12-${currentYear - 1}`
+          endDate = `20-01-${currentYear}`
         } else {
-          this.startDate = `${currentYear}-01-21`
-          this.endDate = `${currentYear}-02-20`
+          // After start date
+          startDate = `21-01-${currentYear}`
+          endDate = `20-02-${currentYear}`
         }
       } else if (currentMonth >= 2 && currentMonth <= 8) {
+        // Spring/Summer season
         if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear}-0${currentMonth - 1}-21`
-          this.endDate = `${currentYear}-0${currentMonth}-20`
+          // Before start date
+          startDate = `21-0${currentMonth - 1}-${currentYear}`
+          endDate = `20-0${currentMonth}-${currentYear}`
         } else {
-          this.startDate = `${currentYear}-0${currentMonth}-21`
-          this.endDate = `${currentYear}-0${currentMonth + 1}-20`
+          // After start date
+          startDate = `21-0${currentMonth}-${currentYear}`
+          endDate = `20-0${currentMonth + 1}-${currentYear}`
         }
       } else if (currentMonth === 9) {
+        // Fall season
         if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear}-0${currentMonth - 1}-21`
-          this.endDate = `${currentYear}-${currentMonth}-20`
+          // Before start date
+          startDate = `21-08-${currentYear}`
+          endDate = `20-09-${currentYear}`
         } else {
-          this.startDate = `${currentYear}-${currentMonth}-21`
-          this.endDate = `${currentYear}-${currentMonth + 1}-20`
+          // After start date
+          startDate = `21-09-${currentYear}`
+          endDate = `20-10-${currentYear}`
         }
-      } else if (currentMonth === 10) {
+      } else if (currentMonth >= 10 && currentMonth <= 11) {
+        // Fall/Winter season
         if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear}-0${currentMonth - 1}-21`
-          this.endDate = `${currentYear}-${currentMonth}-20`
+          // Before start date
+          startDate = `21-0${currentMonth - 1}-${currentYear}`
+          endDate = `20-0${currentMonth}-${currentYear}`
         } else {
-          this.startDate = `${currentYear}-${currentMonth}-21`
-          this.endDate = `${currentYear}-${currentMonth + 1}-20`
-        }
-      } else if (currentMonth === 11) {
-        if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear}-${currentMonth - 1}-21`
-          this.endDate = `${currentYear}-${currentMonth}-20`
-        } else {
-          this.startDate = `${currentYear}-${currentMonth}-21`
-          this.endDate = `${currentYear}-${currentMonth + 1}-20`
+          // After start date
+          startDate = `21-0${currentMonth}-${currentYear}`
+          endDate = `20-0${currentMonth + 1}-${currentYear}`
         }
       } else if (currentMonth === 12) {
+        // Winter season
         if (currentDay >= 1 && currentDay <= 20) {
-          this.startDate = `${currentYear}-${currentMonth - 1}-21`
-          this.endDate = `${currentYear}-${currentMonth}-20`
+          // Before start date
+          startDate = `21-11-${currentYear}`
+          endDate = `20-12-${currentYear}`
         } else {
-          this.startDate = `${currentYear}-${currentMonth}-21`
-          this.endDate = `${currentYear + 1}-01-20`
+          // After start date
+          startDate = `21-12-${currentYear}`
+          endDate = `20-01-${currentYear + 1}`
         }
       }
+
+      // Set the start and end dates as an object with DD-MM-YYYY format
+      this.startDate = startDate.split('-').join('-')
+      this.endDate = endDate.split('-').join('-')
+      // Set other values to send it to the childe component
+      this.activeStartMonth = Number(startDate.split('-')[1])
+      this.activeStartYear = Number(startDate.split('-')[2])
+      this.activeEndMonth = Number(endDate.split('-')[1])
+      this.activeEndYear = Number(endDate.split('-')[2])
     },
 
     updateCalenderOpenStatus() {
@@ -355,58 +367,104 @@ export default {
     },
 
     prev() {
-      // need to add [0] here as the calender is inside a loop
-      // this.$refs.calendar[0].prev()
-      const startingDateMonth = this.startDate.substring(5, 7)
-      const currentYear = this.startDate.substring(0, 4)
+      const startingDateMonth = this.startDate.split('-')[1]
+      const currentYear = this.startDate.split('-')[2]
       switch (startingDateMonth) {
         case '01':
-          this.startDate = `${Number(currentYear - 1)}-12-21`
-          this.endDate = `${currentYear}-01-20`
+          this.startDate = `21-12-${Number(currentYear - 1)}`
+          this.endDate = `20-01-${currentYear}`
+          this.activeStartMonth = 12
+          this.activeStartYear = Number(currentYear - 1)
+          this.activeEndMonth = 1
+          this.activeEndYear = Number(currentYear)
           break
         case '02':
-          this.startDate = `${currentYear}-01-21`
-          this.endDate = `${currentYear}-02-20`
+          this.startDate = `21-01-${currentYear}`
+          this.endDate = `20-02-${currentYear}`
+          this.activeStartMonth = 1
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 2
+          this.activeEndYear = Number(currentYear)
           break
         case '03':
-          this.startDate = `${currentYear}-02-21`
-          this.endDate = `${currentYear}-03-20`
+          this.startDate = `21-02-${currentYear}`
+          this.endDate = `20-03-${currentYear}`
+          this.activeStartMonth = 2
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 3
+          this.activeEndYear = Number(currentYear)
           break
         case '04':
-          this.startDate = `${currentYear}-03-21`
-          this.endDate = `${currentYear}-04-20`
+          this.startDate = `21-03-${currentYear}`
+          this.endDate = `20-04-${currentYear}`
+          this.activeStartMonth = 3
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 4
+          this.activeEndYear = Number(currentYear)
           break
         case '05':
-          this.startDate = `${currentYear}-04-21`
-          this.endDate = `${currentYear}-05-20`
+          this.startDate = `21-04-${currentYear}`
+          this.endDate = `20-05-${currentYear}`
+          this.activeStartMonth = 4
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 5
+          this.activeEndYear = Number(currentYear)
           break
         case '06':
-          this.startDate = `${currentYear}-05-21`
-          this.endDate = `${currentYear}-06-20`
+          this.startDate = `21-05-${currentYear}`
+          this.endDate = `20-06-${currentYear}`
+          this.activeStartMonth = 5
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 6
+          this.activeEndYear = Number(currentYear)
           break
         case '07':
-          this.startDate = `${currentYear}-06-21`
-          this.endDate = `${currentYear}-07-20`
+          this.startDate = `21-06-${currentYear}`
+          this.endDate = `20-07-${currentYear}`
+          this.activeStartMonth = 6
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 7
+          this.activeEndYear = Number(currentYear)
           break
         case '08':
-          this.startDate = `${currentYear}-07-21`
-          this.endDate = `${currentYear}-08-20`
+          this.startDate = `21-07-${currentYear}`
+          this.endDate = `20-08-${currentYear}`
+          this.activeStartMonth = 7
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 8
+          this.activeEndYear = Number(currentYear)
           break
         case '09':
-          this.startDate = `${currentYear}-08-21`
-          this.endDate = `${currentYear}-09-20`
+          this.startDate = `21-08-${currentYear}`
+          this.endDate = `20-09-${currentYear}`
+          this.activeStartMonth = 8
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 9
+          this.activeEndYear = Number(currentYear)
           break
         case '10':
-          this.startDate = `${currentYear}-09-21`
-          this.endDate = `${currentYear}-10-20`
+          this.startDate = `21-09-${currentYear}`
+          this.endDate = `20-10-${currentYear}`
+          this.activeStartMonth = 9
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 10
+          this.activeEndYear = Number(currentYear)
           break
         case '11':
-          this.startDate = `${currentYear}-10-21`
-          this.endDate = `${currentYear}-11-20`
+          this.startDate = `21-10-${currentYear}`
+          this.endDate = `20-11-${currentYear}`
+          this.activeStartMonth = 10
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 11
+          this.activeEndYear = Number(currentYear)
           break
         case '12':
-          this.startDate = `${currentYear}-11-21`
-          this.endDate = `${currentYear}-12-20`
+          this.startDate = `21-11-${currentYear}`
+          this.endDate = `20-12-${currentYear}`
+          this.activeStartMonth = 11
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 12
+          this.activeEndYear = Number(currentYear)
           break
         default:
           break
@@ -414,58 +472,104 @@ export default {
     },
 
     next() {
-      // need to add [0] here as the calender is inside a loop
-      // this.$refs.calendar[0].next()
-      const startingDateMonth = this.startDate.substring(5, 7)
-      const currentYear = this.startDate.substring(0, 4)
+      const startingDateMonth = this.startDate.split('-')[1]
+      const currentYear = this.startDate.split('-')[2]
       switch (startingDateMonth) {
         case '01':
-          this.startDate = `${currentYear}-02-21`
-          this.endDate = `${currentYear}-03-20`
+          this.startDate = `21-02-${currentYear}`
+          this.endDate = `20-03-${currentYear}`
+          this.activeStartMonth = 2
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 3
+          this.activeEndYear = Number(currentYear)
           break
         case '02':
-          this.startDate = `${currentYear}-03-21`
-          this.endDate = `${currentYear}-04-20`
+          this.startDate = `21-03-${currentYear}`
+          this.endDate = `20-04-${currentYear}`
+          this.activeStartMonth = 3
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 4
+          this.activeEndYear = Number(currentYear)
           break
         case '03':
-          this.startDate = `${currentYear}-04-21`
-          this.endDate = `${currentYear}-05-20`
+          this.startDate = `21-04-${currentYear}`
+          this.endDate = `20-05-${currentYear}`
+          this.activeStartMonth = 4
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 5
+          this.activeEndYear = Number(currentYear)
           break
         case '04':
-          this.startDate = `${currentYear}-05-21`
-          this.endDate = `${currentYear}-06-20`
+          this.startDate = `21-05-${currentYear}`
+          this.endDate = `20-06-${currentYear}`
+          this.activeStartMonth = 5
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 6
+          this.activeEndYear = Number(currentYear)
           break
         case '05':
-          this.startDate = `${currentYear}-06-21`
-          this.endDate = `${currentYear}-07-20`
+          this.startDate = `21-06-${currentYear}`
+          this.endDate = `20-07-${currentYear}`
+          this.activeStartMonth = 6
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 7
+          this.activeEndYear = Number(currentYear)
           break
         case '06':
-          this.startDate = `${currentYear}-07-21`
-          this.endDate = `${currentYear}-08-20`
+          this.startDate = `21-07-${currentYear}`
+          this.endDate = `20-08-${currentYear}`
+          this.activeStartMonth = 7
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 8
+          this.activeEndYear = Number(currentYear)
           break
         case '07':
-          this.startDate = `${currentYear}-08-21`
-          this.endDate = `${currentYear}-09-20`
+          this.startDate = `21-08-${currentYear}`
+          this.endDate = `20-09-${currentYear}`
+          this.activeStartMonth = 8
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 9
+          this.activeEndYear = Number(currentYear)
           break
         case '08':
-          this.startDate = `${currentYear}-09-21`
-          this.endDate = `${currentYear}-10-20`
+          this.startDate = `21-09-${currentYear}`
+          this.endDate = `20-10-${currentYear}`
+          this.activeStartMonth = 9
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 10
+          this.activeEndYear = Number(currentYear)
           break
         case '09':
-          this.startDate = `${currentYear}-10-21`
-          this.endDate = `${currentYear}-11-20`
+          this.startDate = `21-10-${currentYear}`
+          this.endDate = `20-11-${currentYear}`
+          this.activeStartMonth = 10
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 11
+          this.activeEndYear = Number(currentYear)
           break
         case '10':
-          this.startDate = `${currentYear}-11-21`
-          this.endDate = `${currentYear}-12-20`
+          this.startDate = `21-11-${currentYear}`
+          this.endDate = `20-12-${currentYear}`
+          this.activeStartMonth = 11
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 12
+          this.activeEndYear = Number(currentYear)
           break
         case '11':
-          this.startDate = `${currentYear}-12-21`
-          this.endDate = `${Number(currentYear) + 1}-01-20`
+          this.startDate = `21-12-${currentYear}`
+          this.endDate = `20-01-${Number(currentYear) + 1}`
+          this.activeStartMonth = 12
+          this.activeStartYear = Number(currentYear)
+          this.activeEndMonth = 1
+          this.activeEndYear = Number(currentYear) + 1
           break
         case '12':
-          this.startDate = `${Number(currentYear) + 1}-01-21`
-          this.endDate = `${Number(currentYear) + 1}-02-20`
+          this.startDate = `21-01-${Number(currentYear) + 1}`
+          this.endDate = `20-02-${Number(currentYear) + 1}`
+          this.activeStartMonth = 1
+          this.activeStartYear = Number(currentYear) + 1
+          this.activeEndMonth = 2
+          this.activeEndYear = Number(currentYear) + 1
           break
         default:
           break
@@ -478,6 +582,3 @@ export default {
   },
 }
 </script>
-
-
-

@@ -91,13 +91,18 @@ export default {
     }
   },
 
+  mounted() {
+    console.log(this.start)
+    console.log(this.end)
+    console.log(this.code)
+  },
+
   methods: {
     getEventColor(event) {
       return event.color
     },
 
     showEvent({ nativeEvent, event }) {
-      console.log('🚀 start ==>', event.start)
       const open = () => {
         this.selectedEvent = event
         this.selectedElement = nativeEvent.target
@@ -117,10 +122,6 @@ export default {
     },
 
     updateRange({ start, end }) {
-      // console.log('🚀 start ==>', start.date)
-      // console.log('🚀 Start Month =>', start.month)
-      // console.log('🚀 end =>', end.date)
-
       this.$emit('calenderIsExpanded')
       this.daysCount = 0
 
@@ -128,8 +129,6 @@ export default {
       this.$refs.calendar.checkChange()
 
       if (process.client) {
-        // aria-expanded="true"
-        // document.querySelectorAll('[data-foo="value"]')
         const activeCalender = document.querySelectorAll(
           '[aria-expanded="true"]'
         )
@@ -139,9 +138,7 @@ export default {
         )
 
         for (const key in allDaysCount) {
-          // console.log(typeof `${allDaysCount[key]._prevClass}`)
           const classesString = `${allDaysCount[key]._prevClass}`
-
           if (!classesString.includes('v-outside')) {
             if (classesString !== 'undefined') {
               this.daysCount += 1
@@ -150,8 +147,7 @@ export default {
         }
       }
 
-      // console.log('🚀 this.daysCount ==>', this.daysCount)
-      // console.log('🚀 employee ==>', employee)
+      // generate events for all days in the calendar
 
       const events = []
 
@@ -251,5 +247,4 @@ export default {
 }
 </script>
 
-<style>
-</style>
+<style></style>
