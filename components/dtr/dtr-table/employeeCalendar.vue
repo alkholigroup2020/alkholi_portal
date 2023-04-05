@@ -1,8 +1,14 @@
 <template>
   <div>
     <v-divider></v-divider>
-    <div style="width: 100%">
+
+    <div style="width: 100%" class="py-2 d-flex">
+      <v-spacer></v-spacer>
       <div class="d-flex">
+        <v-btn color="success" class="mx-2" @click="saveData">Save</v-btn>
+        <v-btn color="warning" @click="resetData">Reset</v-btn>
+      </div>
+      <!-- <div class="d-flex">
         <h3 class="text-body-2 py-1">
           {{
             `From: ${new Date(startDate).toLocaleDateString('en-US', {
@@ -17,10 +23,10 @@
           }}
         </h3>
         <v-spacer></v-spacer>
-        <pre>{{ employeeCode }}</pre>
-      </div>
+      </div> -->
     </div>
-    <hr class="mb-1" />
+
+    <v-divider class="mb-2"></v-divider>
 
     <table>
       <thead>
@@ -38,11 +44,21 @@
             <div v-if="!day.empty">
               <div class="date">{{ day.date | formatDate }}</div>
               <select v-model="day.type" @change="updateData">
-                <option value="Normal">Normal</option>
-                <option value="Vacation">Vacation</option>
-                <option value="Sick Leave">Sick Leave</option>
-                <option value="Annual Vacation">Annual Vacation</option>
-                <option value="Absent">Absent</option>
+                <option value="RA">Regular Attendance</option>
+                <option value="AB">Absent</option>
+                <option value="AV">Annual Vacation</option>
+                <option value="SV">Sick Vacation</option>
+                <option value="UP<20">UnPaid Vacation less than 20 days</option>
+                <option value="UP>20">UnPaid Vacation more than 20 days</option>
+                <option value="D">Death</option>
+                <option value="NB">New Born</option>
+                <option value="HA">HAJJ Vacation</option>
+                <option value="MV">Maternity Vacation</option>
+                <option value="HDM">Huzband Death - Muslim</option>
+                <option value="HDN">Huzband Death - Non Muslim</option>
+                <option value="MRG">Marriage Vacation</option>
+                <option value="DOC">Dayoff Compensation</option>
+                <option value="ST">Study Vacation</option>
               </select>
             </div>
           </td>
@@ -95,6 +111,7 @@ export default {
     return {
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       weeks: [],
+      dtrEntriesArray: null,
     }
   },
   created() {
@@ -132,7 +149,7 @@ export default {
         week.push({
           date,
           empty,
-          type: 'Normal',
+          type: 'RA',
           dayIndex,
         })
       }
@@ -140,6 +157,9 @@ export default {
       // Add the current week to the array of weeks
       this.weeks.push(week)
     }
+  },
+  mounted() {
+    this.updateData()
   },
   methods: {
     updateData() {
@@ -149,17 +169,76 @@ export default {
       // Create a new object with a `date` property equal to the `date` property of the `day` object.
       // Create a `type` property equal to the `type` property of the `day` object.
 
-      const dataArray = this.weeks
+      const dtrEntriesArray = this.weeks
         .flat()
         .filter((day) => !day.empty)
         .map((day) => {
           return {
-            date: day.date,
+            date: new Date(day.date).getDate(),
             type: day.type,
           }
         })
 
-      this.$emit('dataUpdated', dataArray)
+      this.dtrEntriesArray = dtrEntriesArray
+
+      this.$emit('dataUpdated', dtrEntriesArray)
+    },
+
+    async resetData() {},
+
+    async saveData() {
+      try {
+        const employeeCode = this.employeeCode
+
+        const sDate = new Date(this.startDate)
+        const sDay = sDate.getDate().toString().padStart(2, '0')
+        const sMonth = (sDate.getMonth() + 1).toString().padStart(2, '0')
+        const sYear = sDate.getFullYear().toString()
+        const startingDate = `${sYear}-${sMonth}-${sDay}`
+
+        const eDate = new Date(this.endDate)
+        const eDay = eDate.getDate().toString().padStart(2, '0')
+        const eMonth = (eDate.getMonth() + 1).toString().padStart(2, '0')
+        const eYear = eDate.getFullYear().toString()
+        const endingDate = `${eYear}-${eMonth}-${eDay}`
+
+        const managerCodeReq = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/hr-sql-call`,
+          {
+            query: `SELECT [Manager_Code] FROM dbo.Pay_employees where employee_code='${employeeCode}'`,
+          }
+        )
+        const managerCode = managerCodeReq.data[0].Manager_Code
+
+        const dtrAdmin = localStorage.getItem('userFullName')
+
+        const payload = {
+          employeeCode,
+          managerCode,
+          startingDate,
+          endingDate,
+          dtrEntries: this.dtrEntriesArray,
+          dtrAdmin,
+        }
+
+        const saveThePayload = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/save-dtr-data`,
+          payload
+        )
+
+        console.log('🚀 saveThePayload:', saveThePayload)
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
     },
   },
 }
@@ -169,52 +248,33 @@ export default {
 table {
   width: 100%;
   border-collapse: collapse;
-  border-spacing: 0;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
 
 th,
 td {
+  padding: 10px;
   text-align: center;
-  padding: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
 }
 
 th {
-  background-color: #eee;
+  background-color: #f2f2f2;
 }
 
-td {
-  position: relative;
+select {
+  width: 100%;
+  padding: 5px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
 }
 
 .empty {
-  background-color: #f5f5f5;
-}
-
-.select {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px;
-  font-size: 0.8rem;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  z-index: 1;
-  display: none;
-}
-
-td:hover .select {
-  display: block;
-}
-
-.select select {
-  width: 100%;
-  border: none;
-  outline: none;
-  font-size: inherit;
-  background-color: transparent;
+  background-color: #fafafa;
 }
 
 @media (max-width: 576px) {
@@ -225,10 +285,6 @@ td:hover .select {
   th,
   td {
     padding: 6px;
-  }
-
-  .select {
-    font-size: 0.7rem;
   }
 }
 </style>

@@ -7,24 +7,39 @@
     <v-toolbar
       color="mainBG"
       height="50px"
+      class="px-xl-16"
       :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
       style="position: fixed; z-index: 2"
       flat
     >
       <div class="d-flex align-center px-5" style="width: 100%">
         <v-spacer></v-spacer>
-        <div v-if="!calenderIsExpanded" class="d-flex align-center">
+        <div class="d-flex align-center">
           <p class="mb-0 pr-3">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
-          <v-btn fab x-small outlined class="mx-1" @click="prev">
+          <v-btn
+            v-if="!calenderIsExpanded"
+            fab
+            x-small
+            outlined
+            class="mx-1"
+            @click="prev"
+          >
             <v-icon small> mdi-chevron-left </v-icon>
           </v-btn>
-          <v-btn fab x-small outlined class="mx-1" @click="next">
+          <v-btn
+            v-if="!calenderIsExpanded"
+            fab
+            x-small
+            outlined
+            class="mx-1"
+            @click="next"
+          >
             <v-icon small> mdi-chevron-right </v-icon>
           </v-btn>
         </div>
-        <div v-else>
+        <div v-if="calenderIsExpanded">
           <div class="d-flex align-center">
             <v-btn small outlined class="mx-1" @click="refreshPage">
               <v-icon small> mdi-calendar-multiselect-outline </v-icon>
@@ -50,6 +65,7 @@
               :class="$vuetify.theme.dark ? 'mainBG' : ''"
             >
               <div class="d-flex align-center">
+                <!-- employee picture -->
                 <div>
                   <v-avatar
                     v-if="employee.employee_picture"
@@ -74,9 +90,17 @@
                     ></v-img>
                   </v-avatar>
                 </div>
+                <v-divider vertical class="ml-3"></v-divider>
+                <!-- employee code -->
+                <p class="mb-0 px-3">
+                  {{ employee.employee_code }}
+                </p>
+                <v-divider vertical></v-divider>
+                <!-- employee name -->
                 <p class="mb-0 px-3">
                   {{ employee.employee_name_eng }}
                 </p>
+                <v-divider vertical></v-divider>
               </div>
               <template #actions>
                 <v-icon color="teal">mdi-check</v-icon>
