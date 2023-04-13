@@ -197,9 +197,13 @@
   "dtrApp": {
     "appPageNames": {
       "table": "جدول الحضور"
+    },
+    "dtrPage": {
+      "periodChange": "تغيير الفترة"
     }
   },
   "errorMessages": {
+    "noChange": "لا توجد بيانات جديدة تحفظ!",
     "notFound": "لا توجد بيانات تخص هذا الموظف!",
     "login": {
       "hrDataMissing": "بيـانات الموظـف غير مكتملـة ببـرنامج المـوارد البشـرية!",
@@ -241,6 +245,7 @@
     }
   },
   "successMessages": {
+    "successSave": "تم الحفظ بنجاح!",
     "successAdd": "تمت الإضافة بنجاح!",
     "successDelete": "تمت الإزالة بنجاح!",
     "portal": {

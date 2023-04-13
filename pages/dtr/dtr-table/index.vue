@@ -15,35 +15,39 @@
       <div class="d-flex align-center px-5" style="width: 100%">
         <v-spacer></v-spacer>
         <div class="d-flex align-center">
-          <p class="mb-0 pr-3">
+          <p class="mb-0 px-3">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
-          <v-btn
-            v-if="!calenderIsExpanded"
-            fab
-            x-small
-            outlined
-            class="mx-1"
-            @click="prev"
-          >
-            <v-icon small> mdi-chevron-left </v-icon>
-          </v-btn>
-          <v-btn
-            v-if="!calenderIsExpanded"
-            fab
-            x-small
-            outlined
-            class="mx-1"
-            @click="next"
-          >
-            <v-icon small> mdi-chevron-right </v-icon>
-          </v-btn>
+          <div :class="$i18n.locale == 'en' ? '' : 'd-flex flex-row-reverse'">
+            <v-btn
+              v-if="!calenderIsExpanded"
+              fab
+              x-small
+              outlined
+              class="mx-1"
+              @click="prev"
+            >
+              <v-icon small> mdi-chevron-left </v-icon>
+            </v-btn>
+            <v-btn
+              v-if="!calenderIsExpanded"
+              fab
+              x-small
+              outlined
+              class="mx-1"
+              @click="next"
+            >
+              <v-icon small> mdi-chevron-right </v-icon>
+            </v-btn>
+          </div>
         </div>
         <div v-if="calenderIsExpanded">
           <div class="d-flex align-center">
             <v-btn small outlined class="mx-1" @click="refreshPage">
               <v-icon small> mdi-calendar-multiselect-outline </v-icon>
-              <span class="text-capitalize">Change time period</span>
+              <span class="text-capitalize">{{
+                $t('dtrApp.dtrPage.periodChange')
+              }}</span>
             </v-btn>
           </div>
         </div>
@@ -58,6 +62,7 @@
           <v-expansion-panel
             v-for="(employee, index) in allEmployeesData"
             :key="index"
+            class="secondaryBG"
           >
             <!-- header -->
             <v-expansion-panel-header
@@ -90,7 +95,7 @@
                     ></v-img>
                   </v-avatar>
                 </div>
-                <v-divider vertical class="ml-3"></v-divider>
+                <v-divider vertical class="mx-3"></v-divider>
                 <!-- employee code -->
                 <p class="mb-0 px-3">
                   {{ employee.employee_code }}

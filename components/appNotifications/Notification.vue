@@ -33,8 +33,7 @@ export default {
     this.showNotification = true
     setTimeout(() => {
       this.$store.dispatch('appNotifications/removeNotification', this.current)
-    }, 3500)
+    }, 3000)
   },
 }
 </script>
-

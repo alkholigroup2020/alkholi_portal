@@ -197,9 +197,13 @@
   "dtrApp": {
     "appPageNames": {
       "table": "DTR"
+    },
+    "dtrPage": {
+      "periodChange": "Change period"
     }
   },
   "errorMessages": {
+    "noChange": "No Changes To Be Saved!",
     "notFound": "Can't find the admin record!",
     "login": {
       "hrDataMissing": "User's data on HR system is missing!",
@@ -241,6 +245,7 @@
     }
   },
   "successMessages": {
+    "successSave": "Successfully Saved!",
     "successAdd": "Successfully Added!",
     "successDelete": "Successfully Deleted!",
     "portal": {

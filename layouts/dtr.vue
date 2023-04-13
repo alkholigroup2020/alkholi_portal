@@ -4,7 +4,7 @@
     <v-snackbar
       v-model="showSnack"
       app
-      top
+      bottom
       right
       color="transparent"
       elevation="0"
@@ -439,7 +439,4 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
-</style>
-
-
+<style lang="scss" scoped></style>
