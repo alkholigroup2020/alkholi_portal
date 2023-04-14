@@ -199,7 +199,8 @@
       "table": "DTR"
     },
     "dtrPage": {
-      "periodChange": "Change period"
+      "periodChange": "Change period",
+      "sendForApproval": "Send For Approval"
     }
   },
   "errorMessages": {

@@ -39,7 +39,6 @@ router.post('/save-dtr-data', auth, async (req, res) => {
       .query(Q)
 
     const checkResult = dtrEntryCheck.recordset[0].dtrEntry
-    console.log('🚀 checkResult:', checkResult)
 
     if (checkResult === 1) {
       // Generate the SQL query with parameter placeholders

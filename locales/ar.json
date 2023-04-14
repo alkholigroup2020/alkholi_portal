@@ -199,7 +199,8 @@
       "table": "جدول الحضور"
     },
     "dtrPage": {
-      "periodChange": "تغيير الفترة"
+      "periodChange": "تغيير الفترة",
+      "sendForApproval": "إرسال للتصديق"
     }
   },
   "errorMessages": {

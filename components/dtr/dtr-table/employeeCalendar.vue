@@ -51,7 +51,7 @@
                 <select
                   v-model="day.type"
                   class="primaryText--text"
-                  @change="prepareDataArray, (changeOccurs = true)"
+                  @change="prepareDataArray"
                 >
                   <option value="RA" class="black--text">
                     Regular Attendance
@@ -192,11 +192,15 @@ export default {
     }
   },
   mounted() {
-    this.prepareDataArray()
+    this.prepareDataArray('firstTime')
     this.getSavedData()
   },
   methods: {
-    prepareDataArray() {
+    prepareDataArray(arg) {
+      if (arg !== 'firstTime') {
+        this.changeOccurs = true
+      }
+
       // Flatten the two-dimensional `weeks` array into a one-dimensional array.
       // Filter out any elements where the `empty` property is truthy.
       // Map the remaining elements into new objects with a `date` and `type` property.
@@ -215,7 +219,7 @@ export default {
 
       this.dtrEntriesArray = dtrEntriesArray
 
-      this.$emit('dataUpdated', dtrEntriesArray)
+      // this.$emit('dataUpdated', dtrEntriesArray)
     },
 
     async getSavedData() {
@@ -252,33 +256,36 @@ export default {
           on the key and the value from the input object, respectively.
           Convert the key to an integer using parseInt() before assigning it to the date property.
         */
-        const input = savedData.data[0]
-        const output = Object.keys(input)
-          .filter((key) => input[key] !== null)
-          .map((key) => {
-            return {
-              date: parseInt(key),
-              type: input[key],
-            }
-          })
 
-        this.dtrEntriesArray = output
+        if (savedData.data.length > 0) {
+          const input = savedData.data[0]
+          const output = Object.keys(input)
+            .filter((key) => input[key] !== null)
+            .map((key) => {
+              return {
+                date: parseInt(key),
+                type: input[key],
+              }
+            })
 
-        // Iterate over both arrays and comparing the dayNumber from the this.weeks array with the date value from the this.dtrEntriesArray array.
-        // When a match is found, update the type value in the this.weeks array with the type value from the this.dtrEntriesArray array.
-        function updateType(a, b) {
-          a.forEach((group) => {
-            group.forEach((aItem) => {
-              b.forEach((bItem) => {
-                if (aItem.dayNumber === bItem.date) {
-                  aItem.type = bItem.type
-                }
+          this.dtrEntriesArray = output
+          // Iterate over both arrays and comparing the dayNumber from the this.weeks array with the date value from the this.dtrEntriesArray array.
+          // When a match is found, update the type value in the this.weeks array with the type value from the this.dtrEntriesArray array.
+          function updateType(a, b) {
+            a.forEach((group) => {
+              group.forEach((aItem) => {
+                b.forEach((bItem) => {
+                  if (aItem.dayNumber === bItem.date) {
+                    aItem.type = bItem.type
+                  }
+                })
               })
             })
-          })
+          }
+
+          updateType(this.weeks, this.dtrEntriesArray)
         }
 
-        updateType(this.weeks, this.dtrEntriesArray)
         this.overlay = false
       } catch (e) {
         this.overlay = false

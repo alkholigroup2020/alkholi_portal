@@ -12,9 +12,14 @@
       style="position: fixed; z-index: 2"
       flat
     >
-      <div class="d-flex align-center px-5" style="width: 100%">
+      <div class="d-flex align-center" style="width: 100%">
+        <v-btn outlined text>
+          <span class="text-capitalize">
+            {{ $t('dtrApp.dtrPage.sendForApproval') }}
+          </span>
+        </v-btn>
         <v-spacer></v-spacer>
-        <div class="d-flex align-center">
+        <div class="d-flex align-center px-3">
           <p class="mb-0 px-3">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
@@ -57,7 +62,7 @@
     <div style="height: 50px"></div>
 
     <v-container>
-      <v-row justify="center" class="py-3 py-md-10 px-3 px-md-12">
+      <v-row justify="center" class="py-3 py-md-10 px-3 px-md-16">
         <v-expansion-panels inset>
           <v-expansion-panel
             v-for="(employee, index) in allEmployeesData"
@@ -108,7 +113,10 @@
                 <v-divider vertical></v-divider>
               </div>
               <template #actions>
-                <v-icon color="teal">mdi-check</v-icon>
+                <span class="px-5">{{ employee.statusName }}</span>
+                <v-icon :color="employee.statusColor" size="20"
+                  >mdi-circle</v-icon
+                >
               </template>
             </v-expansion-panel-header>
             <!-- content -->
@@ -154,14 +162,16 @@ export default {
   },
 
   mounted() {
-    this.getAssignedEmployees()
     this.getDateRange()
+    this.getAssignedEmployees()
   },
   methods: {
     async getAssignedEmployees() {
       try {
         this.overlay = true
+
         const allEmployees = []
+
         const employeeCode = localStorage.getItem('employeeCode')
 
         const employeeSections = await this.$axios.post(
@@ -294,10 +304,114 @@ export default {
           }
         }
 
-        this.allEmployeesData = allEmployees
+        await this.getRecordStatus(allEmployees)
         this.overlay = false
       } catch (e) {
         this.overlay = false
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
+
+    flipDateString(dateString) {
+      const dateParts = dateString.split('-')
+      const year = dateParts[2]
+      const month = dateParts[1]
+      const day = dateParts[0]
+      return year + '-' + month + '-' + day
+    },
+
+    async getRecordStatus(assignedEmployees) {
+      try {
+        // flip the starting date
+        const startingDate = this.flipDateString(this.startDate)
+        const endingDate = this.flipDateString(this.endDate)
+
+        const employeeCodes = assignedEmployees.map(
+          (employee) => `'${employee.employee_code}'`
+        )
+
+        const employeeCodesStr = employeeCodes.join(', ')
+
+        const checkStatus = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/sql-call`,
+          {
+            query: `
+              SELECT * FROM dtr.dtrEntries
+              WHERE EmployeeCode IN (${employeeCodesStr})
+              AND StartDate='${startingDate}'
+              AND EndDate='${endingDate}'
+            `,
+          }
+        )
+
+        if (checkStatus.status === 200) {
+          const modifiedArray = assignedEmployees.map((element) => {
+            const employeeData = checkStatus.data.find(
+              (record) => record.EmployeeCode === element.employee_code
+            )
+
+            if (employeeData) {
+              if (employeeData.ApprovalStatus === 0) {
+                element.statusColor = 'pink'
+                element.statusName = 'Ready for approval'
+              } else if (employeeData.ApprovalStatus === 1) {
+                element.statusColor = 'yellow'
+                element.statusName = 'Waiting for approval'
+              }
+            } else {
+              element.statusColor = 'red'
+              element.statusName = 'Not saved yet'
+            }
+            return element
+          })
+
+          this.allEmployeesData = modifiedArray
+        }
+
+        // const modifiedArray = []
+        // // need to loop through the received object and add
+        // // the status color property to each one of them
+        // await assignedEmployees.forEach(async (element) => {
+        //   const checkStatus = await this.$axios.post(
+        //     `${this.$config.baseURL}/dtr-api/sql-call`,
+        //     {
+        //       query: `
+        //         SELECT * FROM dtr.dtrEntries
+        //         WHERE EmployeeCode='${element.employee_code}'
+        //         AND StartDate='${startingDate}'
+        //         AND EndDate='${endingDate}'
+        //       `,
+        //     }
+        //   )
+
+        //   if (checkStatus.status === 200) {
+        //     if (checkStatus.data.length === 0) {
+        //       element.statusColor = 'red'
+        //       element.statusName = 'Not saved yet'
+        //     } else if (checkStatus.data.length > 0) {
+        //       if (checkStatus.data[0].ApprovalStatus === 0) {
+        //         element.statusColor = 'pink'
+        //         element.statusName = 'Ready for approval'
+        //       } else if (checkStatus.data[0].ApprovalStatus === 1) {
+        //         element.statusColor = 'yellow'
+        //         element.statusName = 'Waiting for approval'
+        //       }
+        //     }
+
+        //     modifiedArray.push(element)
+        //   }
+        // })
+        // this.allEmployeesData = modifiedArray
+      } catch (e) {
         const error = e.toString()
         const newErrorString = error.replaceAll('Error: ', '')
         const notification = {
@@ -498,6 +612,7 @@ export default {
         default:
           break
       }
+      this.getRecordStatus(this.allEmployeesData)
     },
 
     next() {
@@ -603,6 +718,7 @@ export default {
         default:
           break
       }
+      this.getRecordStatus(this.allEmployeesData)
     },
 
     refreshPage() {
