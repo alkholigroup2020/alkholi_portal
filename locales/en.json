@@ -200,7 +200,11 @@
     },
     "dtrPage": {
       "periodChange": "Change period",
-      "sendForApproval": "Send For Approval"
+      "sendForApproval": "Send For Approval",
+      "sentForApproval": "Sent For Approval",
+      "notReadyForApproval": "You have to complete the DTR for all employees first!",
+      "normalizeHO": "Normal Attendance For HO",
+      "normalizeSites": "Normal Attendance For Sites"
     }
   },
   "errorMessages": {

@@ -200,7 +200,11 @@
     },
     "dtrPage": {
       "periodChange": "تغيير الفترة",
-      "sendForApproval": "إرسال للتصديق"
+      "sendForApproval": "إرسال للتصديق",
+      "sentForApproval": "تم الإرســال",
+      "notReadyForApproval": "يجب إدخال تفاصيل الحضور لكافة الموظفين أولاً",
+      "normalizeHO": "حضور المركز الرئيسي",
+      "normalizeSites": "حضور المواقع"
     }
   },
   "errorMessages": {

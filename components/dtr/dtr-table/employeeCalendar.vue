@@ -7,14 +7,55 @@
       <v-divider></v-divider>
 
       <div style="width: 100%" class="py-2 d-flex">
+        <div class="d-flex">
+          <v-btn
+            text
+            outlined
+            small
+            color="success"
+            class="text-capitalize"
+            @click="normalizeDataHO"
+            ><v-icon small>mdi-cursor-default-click-outline</v-icon>
+            <span class="mx-1">{{
+              $t('dtrApp.dtrPage.normalizeHO')
+            }}</span></v-btn
+          >
+          <v-btn
+            text
+            outlined
+            small
+            color="success"
+            class="text-capitalize mx-3"
+            @click="normalizeDataSites"
+            ><v-icon small>mdi-cursor-default-click-outline</v-icon>
+            <span class="mx-1">{{
+              $t('dtrApp.dtrPage.normalizeSites')
+            }}</span></v-btn
+          >
+        </div>
         <v-spacer></v-spacer>
         <div class="d-flex">
-          <v-btn color="success" class="mx-3" @click="saveData">{{
-            $t('generals.save')
-          }}</v-btn>
-          <v-btn color="warning" @click="resetData">{{
-            $t('generals.reset')
-          }}</v-btn>
+          <v-btn
+            text
+            outlined
+            small
+            color="success"
+            class="mx-3 text-capitalize"
+            @click="saveData"
+            ><v-icon small>mdi-content-save-all-outline</v-icon>
+            <span class="mx-1">{{ $t('generals.save') }}</span></v-btn
+          >
+          <v-btn
+            text
+            outlined
+            small
+            color="warning"
+            class="text-capitalize"
+            @click="resetData"
+          >
+            <v-icon small>mdi-restart</v-icon>
+            <span class="mx-1">{{ $t('generals.reset') }}</span>
+          </v-btn>
         </div>
       </div>
 
@@ -34,7 +75,6 @@
         </thead>
         <tbody class="text-body-2">
           <tr v-for="(week, index) in weeks" :key="index">
-            <!-- :class="{ empty: day.empty }" -->
             <td
               v-for="day in week"
               :key="day.dayIndex"
@@ -51,6 +91,7 @@
                 <select
                   v-model="day.type"
                   class="primaryText--text"
+                  :disabled="disabledStatus"
                   @change="prepareDataArray"
                 >
                   <option value="RA" class="black--text">
@@ -134,6 +175,10 @@ export default {
       type: Date,
       required: true,
     },
+    statusColor: {
+      type: String,
+      required: true,
+    },
   },
   data() {
     return {
@@ -143,6 +188,15 @@ export default {
       overlay: false,
       changeOccurs: false,
     }
+  },
+  computed: {
+    disabledStatus() {
+      if (this.statusColor === 'orange') {
+        return true
+      } else {
+        return false
+      }
+    },
   },
   created() {
     // notify the parent component calender is expanded to hide the date range navigator
@@ -171,6 +225,10 @@ export default {
 
         const dayNumber = date.getDate()
 
+        const dayName = new Date(date).toLocaleString('en-US', {
+          weekday: 'short',
+        })
+
         // If the date is before the start date or after the end date, mark it as empty
         const empty =
           date < this.startDate ||
@@ -181,6 +239,7 @@ export default {
         week.push({
           date,
           dayNumber,
+          dayName,
           empty,
           type: `RA`,
           dayIndex,
@@ -218,8 +277,6 @@ export default {
         })
 
       this.dtrEntriesArray = dtrEntriesArray
-
-      // this.$emit('dataUpdated', dtrEntriesArray)
     },
 
     async getSavedData() {
@@ -302,7 +359,52 @@ export default {
       }
     },
 
-    async resetData() {},
+    resetData() {
+      const arr = this.weeks
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < arr[i].length; j++) {
+          const item = arr[i][j]
+          item.type = 'RA'
+        }
+      }
+
+      this.weeks = arr
+      this.prepareDataArray()
+      this.changeOccurs = true
+    },
+
+    normalizeDataHO() {
+      const arr = this.weeks
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < arr[i].length; j++) {
+          const item = arr[i][j]
+
+          if (item.dayName === 'Fri' || item.dayName === 'Sat') {
+            item.type = 'AB'
+          }
+        }
+      }
+
+      this.weeks = arr
+      this.prepareDataArray()
+      this.changeOccurs = true
+    },
+    normalizeDataSites() {
+      const arr = this.weeks
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < arr[i].length; j++) {
+          const item = arr[i][j]
+
+          if (item.dayName === 'Fri') {
+            item.type = 'AB'
+          }
+        }
+      }
+
+      this.weeks = arr
+      this.prepareDataArray()
+      this.changeOccurs = true
+    },
 
     async saveData() {
       try {
@@ -347,6 +449,8 @@ export default {
           )
 
           if (saveToDB.data[0] === 1) {
+            this.$emit('employeeDataSaved', this.employeeCode)
+
             this.overlay = false
             const notification = {
               type: 'success',

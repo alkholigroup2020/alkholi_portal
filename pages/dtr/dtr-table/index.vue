@@ -7,20 +7,26 @@
     <v-toolbar
       color="mainBG"
       height="50px"
-      class="px-xl-16"
+      class="px-3 px-xl-16"
       :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
       style="position: fixed; z-index: 2"
       flat
     >
       <div class="d-flex align-center" style="width: 100%">
-        <v-btn outlined text>
+        <v-btn
+          outlined
+          text
+          :disabled="isSentForApproval"
+          @click="sendForApproval"
+        >
+          <v-icon color="green" small class="mx-1">mdi-send</v-icon>
           <span class="text-capitalize">
             {{ $t('dtrApp.dtrPage.sendForApproval') }}
           </span>
         </v-btn>
         <v-spacer></v-spacer>
         <div class="d-flex align-center px-3">
-          <p class="mb-0 px-3">
+          <p class="mb-0 px-3 text-body-2">
             {{ `From: ${startDate} - To: ${endDate}` }}
           </p>
           <div :class="$i18n.locale == 'en' ? '' : 'd-flex flex-row-reverse'">
@@ -32,7 +38,7 @@
               class="mx-1"
               @click="prev"
             >
-              <v-icon small> mdi-chevron-left </v-icon>
+              <v-icon size="20"> mdi-chevron-left </v-icon>
             </v-btn>
             <v-btn
               v-if="!calenderIsExpanded"
@@ -42,14 +48,16 @@
               class="mx-1"
               @click="next"
             >
-              <v-icon small> mdi-chevron-right </v-icon>
+              <v-icon size="20"> mdi-chevron-right </v-icon>
             </v-btn>
           </div>
         </div>
         <div v-if="calenderIsExpanded">
           <div class="d-flex align-center">
-            <v-btn small outlined class="mx-1" @click="refreshPage">
-              <v-icon small> mdi-calendar-multiselect-outline </v-icon>
+            <v-btn small outlined @click="refreshPage">
+              <v-icon small class="mx-1">
+                mdi-calendar-multiselect-outline
+              </v-icon>
               <span class="text-capitalize">{{
                 $t('dtrApp.dtrPage.periodChange')
               }}</span>
@@ -127,7 +135,9 @@
                 "
                 :end-date="new Date(activeEndYear, activeEndMonth - 1, 20)"
                 :employee-code="employee.employee_code"
+                :status-color="employee.statusColor"
                 @calenderIsExpanded="updateCalenderOpenStatus"
+                @employeeDataSaved="getSingleRecordStatus"
               />
             </v-expansion-panel-content>
           </v-expansion-panel>
@@ -146,6 +156,7 @@ export default {
       allEmployeesData: [],
       overlay: false,
       calenderIsExpanded: false,
+      isSentForApproval: false,
       startDate: '',
       endDate: '',
       activeStartMonth: 0,
@@ -175,7 +186,7 @@ export default {
         const employeeCode = localStorage.getItem('employeeCode')
 
         const employeeSections = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
+          `${this.$config.baseURL}/dtr-api/sql-call`,
           {
             query: `
               SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
@@ -193,7 +204,7 @@ export default {
             element.subProjectCode === 'undefined'
           ) {
             const allEmployeesInDivision = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
               {
                 query: `
                   SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
@@ -216,7 +227,7 @@ export default {
             element.subProjectCode === 'undefined'
           ) {
             const projects = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
               {
                 query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables]
                 WHERE branch_code='${branchName}' and system_code_type='71'
@@ -226,7 +237,7 @@ export default {
             if (projects.status === 200) {
               for await (const project of projects.data) {
                 const queryResult = await this.$axios.post(
-                  `${this.$config.baseURL}/administration-api/hr-sql-call`,
+                  `${this.$config.baseURL}/dtr-api/hr-sql-call`,
                   {
                     query: `SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
                         FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
@@ -248,7 +259,7 @@ export default {
           else if (element.subProjectCode === 'undefined') {
             // get all sub-projects first
             const subProjects = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
               {
                 query: `SELECT system_desp_a, system_desp_e, system_code, major_code, section_code, division_code
                     FROM [dbo].[pay_code_tables] WHERE branch_code='${element.branchName}' and system_code_type='72'
@@ -259,7 +270,7 @@ export default {
             if (subProjects.status === 200) {
               for await (const el of subProjects.data) {
                 const queryResult = await this.$axios.post(
-                  `${this.$config.baseURL}/administration-api/hr-sql-call`,
+                  `${this.$config.baseURL}/dtr-api/hr-sql-call`,
                   {
                     query: `
                       SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
@@ -283,7 +294,7 @@ export default {
           // if the admin was assigned on the sub-project level
           else {
             const queryResult = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
+              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
               {
                 query: `
                 SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
@@ -329,6 +340,10 @@ export default {
       return year + '-' + month + '-' + day
     },
 
+    areAllApprovalStatusEqualTo(data, targetValue) {
+      return data.every((item) => item.ApprovalStatus === targetValue)
+    },
+
     async getRecordStatus(assignedEmployees) {
       try {
         // flip the starting date
@@ -354,6 +369,18 @@ export default {
         )
 
         if (checkStatus.status === 200) {
+          // to check if we need to disable the button of "send for approval" or not
+          const allApprovalStatusEqual = this.areAllApprovalStatusEqualTo(
+            checkStatus.data,
+            1
+          )
+          if (allApprovalStatusEqual) {
+            // disable the send for approval button
+            this.isSentForApproval = true
+          } else {
+            this.isSentForApproval = false
+          }
+
           const modifiedArray = assignedEmployees.map((element) => {
             const employeeData = checkStatus.data.find(
               (record) => record.EmployeeCode === element.employee_code
@@ -361,56 +388,77 @@ export default {
 
             if (employeeData) {
               if (employeeData.ApprovalStatus === 0) {
-                element.statusColor = 'pink'
-                element.statusName = 'Ready for approval'
-              } else if (employeeData.ApprovalStatus === 1) {
                 element.statusColor = 'yellow'
+                element.statusName = 'Ready to be sent for approval'
+              } else if (employeeData.ApprovalStatus === 1) {
+                element.statusColor = 'orange'
                 element.statusName = 'Waiting for approval'
               }
             } else {
               element.statusColor = 'red'
-              element.statusName = 'Not saved yet'
+              element.statusName = 'No changes yet!'
+              // then no need to disable the button of "send for approval"
+              this.isSentForApproval = false
             }
             return element
           })
 
           this.allEmployeesData = modifiedArray
         }
+      } catch (e) {
+        const error = e.toString()
+        const newErrorString = error.replaceAll('Error: ', '')
+        const notification = {
+          type: 'error',
+          message: newErrorString,
+        }
+        await this.$store.dispatch(
+          'appNotifications/addNotification',
+          notification
+        )
+      }
+    },
 
-        // const modifiedArray = []
-        // // need to loop through the received object and add
-        // // the status color property to each one of them
-        // await assignedEmployees.forEach(async (element) => {
-        //   const checkStatus = await this.$axios.post(
-        //     `${this.$config.baseURL}/dtr-api/sql-call`,
-        //     {
-        //       query: `
-        //         SELECT * FROM dtr.dtrEntries
-        //         WHERE EmployeeCode='${element.employee_code}'
-        //         AND StartDate='${startingDate}'
-        //         AND EndDate='${endingDate}'
-        //       `,
-        //     }
-        //   )
+    async getSingleRecordStatus(payload) {
+      try {
+        // flip the starting date
+        const startingDate = this.flipDateString(this.startDate)
+        const endingDate = this.flipDateString(this.endDate)
 
-        //   if (checkStatus.status === 200) {
-        //     if (checkStatus.data.length === 0) {
-        //       element.statusColor = 'red'
-        //       element.statusName = 'Not saved yet'
-        //     } else if (checkStatus.data.length > 0) {
-        //       if (checkStatus.data[0].ApprovalStatus === 0) {
-        //         element.statusColor = 'pink'
-        //         element.statusName = 'Ready for approval'
-        //       } else if (checkStatus.data[0].ApprovalStatus === 1) {
-        //         element.statusColor = 'yellow'
-        //         element.statusName = 'Waiting for approval'
-        //       }
-        //     }
+        const employeeCodes = payload
 
-        //     modifiedArray.push(element)
-        //   }
-        // })
-        // this.allEmployeesData = modifiedArray
+        const checkStatus = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/sql-call`,
+          {
+            query: `
+              SELECT * FROM dtr.dtrEntries
+              WHERE EmployeeCode='${employeeCodes}'
+              AND StartDate='${startingDate}'
+              AND EndDate='${endingDate}'
+            `,
+          }
+        )
+
+        if (checkStatus.status === 200) {
+          const modifiedArray = this.allEmployeesData.map((element) => {
+            const employeeData = checkStatus.data.find(
+              (record) => record.EmployeeCode === element.employee_code
+            )
+
+            if (employeeData) {
+              if (employeeData.ApprovalStatus === 0) {
+                element.statusColor = 'yellow'
+                element.statusName = 'Ready to be sent for approval'
+              } else if (employeeData.ApprovalStatus === 1) {
+                element.statusColor = 'orange'
+                element.statusName = 'Waiting for approval'
+              }
+            }
+            return element
+          })
+
+          this.allEmployeesData = modifiedArray
+        }
       } catch (e) {
         const error = e.toString()
         const newErrorString = error.replaceAll('Error: ', '')
@@ -509,7 +557,8 @@ export default {
       this.calenderIsExpanded = true
     },
 
-    prev() {
+    async prev() {
+      this.overlay = true
       const startingDateMonth = this.startDate.split('-')[1]
       const currentYear = this.startDate.split('-')[2]
       switch (startingDateMonth) {
@@ -612,10 +661,12 @@ export default {
         default:
           break
       }
-      this.getRecordStatus(this.allEmployeesData)
+      await this.getRecordStatus(this.allEmployeesData)
+      this.overlay = false
     },
 
-    next() {
+    async next() {
+      this.overlay = true
       const startingDateMonth = this.startDate.split('-')[1]
       const currentYear = this.startDate.split('-')[2]
       switch (startingDateMonth) {
@@ -718,11 +769,87 @@ export default {
         default:
           break
       }
-      this.getRecordStatus(this.allEmployeesData)
+      await this.getRecordStatus(this.allEmployeesData)
+      this.overlay = false
     },
 
     refreshPage() {
       this.$router.go(0)
+    },
+
+    hasRedStatusColor(array) {
+      for (let i = 0; i < array.length; i++) {
+        if (array[i].statusColor === 'red') {
+          return true
+        }
+      }
+      return false
+    },
+
+    async sendForApproval() {
+      try {
+        // Check if all employees are in the ready-for-approval state
+        const isReadyForApproval = !this.hasRedStatusColor(
+          this.allEmployeesData
+        )
+
+        if (isReadyForApproval) {
+          // Define reusable helper functions
+          const formatDate = (date) => this.flipDateString(date)
+
+          // Prepare variables for the query
+          const startingDate = formatDate(this.startDate)
+          const endingDate = formatDate(this.endDate)
+
+          const buildEmployeeCodesString = (employees) =>
+            `(${employees.map((e) => `'${e.employee_code}'`).join(',')})`
+
+          const employeeCodesString = buildEmployeeCodesString(
+            this.allEmployeesData
+          )
+
+          // Update the ApprovalStatus to 1 for the given date range and employees
+          // Using parameterized queries to prevent SQL injection
+          const response = await this.$axios.post(
+            `${this.$config.baseURL}/dtr-api/sql-params-call`,
+            {
+              query: `
+                UPDATE [dtr].[dtrEntries] 
+                SET [ApprovalStatus] = @approvalStatus
+                WHERE [EmployeeCode] IN ${employeeCodesString}
+                AND [StartDate] = @startDate
+                AND [EndDate] = @endDate
+              `,
+              parameters: {
+                approvalStatus: 1,
+                startDate: startingDate,
+                endDate: endingDate,
+              },
+            }
+          )
+
+          if (response.status === 200) {
+            // Update the records status after sending all for approval
+            await this.getRecordStatus(this.allEmployeesData)
+
+            // Send a successful feedback to the user
+            await this.notifyUser('success', 'dtrApp.dtrPage.sentForApproval')
+          }
+        } else {
+          await this.notifyUser('error', 'dtrApp.dtrPage.notReadyForApproval')
+        }
+      } catch (e) {
+        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+      }
+    },
+
+    // Notify the user by dispatching a Vuex action
+    async notifyUser(type, message) {
+      const notification = { type, message: this.$t(message) }
+      await this.$store.dispatch(
+        'appNotifications/addNotification',
+        notification
+      )
     },
   },
 }
