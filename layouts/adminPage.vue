@@ -301,6 +301,7 @@ export default {
       drawer: null,
       show: false,
       profilePicPath: '',
+      innerWidthWithoutScrollbar: 0,
     }
   },
 
@@ -324,6 +325,7 @@ export default {
     },
   },
   mounted() {
+    this.innerWidthWithoutScrollbar = this.getInnerWidthWithoutScrollbar()
     if (process.browser) {
       // eslint-disable-next-line nuxt/no-globals-in-created
       window.addEventListener('resize', this.setToolbarsWidth)
@@ -438,7 +440,7 @@ export default {
       try {
         await this.$store.dispatch(
           'portal/setToolbarsWidth',
-          window.innerWidth - 256
+          this.innerWidthWithoutScrollbar - 256
         )
       } catch (e) {
         const error = e.toString()
@@ -453,9 +455,31 @@ export default {
         )
       }
     },
+    getScrollbarWidth() {
+      const div = document.createElement('div')
+      div.style.overflowY = 'scroll'
+      div.style.visibility = 'hidden'
+      div.style.width = '50px'
+      div.style.height = '50px'
+      div.style.position = 'absolute'
+      div.style.top = '-100px'
+      div.style.left = '-100px'
+      document.body.appendChild(div)
+      const scrollbarWidth = div.offsetWidth - div.clientWidth
+      document.body.removeChild(div)
+      return scrollbarWidth
+    },
+    getInnerWidthWithoutScrollbar() {
+      const scrollbarWidth = this.getScrollbarWidth()
+      return window.innerWidth - scrollbarWidth
+    },
   },
 }
 </script>
 
 <style>
+.v-toolbar__content,
+.v-toolbar__extension {
+  padding: 0px !important;
+}
 </style>
