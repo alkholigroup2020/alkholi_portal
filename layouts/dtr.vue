@@ -4,7 +4,7 @@
     <v-snackbar
       v-model="showSnack"
       app
-      bottom
+      top
       right
       color="transparent"
       elevation="0"
@@ -119,6 +119,21 @@
             <v-list-item-content>
               <v-list-item-title class="primaryText--text">{{
                 $t('dtrApp.appPageNames.table')
+              }}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+          <v-list-item
+            nuxt
+            :to="localePath('/dtr/approvals')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-check-outline</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">{{
+                $t('dtrApp.appPageNames.approvals')
               }}</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
@@ -438,5 +453,3 @@ export default {
   },
 }
 </script>
-
-<style lang="scss" scoped></style>

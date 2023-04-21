@@ -4,61 +4,97 @@
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
 
+    <v-dialog
+      v-model="dialog"
+      overlay-opacity="0.8"
+      persistent
+      max-width="750px"
+    >
+      <v-card>
+        <v-card-title>
+          <div class="d-flex justify-center pt-5" style="width: 100%">
+            <span class="text-h5">{{ $t('chooseTimePeriod') }}</span>
+          </div>
+        </v-card-title>
+        <v-card-text>
+          <div class="d-flex align-center justify-center px-3">
+            <div
+              style="height: 180px"
+              :class="
+                $i18n.locale == 'en'
+                  ? 'd-flex align-center'
+                  : 'd-flex align-center flex-row-reverse'
+              "
+            >
+              <v-btn fab small outlined class="mx-1" @click="prev">
+                <v-icon size="30"> mdi-chevron-left </v-icon>
+              </v-btn>
+              <p class="mb-0 px-3 text-h6 text-md-h5">
+                {{ `From: ${startDate} - To: ${endDate}` }}
+              </p>
+              <v-btn fab small outlined class="mx-1" @click="next">
+                <v-icon size="30"> mdi-chevron-right </v-icon>
+              </v-btn>
+            </div>
+          </div>
+        </v-card-text>
+        <v-card-actions class="pb-10">
+          <v-spacer></v-spacer>
+          <v-btn
+            outlined
+            text
+            color="warning"
+            class="px-8 mx-2 text-capitalize"
+            @click="goBack"
+          >
+            {{ $t('generals.back') }}
+          </v-btn>
+          <v-btn
+            outlined
+            color="success"
+            class="px-8 mx-2 text-capitalize"
+            text
+            @click="saveStartAndEndDatesInStore"
+          >
+            {{ $t('generals.save') }}
+          </v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-toolbar
       color="mainBG"
       height="50px"
-      class="px-3 px-xl-16"
+      class="pa-0"
       :width="$vuetify.breakpoint.lgAndUp ? barWidth : '100%'"
       style="position: fixed; z-index: 2"
       flat
     >
-      <div class="d-flex align-center" style="width: 100%">
+      <div class="d-flex align-center px-3 px-xl-16" style="width: 100%">
         <v-btn
           outlined
           text
           :disabled="isSentForApproval"
           @click="sendForApproval"
         >
-          <v-icon color="green" small class="mx-1">mdi-send</v-icon>
+          <v-icon color="green" small class="mx-2">mdi-send</v-icon>
           <span class="text-capitalize">
             {{ $t('dtrApp.dtrPage.sendForApproval') }}
           </span>
         </v-btn>
         <v-spacer></v-spacer>
-        <div class="d-flex align-center px-3">
+        <div v-if="dtrAppStartDate" class="d-flex align-center px-3">
           <p class="mb-0 px-3 text-body-2">
-            {{ `From: ${startDate} - To: ${endDate}` }}
+            {{ `From: ${dtrAppStartDate} - To: ${dtrAppEndDate}` }}
           </p>
-          <div :class="$i18n.locale == 'en' ? '' : 'd-flex flex-row-reverse'">
-            <v-btn
-              v-if="!calenderIsExpanded"
-              fab
-              x-small
-              outlined
-              class="mx-1"
-              @click="prev"
-            >
-              <v-icon size="20"> mdi-chevron-left </v-icon>
-            </v-btn>
-            <v-btn
-              v-if="!calenderIsExpanded"
-              fab
-              x-small
-              outlined
-              class="mx-1"
-              @click="next"
-            >
-              <v-icon size="20"> mdi-chevron-right </v-icon>
-            </v-btn>
-          </div>
         </div>
-        <div v-if="calenderIsExpanded">
+
+        <div>
           <div class="d-flex align-center">
             <v-btn small outlined @click="refreshPage">
-              <v-icon small class="mx-1">
-                mdi-calendar-multiselect-outline
-              </v-icon>
-              <span class="text-capitalize">{{
+              <v-icon small> mdi-calendar-multiselect-outline </v-icon>
+              <span class="text-capitalize px-2">{{
                 $t('dtrApp.dtrPage.periodChange')
               }}</span>
             </v-btn>
@@ -69,8 +105,8 @@
 
     <div style="height: 50px"></div>
 
-    <v-container>
-      <v-row justify="center" class="py-3 py-md-10 px-3 px-md-16">
+    <v-container class="py-2 py-xl-12 px-3 px-xl-16">
+      <v-row>
         <v-expansion-panels inset>
           <v-expansion-panel
             v-for="(employee, index) in allEmployeesData"
@@ -136,7 +172,6 @@
                 :end-date="new Date(activeEndYear, activeEndMonth - 1, 20)"
                 :employee-code="employee.employee_code"
                 :status-color="employee.statusColor"
-                @calenderIsExpanded="updateCalenderOpenStatus"
                 @employeeDataSaved="getSingleRecordStatus"
               />
             </v-expansion-panel-content>
@@ -155,7 +190,7 @@ export default {
     return {
       allEmployeesData: [],
       overlay: false,
-      calenderIsExpanded: false,
+      dialog: false,
       isSentForApproval: false,
       startDate: '',
       endDate: '',
@@ -169,14 +204,39 @@ export default {
   computed: {
     ...mapState({
       barWidth: (state) => state.portal.toolbarWidth,
+      dtrAppStartDate: (state) => state.dtr.dtrAppStartDate,
+      dtrAppEndDate: (state) => state.dtr.dtrAppEndDate,
     }),
   },
 
-  mounted() {
-    this.getDateRange()
-    this.getAssignedEmployees()
+  async mounted() {
+    if (this.dtrAppStartDate === undefined) {
+      // if there was no data saved in the store
+      this.getDateRange()
+      this.dialog = true
+    } else {
+      // if the data range was already defined and saved --> set the date values based on the saved data
+      this.startDate = this.dtrAppStartDate
+      this.endDate = this.dtrAppEndDate
+      this.activeStartMonth = Number(this.dtrAppStartDate.split('-')[1])
+      this.activeStartYear = Number(this.dtrAppEndDate.split('-')[2])
+      this.activeEndMonth = Number(this.dtrAppEndDate.split('-')[1])
+      this.activeEndYear = Number(this.dtrAppEndDate.split('-')[2])
+      await this.getAssignedEmployees()
+    }
   },
+
   methods: {
+    async saveStartAndEndDatesInStore() {
+      const payload = {
+        start: this.startDate,
+        end: this.endDate,
+      }
+      this.dialog = false
+      await this.$store.dispatch('dtr/saveStartAndEndDates', payload)
+      await this.getAssignedEmployees()
+    },
+
     async getAssignedEmployees() {
       try {
         this.overlay = true
@@ -392,7 +452,7 @@ export default {
                 element.statusName = 'Ready to be sent for approval'
               } else if (employeeData.ApprovalStatus === 1) {
                 element.statusColor = 'orange'
-                element.statusName = 'Waiting for approval'
+                element.statusName = 'Waiting for manager approval'
               }
             } else {
               element.statusColor = 'red'
@@ -451,7 +511,7 @@ export default {
                 element.statusName = 'Ready to be sent for approval'
               } else if (employeeData.ApprovalStatus === 1) {
                 element.statusColor = 'orange'
-                element.statusName = 'Waiting for approval'
+                element.statusName = 'Waiting for manager approval'
               }
             }
             return element
@@ -553,11 +613,7 @@ export default {
       this.activeEndYear = Number(endDate.split('-')[2])
     },
 
-    updateCalenderOpenStatus() {
-      this.calenderIsExpanded = true
-    },
-
-    async prev() {
+    prev() {
       this.overlay = true
       const startingDateMonth = this.startDate.split('-')[1]
       const currentYear = this.startDate.split('-')[2]
@@ -661,11 +717,10 @@ export default {
         default:
           break
       }
-      await this.getRecordStatus(this.allEmployeesData)
       this.overlay = false
     },
 
-    async next() {
+    next() {
       this.overlay = true
       const startingDateMonth = this.startDate.split('-')[1]
       const currentYear = this.startDate.split('-')[2]
@@ -769,12 +824,15 @@ export default {
         default:
           break
       }
-      await this.getRecordStatus(this.allEmployeesData)
       this.overlay = false
     },
 
     refreshPage() {
       this.$router.go(0)
+    },
+
+    goBack() {
+      this.$router.push('/')
     },
 
     hasRedStatusColor(array) {

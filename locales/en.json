@@ -196,10 +196,11 @@
   },
   "dtrApp": {
     "appPageNames": {
-      "table": "DTR"
+      "table": "DTR",
+      "approvals": "Approvals"
     },
     "dtrPage": {
-      "periodChange": "Change period",
+      "periodChange": "Change Time Period",
       "sendForApproval": "Send For Approval",
       "sentForApproval": "Sent For Approval",
       "notReadyForApproval": "You have to complete the DTR for all employees first!",

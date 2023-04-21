@@ -26,7 +26,13 @@ router.post('/save-dtr-data', auth, async (req, res) => {
     const portalDBConnection = await portalDB()
 
     // Destructure the required properties from req.body
-    const { employeeCode, startingDate, endingDate } = req.body
+    const {
+      employeeCode,
+      employeeName,
+      employeePicture,
+      startingDate,
+      endingDate,
+    } = req.body
 
     const Q =
       'exec [dtr].[dtrEntries_checkIfExist] @employeeCode, @startingDate, @endingDate'
@@ -44,6 +50,8 @@ router.post('/save-dtr-data', auth, async (req, res) => {
       // Generate the SQL query with parameter placeholders
       const baseQuery = `UPDATE [dtr].[dtrEntries]
       SET [EmployeeCode] = @employeeCode,
+          [employeeName] = @employeeName
+          [employeePicture] = @employeePicture
           [ManagerCode] = @managerCode,
           [StartDate] = @startingDate,
           [EndDate] = @endingDate,
@@ -87,8 +95,9 @@ router.post('/save-dtr-data', auth, async (req, res) => {
       const request = portalDBConnection.request()
 
       // Add parameters to the request
-      request.input('id', req.body.id)
       request.input('employeeCode', req.body.employeeCode)
+      request.input('employeeName', employeeName)
+      request.input('employeePicture', employeePicture)
       request.input('managerCode', req.body.managerCode)
       request.input('startingDate', req.body.startingDate)
       request.input('endingDate', req.body.endingDate)
@@ -105,11 +114,11 @@ router.post('/save-dtr-data', auth, async (req, res) => {
     } else {
       // Generate the SQL query with parameter placeholders
       const baseQuery = `INSERT INTO [dtr].[dtrEntries]
-        ([EmployeeCode], [ManagerCode], [StartDate], [EndDate], [ModifiedDate], [ModifiedBy], [ApprovalStatus],
+        ([EmployeeCode], [employeeName], [employeePicture], [ManagerCode], [StartDate], [EndDate], [ModifiedDate], [ModifiedBy], [ApprovalStatus],
           [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20]
         )
         VALUES
-        (@employeeCode, @managerCode, @startingDate, @endingDate, @logDate, @dtrAdmin, 0,`
+        (@employeeCode, @employeeName, @employeePicture, @managerCode, @startingDate, @endingDate, @logDate, @dtrAdmin, 0,`
 
       // Generate placeholders for dtrEntries
       let dtrEntryPlaceholders
@@ -146,10 +155,12 @@ router.post('/save-dtr-data', auth, async (req, res) => {
       const request = portalDBConnection.request()
 
       // Add parameters to the request
-      request.input('employeeCode', req.body.employeeCode)
+      request.input('employeeCode', employeeCode)
+      request.input('employeeName', employeeName)
+      request.input('employeePicture', employeePicture)
       request.input('managerCode', req.body.managerCode)
-      request.input('startingDate', req.body.startingDate)
-      request.input('endingDate', req.body.endingDate)
+      request.input('startingDate', startingDate)
+      request.input('endingDate', endingDate)
       request.input('logDate', logDate)
       request.input('dtrAdmin', req.body.dtrAdmin)
 

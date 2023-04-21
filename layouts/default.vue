@@ -341,8 +341,6 @@ export default {
 }
 </script>
 
-
-
 <style lang="scss">
 .main-div {
   width: 100%;
@@ -366,5 +364,3 @@ export default {
   }
 }
 </style>
-
-

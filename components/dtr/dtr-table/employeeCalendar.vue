@@ -14,6 +14,7 @@
             small
             color="success"
             class="text-capitalize"
+            :disabled="disabledStatus"
             @click="normalizeDataHO"
             ><v-icon small>mdi-cursor-default-click-outline</v-icon>
             <span class="mx-1">{{
@@ -26,6 +27,7 @@
             small
             color="success"
             class="text-capitalize mx-3"
+            :disabled="disabledStatus"
             @click="normalizeDataSites"
             ><v-icon small>mdi-cursor-default-click-outline</v-icon>
             <span class="mx-1">{{
@@ -40,6 +42,7 @@
             outlined
             small
             color="success"
+            :disabled="disabledStatus"
             class="mx-3 text-capitalize"
             @click="saveData"
             ><v-icon small>mdi-content-save-all-outline</v-icon>
@@ -50,6 +53,7 @@
             outlined
             small
             color="warning"
+            :disabled="disabledStatus"
             class="text-capitalize"
             @click="resetData"
           >
@@ -199,12 +203,9 @@ export default {
     },
   },
   created() {
-    // notify the parent component calender is expanded to hide the date range navigator
-    this.$emit('calenderIsExpanded')
     // Calculate the number of days between the start and end dates
     const totalDays =
       Math.ceil((this.endDate - this.startDate) / (1000 * 60 * 60 * 24)) + 1 // add one day to include the end date
-
     // Calculate the number of days to add to the start date to align it with the first day of a week (Sunday)
     const offset = (this.startDate.getDay() + 7 - 0) % 7
 
@@ -427,39 +428,46 @@ export default {
           const managerCodeReq = await this.$axios.post(
             `${this.$config.baseURL}/dtr-api/hr-sql-call`,
             {
-              query: `SELECT [Manager_Code] FROM dbo.Pay_employees where employee_code='${employeeCode}'`,
+              query: `SELECT * FROM dbo.Pay_employees where employee_code='${employeeCode}'`,
             }
           )
-          const managerCode = managerCodeReq.data[0].Manager_Code
 
-          const dtrAdmin = localStorage.getItem('userFullName')
+          if (managerCodeReq.status === 200) {
+            const managerCode = managerCodeReq.data[0].Manager_Code
+            const employeeName = managerCodeReq.data[0].employee_name_eng
+            const employeePicture = managerCodeReq.data[0].employee_picture
 
-          const payload = {
-            employeeCode,
-            managerCode,
-            startingDate,
-            endingDate,
-            dtrEntries: this.dtrEntriesArray,
-            dtrAdmin,
-          }
+            const dtrAdmin = localStorage.getItem('userFullName')
 
-          const saveToDB = await this.$axios.post(
-            `${this.$config.baseURL}/dtr-api/save-dtr-data`,
-            payload
-          )
-
-          if (saveToDB.data[0] === 1) {
-            this.$emit('employeeDataSaved', this.employeeCode)
-
-            this.overlay = false
-            const notification = {
-              type: 'success',
-              message: this.$t(`successMessages.successSave`),
+            const payload = {
+              employeeCode,
+              managerCode,
+              startingDate,
+              endingDate,
+              dtrEntries: this.dtrEntriesArray,
+              dtrAdmin,
+              employeeName,
+              employeePicture,
             }
-            await this.$store.dispatch(
-              'appNotifications/addNotification',
-              notification
+
+            const saveToDB = await this.$axios.post(
+              `${this.$config.baseURL}/dtr-api/save-dtr-data`,
+              payload
             )
+
+            if (saveToDB.data[0] === 1) {
+              this.$emit('employeeDataSaved', this.employeeCode)
+
+              this.overlay = false
+              const notification = {
+                type: 'success',
+                message: this.$t(`successMessages.successSave`),
+              }
+              await this.$store.dispatch(
+                'appNotifications/addNotification',
+                notification
+              )
+            }
           }
         } else {
           const notification = {

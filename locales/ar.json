@@ -196,7 +196,8 @@
   },
   "dtrApp": {
     "appPageNames": {
-      "table": "جدول الحضور"
+      "table": "جدول الحضور",
+      "approvals": "الموافقات"
     },
     "dtrPage": {
       "periodChange": "تغيير الفترة",
