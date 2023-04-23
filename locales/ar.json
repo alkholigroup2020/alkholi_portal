@@ -203,6 +203,7 @@
       "periodChange": "تغيير الفترة",
       "sendForApproval": "إرسال للتصديق",
       "sentForApproval": "تم الإرســال",
+      "approved": "تمت الموافقة",
       "notReadyForApproval": "يجب إدخال تفاصيل الحضور لكافة الموظفين أولاً",
       "normalizeHO": "حضور المركز الرئيسي",
       "normalizeSites": "حضور المواقع"

@@ -11,29 +11,41 @@
       style="position: fixed; z-index: 2"
       flat
     >
-      <div class="d-flex align-center" style="width: 100%"></div>
+      <div class="d-flex align-center px-3 px-xl-16" style="width: 100%">
+        <v-btn outlined text @click="approveAll">
+          <v-icon color="green" small class="mx-2">mdi-send</v-icon>
+          <span class="text-capitalize">
+            {{ $t('dtrApp.approvalPage.sendAllForApproval') }}
+          </span>
+        </v-btn>
+        <v-spacer></v-spacer>
+      </div>
     </v-toolbar>
 
     <div style="height: 50px"></div>
 
-    <v-container>
-      <v-row v-if="employeesWaitingApproval.length > 0">
+    <v-container class="py-2 py-xl-5 px-3 px-xl-16">
+      <v-row
+        v-if="employeesWaitingApproval.length > 0"
+        class="py-1 py-xl-3 px-1"
+      >
         <v-col>
-          <h3 class="text-h6 text-md-h5 py-2 py-md-5 px-2 px-md-14">
+          <h3 class="text-h6 primaryText--text">
             The following employees' DTR needs your approval.
           </h3>
         </v-col>
       </v-row>
-      <v-row v-else>
+
+      <v-row v-else class="py-1 py-xl-3 px-1">
         <v-col>
-          <h3 class="text-h6 text-md-h5 py-2 py-md-5 px-2 px-md-14">
+          <h3 class="text-h6 primaryText--text">
             No approvals are currently required.
           </h3>
         </v-col>
       </v-row>
 
-      <v-row justify="center" class="pb-3 pb-md-10 px-3 px-md-16">
-        <v-expansion-panels inset>
+      <v-row justify="center" class="pb-5 pb-xl-15 px-1 px-xl-4">
+        <v-expansion-panels v-model="panel" inset>
           <v-expansion-panel
             v-for="(employee, index) in employeesWaitingApproval"
             :key="index"
@@ -41,9 +53,10 @@
           >
             <!-- header -->
             <v-expansion-panel-header
+              ref="employeeHeader"
               disable-icon-rotate
               :class="$vuetify.theme.dark ? 'mainBG' : ''"
-              @click="getDtrValues(employee)"
+              @click="setDTRValues(employee)"
             >
               <div class="d-flex align-center">
                 <!-- employee picture -->
@@ -101,7 +114,7 @@
                     outlined
                     text
                     elevation="0"
-                    @click="singleApproval"
+                    @click="confirmationDialog = true"
                   >
                     <v-icon>mdi-success</v-icon>
                     <span class="text-capitalize">Approve</span>
@@ -157,6 +170,46 @@
                   </tr>
                 </tbody>
               </table>
+              <!-- confirmation dialog -->
+              <v-dialog v-model="confirmationDialog" width="500" persistent>
+                <v-card>
+                  <v-card-title class="text-subtitle-1 primary_5">
+                    {{ $t('adminPage.bCards.confirmationTitle') }}
+                  </v-card-title>
+
+                  <v-card-text class="pb-0">
+                    <p
+                      class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
+                    >
+                      {{ $t('adminPage.bCards.confirmationMessage') }}
+                    </p>
+                  </v-card-text>
+
+                  <v-card-actions class="pb-10">
+                    <v-spacer></v-spacer>
+
+                    <v-btn
+                      outlined
+                      class="px-8 mx-2 text-capitalize"
+                      color="success darken-1 "
+                      text
+                      @click="singleApproval(employee.EmployeeCode)"
+                    >
+                      {{ $t('generals.yes') }}
+                    </v-btn>
+                    <v-btn
+                      outlined
+                      class="px-8 text-capitalize"
+                      color="error darken-1 "
+                      text
+                      @click="confirmationDialog = false"
+                    >
+                      {{ $t('generals.no') }}
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
             </v-expansion-panel-content>
           </v-expansion-panel>
         </v-expansion-panels>
@@ -192,16 +245,21 @@ export default {
       }
     },
   },
+
   layout: 'dtr',
+
   data() {
     return {
       overlay: false,
+      panel: null,
+      confirmationDialog: false,
       weeks: [],
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       employeesWaitingApproval: [],
       dtrValues: [],
     }
   },
+
   computed: {
     ...mapState({
       barWidth: (state) => state.portal.toolbarWidth,
@@ -209,6 +267,7 @@ export default {
       dtrAppEndDate: (state) => state.dtr.dtrAppEndDate,
     }),
   },
+
   mounted() {
     if (!this.dtrAppStartDate) {
       this.$router.push('/dtr/dtr-table')
@@ -321,55 +380,104 @@ export default {
           this.employeesWaitingApproval = modifiedArray
         }
       } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
+        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
       }
     },
 
-    getDtrValues(databaseReplyObject) {
-      const dtrValues = {}
-      Object.keys(databaseReplyObject).forEach((key) => {
-        if (!isNaN(parseInt(key))) {
-          dtrValues[key] = databaseReplyObject[key]
+    setDTRValues(databaseReplyObject) {
+      if (databaseReplyObject) {
+        const dtrValues = {}
+        Object.keys(databaseReplyObject).forEach((key) => {
+          if (!isNaN(parseInt(key))) {
+            dtrValues[key] = databaseReplyObject[key]
+          }
+        })
+
+        const mapping = {
+          RA: 'Regular Attendance',
+          AB: 'Absent',
+          AV: 'Annual Vacation',
+          SV: 'Sick Vacation',
+          'UP<20': 'UnPaid Vacation less than 20 days',
+          'UP>20': 'UnPaid Vacation more than 20 days',
+          D: 'Death',
+          NB: 'New Born',
+          HA: 'HAJJ Vacation',
+          MV: 'Maternity Vacation',
+          HDM: 'Huzband Death - Muslim',
+          HDN: 'Huzband Death - Non Muslim',
+          MRG: 'Marriage Vacation',
+          DOC: 'Dayoff Compensation',
+          ST: 'Study Vacation',
         }
-      })
 
-      const mapping = {
-        RA: 'Regular Attendance',
-        AB: 'Absent',
-        AV: 'Annual Vacation',
-        SV: 'Sick Vacation',
-        'UP<20': 'UnPaid Vacation less than 20 days',
-        'UP>20': 'UnPaid Vacation more than 20 days',
-        D: 'Death',
-        NB: 'New Born',
-        HA: 'HAJJ Vacation',
-        MV: 'Maternity Vacation',
-        HDM: 'Huzband Death - Muslim',
-        HDN: 'Huzband Death - Non Muslim',
-        MRG: 'Marriage Vacation',
-        DOC: 'Dayoff Compensation',
-        ST: 'Study Vacation',
-      }
-
-      for (const key in dtrValues) {
-        if (
-          Object.prototype.hasOwnProperty.call(dtrValues, key) &&
-          dtrValues[key] !== null
-        ) {
-          dtrValues[key] = mapping[dtrValues[key]]
+        for (const key in dtrValues) {
+          if (
+            Object.prototype.hasOwnProperty.call(dtrValues, key) &&
+            dtrValues[key] !== null
+          ) {
+            dtrValues[key] = mapping[dtrValues[key]]
+          }
         }
-      }
 
-      this.dtrValues = dtrValues
+        this.dtrValues = dtrValues
+      }
+    },
+
+    async singleApproval(employeeCode) {
+      try {
+        if (employeeCode) {
+          this.confirmationDialog = false
+          this.overlay = true
+          const startDate = this.flipDateString(this.dtrAppStartDate)
+          const endDate = this.flipDateString(this.dtrAppEndDate)
+
+          const approveSingleEmployee = await this.$axios.post(
+            `${this.$config.baseURL}/dtr-api/sql-params-call`,
+            {
+              query: `
+              UPDATE [dtr].[dtrEntries] 
+              SET [ApprovalStatus] = @approvalStatus
+              WHERE [EmployeeCode] = @employeeCode
+              AND [StartDate] = @startDate
+              AND [EndDate] = @endDate 
+            `,
+              parameters: {
+                approvalStatus: 2,
+                employeeCode,
+                startDate,
+                endDate,
+              },
+            }
+          )
+          if (approveSingleEmployee.status === 200) {
+            this.employeesWaitingApproval =
+              this.employeesWaitingApproval.filter(
+                (item) => item.EmployeeCode !== employeeCode
+              )
+
+            // to close the following employee's expanded panel header
+            this.panel = -1
+
+            this.overlay = false
+
+            // Send a successful feedback to the user
+            await this.notifyUser('success', 'dtrApp.dtrPage.approved')
+          }
+        }
+      } catch (e) {
+        this.overlay = false
+        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+      }
+    },
+
+    // Notify the user by dispatching a Vuex action
+    async notifyUser(type, message) {
+      const notification = { type, message: this.$t(message) }
+      await this.$store.dispatch(
+        'appNotifications/addNotification',
+        notification
+      )
     },
   },
 }

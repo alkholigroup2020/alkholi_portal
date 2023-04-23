@@ -106,7 +106,7 @@
     <div style="height: 50px"></div>
 
     <v-container class="py-2 py-xl-12 px-3 px-xl-16">
-      <v-row>
+      <v-row class="px-1 px-xl-4">
         <v-expansion-panels inset>
           <v-expansion-panel
             v-for="(employee, index) in allEmployeesData"
@@ -453,6 +453,10 @@ export default {
               } else if (employeeData.ApprovalStatus === 1) {
                 element.statusColor = 'orange'
                 element.statusName = 'Waiting for manager approval'
+              } else if (employeeData.ApprovalStatus === 2) {
+                element.statusColor = 'green'
+                element.statusName = 'Approved'
+                this.isSentForApproval = true
               }
             } else {
               element.statusColor = 'red'

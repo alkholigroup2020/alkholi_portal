@@ -195,7 +195,7 @@ export default {
   },
   computed: {
     disabledStatus() {
-      if (this.statusColor === 'orange') {
+      if (this.statusColor === 'orange' || this.statusColor === 'green') {
         return true
       } else {
         return false
