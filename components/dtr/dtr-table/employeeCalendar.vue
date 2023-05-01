@@ -3,14 +3,73 @@
     <v-overlay :value="overlay" :absolute="true">
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
+
+    <!-- single approval confirmation dialog -->
+    <v-dialog v-model="singleApprovalDialog" width="500" persistent>
+      <v-card>
+        <v-card-title class="text-subtitle-1 primary_5">
+          {{ $t('adminPage.bCards.confirmationTitle') }}
+        </v-card-title>
+
+        <v-card-text class="pb-0">
+          <p
+            class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
+          >
+            {{ $t('dtrApp.approvalPage.approveAllMessage') }}
+          </p>
+        </v-card-text>
+
+        <v-card-actions class="pb-10">
+          <v-spacer></v-spacer>
+
+          <v-btn
+            outlined
+            class="px-8 mx-2 text-capitalize"
+            color="success darken-1 "
+            text
+            @click="sendSingleForApproval"
+          >
+            {{ $t('generals.yes') }}
+          </v-btn>
+          <v-btn
+            outlined
+            class="px-8 text-capitalize"
+            color="error darken-1 "
+            text
+            @click="singleApprovalDialog = false"
+          >
+            {{ $t('generals.no') }}
+          </v-btn>
+          <v-spacer></v-spacer>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <div>
       <v-divider></v-divider>
 
       <div style="width: 100%" class="py-2 d-flex">
         <div class="d-flex">
           <v-btn
+            v-if="declineFlag"
             text
             outlined
+            small
+            color="success"
+            class="text-capitalize"
+            :disabled="disabledStatus"
+            @click="singleApprovalDialog = true"
+            ><v-icon color="green" small class="mx-2"
+              >mdi-checkbox-marked-circle-plus-outline</v-icon
+            >
+            <span class="text-capitalize">
+              {{ $t('dtrApp.dtrPage.sendForApproval') }}
+            </span></v-btn
+          >
+          <v-btn
+            text
+            outlined
+            :class="declineFlag ? 'mx-2' : ''"
             small
             color="success"
             class="text-capitalize"
@@ -24,9 +83,10 @@
           <v-btn
             text
             outlined
+            :class="declineFlag ? '' : 'mx-2'"
             small
             color="success"
-            class="text-capitalize mx-3"
+            class="text-capitalize"
             :disabled="disabledStatus"
             @click="normalizeDataSites"
             ><v-icon small>mdi-cursor-default-click-outline</v-icon>
@@ -42,7 +102,7 @@
             outlined
             small
             color="success"
-            :disabled="disabledStatus"
+            :disabled="disabledStatus || !changeOccurs"
             class="mx-3 text-capitalize"
             @click="saveData"
             ><v-icon small>mdi-content-save-all-outline</v-icon>
@@ -137,6 +197,12 @@
           </tr>
         </tbody>
       </table>
+
+      <div v-if="declineMessage" class="d-flex align-center py-5">
+        <span class="text-body-2">Decline Message:</span>
+        <span class="error--text text-body-2 px-2">{{ declineMessage }}</span>
+      </div>
+      <v-divider></v-divider>
     </div>
   </div>
 </template>
@@ -183,13 +249,19 @@ export default {
       type: String,
       required: true,
     },
+    declineFlag: {
+      type: Boolean,
+      required: false,
+    },
   },
   data() {
     return {
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
       weeks: [],
+      declineMessage: null,
       dtrEntriesArray: null,
       overlay: false,
+      singleApprovalDialog: false,
       changeOccurs: false,
     }
   },
@@ -301,12 +373,18 @@ export default {
         const savedData = await this.$axios.post(
           `${this.$config.baseURL}/dtr-api/sql-call`,
           {
-            query: `SELECT [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20] 
+            query: `SELECT DeclineMessage, [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20]
             FROM [alkholiPortal].[dtr].[dtrEntries] WHERE EmployeeCode='${this.employeeCode}' AND StartDate='${theStartDate}' AND EndDate='${theEndDate}'`,
           }
         )
 
-        /* 
+        if (savedData.data[0]) {
+          if (savedData.data[0].DeclineMessage) {
+            this.declineMessage = savedData.data[0].DeclineMessage
+          }
+        }
+
+        /*
           Use Object.keys(input) to get an array of the keys in the input object.
           Use .filter() to create a new array that only includes keys with non-null values.
           Use .map() to create a new array of objects based on the filtered keys.
@@ -371,10 +449,12 @@ export default {
 
       this.weeks = arr
       this.prepareDataArray()
-      this.changeOccurs = true
+      this.changeOccurs = false
+      this.$emit('employeeDataReset', this.employeeCode)
     },
 
     normalizeDataHO() {
+      this.resetData()
       const arr = this.weeks
       for (let i = 0; i < arr.length; i++) {
         for (let j = 0; j < arr[i].length; j++) {
@@ -390,7 +470,9 @@ export default {
       this.prepareDataArray()
       this.changeOccurs = true
     },
+
     normalizeDataSites() {
+      this.resetData()
       const arr = this.weeks
       for (let i = 0; i < arr.length; i++) {
         for (let j = 0; j < arr[i].length; j++) {
@@ -492,6 +574,66 @@ export default {
           notification
         )
       }
+    },
+
+    async sendSingleForApproval() {
+      try {
+        this.singleApprovalDialog = false
+        this.overlay = true
+
+        // Prepare variables for the query
+        const startingDate = this.formatDate(new Date(this.startDate))
+        const endingDate = this.formatDate(new Date(this.endDate))
+
+        const response = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/sql-params-call`,
+          {
+            query: `
+                UPDATE [dtr].[dtrEntries]
+                SET [ApprovalStatus] = @approvalStatus
+                WHERE [EmployeeCode] = @employeeCode
+                AND [StartDate] = @startDate
+                AND [EndDate] = @endDate
+              `,
+            parameters: {
+              approvalStatus: 1,
+              employeeCode: this.employeeCode,
+              startDate: startingDate,
+              endDate: endingDate,
+            },
+          }
+        )
+
+        if (response.status === 200) {
+          // close the panel
+          this.$emit('closePanel')
+
+          this.overlay = false
+
+          // Send a successful feedback to the user
+          await this.notifyUser('success', 'dtrApp.dtrPage.sentForApproval')
+        }
+      } catch (e) {
+        this.overlay = false
+        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+      }
+    },
+
+    formatDate(d) {
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    },
+
+    // Notify the user by dispatching a Vuex action
+    async notifyUser(type, message) {
+      const notification = { type, message: this.$t(message) }
+      await this.$store.dispatch(
+        'appNotifications/addNotification',
+        notification
+      )
     },
   },
 }

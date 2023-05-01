@@ -47,11 +47,29 @@ router.post('/save-dtr-data', auth, async (req, res) => {
     const checkResult = dtrEntryCheck.recordset[0].dtrEntry
 
     if (checkResult === 1) {
+      // Generate placeholders for dtrEntries
+      let dtrEntryPlaceholders
+      if (req.body.dtrEntries.length === 31) {
+        dtrEntryPlaceholders = req.body.dtrEntries
+      } else if (req.body.dtrEntries.length === 30) {
+        dtrEntryPlaceholders = req.body.dtrEntries
+        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
+      } else if (req.body.dtrEntries.length === 29) {
+        dtrEntryPlaceholders = req.body.dtrEntries
+        dtrEntryPlaceholders.splice(9, 0, { date: 30, type: null })
+        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
+      } else if (req.body.dtrEntries.length === 28) {
+        dtrEntryPlaceholders = req.body.dtrEntries
+        dtrEntryPlaceholders.splice(8, 0, { date: 29, type: null })
+        dtrEntryPlaceholders.splice(9, 0, { date: 30, type: null })
+        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
+      }
+
       // Generate the SQL query with parameter placeholders
       const baseQuery = `UPDATE [dtr].[dtrEntries]
-      SET [EmployeeCode] = @employeeCode,
-          [employeeName] = @employeeName
-          [employeePicture] = @employeePicture
+      SET
+          [employeeName] = @employeeName,
+          [employeePicture] = @employeePicture,
           [ManagerCode] = @managerCode,
           [StartDate] = @startingDate,
           [EndDate] = @endingDate,
@@ -89,22 +107,23 @@ router.post('/save-dtr-data', auth, async (req, res) => {
           [18] = @type28,
           [19] = @type29,
           [20] = @type30
-      WHERE [EmployeeCode] = @employeeCode AND [StartDate] = @startingDate AND [EndDate] = @endingDate`
+      WHERE
+          [EmployeeCode] = @employeeCode;`
 
       // Prepare the SQL request
       const request = portalDBConnection.request()
 
       // Add parameters to the request
-      request.input('employeeCode', req.body.employeeCode)
+      request.input('employeeCode', employeeCode)
       request.input('employeeName', employeeName)
       request.input('employeePicture', employeePicture)
       request.input('managerCode', req.body.managerCode)
-      request.input('startingDate', req.body.startingDate)
-      request.input('endingDate', req.body.endingDate)
+      request.input('startingDate', startingDate)
+      request.input('endingDate', endingDate)
       request.input('logDate', logDate)
       request.input('dtrAdmin', req.body.dtrAdmin)
 
-      req.body.dtrEntries.forEach((entry, index) => {
+      dtrEntryPlaceholders.forEach((entry, index) => {
         request.input(`type${index}`, entry.type)
       })
 
@@ -185,139 +204,3 @@ router.post('/save-dtr-data', auth, async (req, res) => {
 })
 
 module.exports = router
-
-// Mine
-
-// const express = require('express')
-// const router = express.Router()
-// const sql = require('mssql')
-// // Import a date formatting library
-// const { format } = require('date-fns')
-// const sqlConfigs = require('../configs/sql')
-// // const hrSQLConfigs = require('../configs/hrSQL')
-// const auth = require('../middleware/authorization')
-
-// async function portalDB() {
-//   const pool = new sql.ConnectionPool(sqlConfigs)
-//   try {
-//     await pool.connect()
-//     return pool
-//   } catch (err) {
-//     return err
-//   }
-// }
-
-// async function hrDB() {
-//   const pool = new sql.ConnectionPool(hrSQLConfigs)
-//   try {
-//     await pool.connect()
-//     return pool
-//   } catch (err) {
-//     return err
-//   }
-// }
-
-// router.post('/save-dtr-data', auth, async (req, res) => {
-//   const portalDBConnection = await portalDB()
-
-//   try {
-//     // Format the date using the date-fns library
-//     const logDate = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
-//     const employeeCode = req.body.employeeCode
-//     const startingDate = req.body.startingDate
-//     const endingDate = req.body.endingDate
-
-//     // check if the dtr entry was already there
-//     const dtrEntryCheck = await portalDBConnection
-//       .request()
-//       .query(
-//         `exec [dtr].[dtrEntries_checkIfExist] '${employeeCode}', '${startingDate}', '${endingDate}'`
-//       )
-
-//     console.log('🚀 dtrEntryCheck:', dtrEntryCheck.recordset[0].dtrEntry)
-
-//     // if (dtrEntryCheck === 1) {
-//     //   //
-//     // } else {
-//     //   //
-//     // }
-
-//     // const request = portalDBConnection.request()
-
-//     // request.input('employeeCode', sql.VarChar, employeeCode)
-//     // request.input('startingDate', sql.Date, startingDate)
-//     // request.input('endingDate', sql.Date, endingDate)
-
-//     // const result = await request.execute('[dtr].[dtrEntries_checkIfExist]')
-//     // console.log('🚀 result:', result)
-
-//     if (Array.isArray(req.body.dtrEntries)) {
-//       // Generate the SQL query with parameter placeholders
-//       const baseQuery = `
-//         INSERT INTO [dtr].[dtrEntries]
-//         ([EmployeeCode], [ManagerCode], [StartDate], [EndDate], [ModifiedDate], [ModifiedBy], [ApprovalStatus],
-//           [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20]
-//         )
-//         VALUES
-//         (@employeeCode, @managerCode, @startingDate, @endingDate, @logDate, @dtrAdmin, 0,`
-
-//       // Generate placeholders for dtrEntries
-//       let dtrEntryPlaceholders
-//       if (req.body.dtrEntries.length === 31) {
-//         dtrEntryPlaceholders = req.body.dtrEntries
-//           .map((_, index) => `@type${index}`)
-//           .join(', ')
-//       } else if (req.body.dtrEntries.length === 30) {
-//         const entriesArray = req.body.dtrEntries
-//         entriesArray.splice(10, 0, { date: 31, type: null })
-//         dtrEntryPlaceholders = entriesArray
-//           .map((_, index) => `@type${index}`)
-//           .join(', ')
-//       } else if (req.body.dtrEntries.length === 29) {
-//         const entriesArray = req.body.dtrEntries
-//         entriesArray.splice(9, 0, { date: 30, type: null })
-//         entriesArray.splice(10, 0, { date: 31, type: null })
-//         dtrEntryPlaceholders = entriesArray
-//           .map((_, index) => `@type${index}`)
-//           .join(', ')
-//       } else if (req.body.dtrEntries.length === 28) {
-//         const entriesArray = req.body.dtrEntries
-//         entriesArray.splice(8, 0, { date: 29, type: null })
-//         entriesArray.splice(9, 0, { date: 30, type: null })
-//         entriesArray.splice(10, 0, { date: 31, type: null })
-//         dtrEntryPlaceholders = entriesArray
-//           .map((_, index) => `@type${index}`)
-//           .join(', ')
-//       }
-
-//       const query = baseQuery + dtrEntryPlaceholders + ')'
-
-//       // Prepare the SQL request
-//       const request = portalDBConnection.request()
-
-//       // Add parameters to the request
-//       request.input('employeeCode', req.body.employeeCode)
-//       request.input('managerCode', req.body.managerCode)
-//       request.input('startingDate', req.body.startingDate)
-//       request.input('endingDate', req.body.endingDate)
-//       request.input('logDate', logDate)
-//       request.input('dtrAdmin', req.body.dtrAdmin)
-
-//       req.body.dtrEntries.forEach((entry, index) => {
-//         request.input(`type${index}`, entry.type)
-//       })
-
-//       // Execute the query
-//       const theCall = await request.query(query)
-//       res.send(theCall)
-//     }
-//   } catch (e) {
-//     const statusCode = e.statusCode || 500
-//     const message = e.message || e.toString().replace('Error: ', '')
-//     res.status(statusCode).json({ message })
-//   } finally {
-//     await portalDBConnection.close()
-//   }
-// })
-
-// module.exports = router

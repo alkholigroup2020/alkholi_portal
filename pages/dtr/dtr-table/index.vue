@@ -71,14 +71,57 @@
       style="position: fixed; z-index: 2"
       flat
     >
+      <!-- approve all confirmation dialog -->
+      <v-dialog v-model="approvalDialog" width="500" persistent>
+        <v-card>
+          <v-card-title class="text-subtitle-1 primary_5">
+            {{ $t('adminPage.bCards.confirmationTitle') }}
+          </v-card-title>
+
+          <v-card-text class="pb-0">
+            <p
+              class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
+            >
+              {{ $t('dtrApp.approvalPage.approveAllMessage') }}
+            </p>
+          </v-card-text>
+
+          <v-card-actions class="pb-10">
+            <v-spacer></v-spacer>
+
+            <v-btn
+              outlined
+              class="px-8 mx-2 text-capitalize"
+              color="success darken-1 "
+              text
+              @click="sendForApproval"
+            >
+              {{ $t('generals.yes') }}
+            </v-btn>
+            <v-btn
+              outlined
+              class="px-8 text-capitalize"
+              color="error darken-1 "
+              text
+              @click="approvalDialog = false"
+            >
+              {{ $t('generals.no') }}
+            </v-btn>
+            <v-spacer></v-spacer>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <div class="d-flex align-center px-3 px-xl-16" style="width: 100%">
         <v-btn
           outlined
           text
-          :disabled="isSentForApproval"
-          @click="sendForApproval"
+          :disabled="disableSendForApprovalBTN"
+          @click="approvalDialog = true"
         >
-          <v-icon color="green" small class="mx-2">mdi-send</v-icon>
+          <v-icon color="green" small class="mx-2"
+            >mdi-checkbox-marked-circle-plus-outline</v-icon
+          >
           <span class="text-capitalize">
             {{ $t('dtrApp.dtrPage.sendForApproval') }}
           </span>
@@ -105,9 +148,9 @@
 
     <div style="height: 50px"></div>
 
-    <v-container class="py-2 py-xl-12 px-3 px-xl-16">
+    <v-container class="py-8 py-md-10 py-xl-12 px-3 px-xl-16">
       <v-row class="px-1 px-xl-4">
-        <v-expansion-panels inset>
+        <v-expansion-panels v-model="panel" inset>
           <v-expansion-panel
             v-for="(employee, index) in allEmployeesData"
             :key="index"
@@ -172,7 +215,10 @@
                 :end-date="new Date(activeEndYear, activeEndMonth - 1, 20)"
                 :employee-code="employee.employee_code"
                 :status-color="employee.statusColor"
+                :decline-flag="employee.declineFlag"
                 @employeeDataSaved="getSingleRecordStatus"
+                @employeeDataReset="employeeDataReset(employee)"
+                @closePanel="closePanel(employee)"
               />
             </v-expansion-panel-content>
           </v-expansion-panel>
@@ -191,7 +237,9 @@ export default {
       allEmployeesData: [],
       overlay: false,
       dialog: false,
-      isSentForApproval: false,
+      approvalDialog: false,
+      panel: null,
+      disableSendForApprovalBTN: false,
       startDate: '',
       endDate: '',
       activeStartMonth: 0,
@@ -375,7 +423,7 @@ export default {
           }
         }
 
-        await this.getRecordStatus(allEmployees)
+        await this.getRecordsStatus(allEmployees)
         this.overlay = false
       } catch (e) {
         this.overlay = false
@@ -400,11 +448,18 @@ export default {
       return year + '-' + month + '-' + day
     },
 
-    areAllApprovalStatusEqualTo(data, targetValue) {
-      return data.every((item) => item.ApprovalStatus === targetValue)
+    areAllApprovalStatusEqualTo(arr) {
+      // Use the every() method to iterate over the array
+      // The every() method tests whether all elements in the array pass
+      // the test implemented by the provided function
+      return arr.every(function (item) {
+        // Check if the current item's statusColor property is equal to "yellow"
+        // If it is not equal to "yellow", the every() method will return false immediately
+        return item.statusColor === 'yellow'
+      })
     },
 
-    async getRecordStatus(assignedEmployees) {
+    async getRecordsStatus(assignedEmployees) {
       try {
         // flip the starting date
         const startingDate = this.flipDateString(this.startDate)
@@ -429,22 +484,18 @@ export default {
         )
 
         if (checkStatus.status === 200) {
-          // to check if we need to disable the button of "send for approval" or not
-          const allApprovalStatusEqual = this.areAllApprovalStatusEqualTo(
-            checkStatus.data,
-            1
-          )
-          if (allApprovalStatusEqual) {
-            // disable the send for approval button
-            this.isSentForApproval = true
-          } else {
-            this.isSentForApproval = false
-          }
-
           const modifiedArray = assignedEmployees.map((element) => {
             const employeeData = checkStatus.data.find(
               (record) => record.EmployeeCode === element.employee_code
             )
+
+            if (employeeData) {
+              if (employeeData.DeclineFlag) {
+                element.declineFlag = true
+              } else {
+                element.declineFlag = false
+              }
+            }
 
             if (employeeData) {
               if (employeeData.ApprovalStatus === 0) {
@@ -454,20 +505,32 @@ export default {
                 element.statusColor = 'orange'
                 element.statusName = 'Waiting for manager approval'
               } else if (employeeData.ApprovalStatus === 2) {
+                element.statusColor = 'red'
+                element.statusName = 'Declined - Needs Review'
+              } else if (employeeData.ApprovalStatus === 4) {
                 element.statusColor = 'green'
                 element.statusName = 'Approved'
-                this.isSentForApproval = true
               }
             } else {
-              element.statusColor = 'red'
+              element.statusColor = 'pink'
               element.statusName = 'No changes yet!'
-              // then no need to disable the button of "send for approval"
-              this.isSentForApproval = false
             }
+
             return element
           })
 
           this.allEmployeesData = modifiedArray
+
+          // check if we need to disable the button of "send for approval" or not
+          const allApprovalStatusEqual = this.areAllApprovalStatusEqualTo(
+            this.allEmployeesData
+          )
+
+          if (allApprovalStatusEqual) {
+            this.disableSendForApprovalBTN = false
+          } else {
+            this.disableSendForApprovalBTN = true
+          }
         }
       } catch (e) {
         const error = e.toString()
@@ -489,14 +552,14 @@ export default {
         const startingDate = this.flipDateString(this.startDate)
         const endingDate = this.flipDateString(this.endDate)
 
-        const employeeCodes = payload
+        const employeeCode = payload
 
         const checkStatus = await this.$axios.post(
           `${this.$config.baseURL}/dtr-api/sql-call`,
           {
             query: `
               SELECT * FROM dtr.dtrEntries
-              WHERE EmployeeCode='${employeeCodes}'
+              WHERE EmployeeCode='${employeeCode}'
               AND StartDate='${startingDate}'
               AND EndDate='${endingDate}'
             `,
@@ -516,12 +579,28 @@ export default {
               } else if (employeeData.ApprovalStatus === 1) {
                 element.statusColor = 'orange'
                 element.statusName = 'Waiting for manager approval'
+              } else if (employeeData.ApprovalStatus === 2) {
+                element.statusColor = 'red'
+                element.statusName = 'Declined - Needs Review'
               }
             }
             return element
           })
 
+          // close the panel
+          this.panel = -1
+
           this.allEmployeesData = modifiedArray
+          // check if we need to disable the button of "send for approval" or not
+          const allApprovalStatusEqual = this.areAllApprovalStatusEqualTo(
+            this.allEmployeesData
+          )
+
+          if (allApprovalStatusEqual) {
+            this.disableSendForApprovalBTN = false
+          } else {
+            this.disableSendForApprovalBTN = true
+          }
         }
       } catch (e) {
         const error = e.toString()
@@ -839,6 +918,26 @@ export default {
       this.$router.push('/')
     },
 
+    async closePanel(payload) {
+      this.panel = -1
+      await this.getSingleRecordStatus(payload.employee_code)
+    },
+
+    employeeDataReset(employee) {
+      employee.statusColor = 'pink'
+      employee.statusName = 'No changes yet!'
+      // check if we need to disable the button of "send for approval" or not
+      const allApprovalStatusEqual = this.areAllApprovalStatusEqualTo(
+        this.allEmployeesData
+      )
+
+      if (allApprovalStatusEqual) {
+        this.disableSendForApprovalBTN = false
+      } else {
+        this.disableSendForApprovalBTN = true
+      }
+    },
+
     hasRedStatusColor(array) {
       for (let i = 0; i < array.length; i++) {
         if (array[i].statusColor === 'red') {
@@ -856,6 +955,7 @@ export default {
         )
 
         if (isReadyForApproval) {
+          this.overlay = true
           // Define reusable helper functions
           const formatDate = (date) => this.flipDateString(date)
 
@@ -876,7 +976,7 @@ export default {
             `${this.$config.baseURL}/dtr-api/sql-params-call`,
             {
               query: `
-                UPDATE [dtr].[dtrEntries] 
+                UPDATE [dtr].[dtrEntries]
                 SET [ApprovalStatus] = @approvalStatus
                 WHERE [EmployeeCode] IN ${employeeCodesString}
                 AND [StartDate] = @startDate
@@ -892,15 +992,21 @@ export default {
 
           if (response.status === 200) {
             // Update the records status after sending all for approval
-            await this.getRecordStatus(this.allEmployeesData)
+            await this.getRecordsStatus(this.allEmployeesData)
+            this.overlay = false
+            this.approvalDialog = false
 
             // Send a successful feedback to the user
             await this.notifyUser('success', 'dtrApp.dtrPage.sentForApproval')
           }
         } else {
+          this.overlay = false
+          this.approvalDialog = false
           await this.notifyUser('error', 'dtrApp.dtrPage.notReadyForApproval')
         }
       } catch (e) {
+        this.overlay = false
+        this.approvalDialog = false
         await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
       }
     },

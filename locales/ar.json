@@ -207,6 +207,10 @@
       "notReadyForApproval": "يجب إدخال تفاصيل الحضور لكافة الموظفين أولاً",
       "normalizeHO": "حضور المركز الرئيسي",
       "normalizeSites": "حضور المواقع"
+    },
+    "approvalPage": {
+      "sendAllForApproval": "الموافقة للكل",
+      "approveAllMessage": "هل أنت متأكد من الموافقة على الكل؟"
     }
   },
   "errorMessages": {

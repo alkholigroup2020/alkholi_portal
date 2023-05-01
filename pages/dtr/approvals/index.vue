@@ -22,7 +22,7 @@
             <p
               class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
             >
-              {{ $t('adminPage.bCards.confirmationMessage') }}
+              {{ $t('dtrApp.approvalPage.approveAllMessage') }}
             </p>
           </v-card-text>
 
@@ -54,7 +54,7 @@
 
       <div class="d-flex align-center px-3 px-xl-16" style="width: 100%">
         <v-btn outlined text @click="confirmAllDialog = true">
-          <v-icon color="green" small class="mx-2">mdi-send</v-icon>
+          <v-icon color="green" small class="mx-2">mdi-check-all</v-icon>
           <span class="text-capitalize">
             {{ $t('dtrApp.approvalPage.sendAllForApproval') }}
           </span>
@@ -65,7 +65,7 @@
 
     <div style="height: 50px"></div>
 
-    <v-container class="py-2 py-xl-5 px-3 px-xl-16">
+    <v-container class="py-8 py-md-10 py-xl-12 px-3 px-xl-16">
       <v-row
         v-if="employeesWaitingApproval.length > 0"
         class="py-1 py-xl-3 px-1"
@@ -79,7 +79,7 @@
 
       <v-row v-else class="py-1 py-xl-3 px-1">
         <v-col>
-          <h3 class="text-body-1 green--text">
+          <h3 class="text-body-1 success--text">
             No approvals are currently required.
           </h3>
         </v-col>
@@ -168,7 +168,7 @@
                     outlined
                     text
                     elevation="0"
-                    @click="singleDecline"
+                    @click="declineDialog = true"
                   >
                     <v-icon>mdi-success</v-icon>
                     <span class="text-capitalize">Decline</span>
@@ -176,6 +176,7 @@
                 </div>
               </div>
               <v-divider class="mt-1 mb-3"></v-divider>
+
               <table>
                 <thead
                   :style="
@@ -211,7 +212,8 @@
                   </tr>
                 </tbody>
               </table>
-              <!-- confirmation dialog -->
+
+              <!-- single approve confirmation dialog -->
               <v-dialog v-model="confirmationDialog" width="500" persistent>
                 <v-card>
                   <v-card-title class="text-subtitle-1 primary_5">
@@ -244,6 +246,54 @@
                       color="error darken-1 "
                       text
                       @click="confirmationDialog = false"
+                    >
+                      {{ $t('generals.no') }}
+                    </v-btn>
+                    <v-spacer></v-spacer>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+
+              <!-- single decline confirmation dialog -->
+              <v-dialog v-model="declineDialog" width="500" persistent>
+                <v-card>
+                  <v-card-title class="text-subtitle-1 primary_5">
+                    {{ $t('adminPage.bCards.confirmationTitle') }}
+                  </v-card-title>
+
+                  <v-card-text class="pb-0">
+                    <p
+                      class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
+                    >
+                      {{ $t('adminPage.bCards.confirmationMessage') }}
+                    </p>
+                    <v-textarea
+                      v-model="declineMSG"
+                      outlined
+                      label="Decline Message"
+                      color="primary--text"
+                      height="100"
+                    ></v-textarea>
+                  </v-card-text>
+
+                  <v-card-actions class="pb-10">
+                    <v-spacer></v-spacer>
+
+                    <v-btn
+                      outlined
+                      class="px-8 mx-2 text-capitalize"
+                      color="success darken-1 "
+                      text
+                      @click="singleDecline(employee.EmployeeCode)"
+                    >
+                      {{ $t('generals.yes') }}
+                    </v-btn>
+                    <v-btn
+                      outlined
+                      class="px-8 text-capitalize"
+                      color="error darken-1 "
+                      text
+                      @click="declineDialog = false"
                     >
                       {{ $t('generals.no') }}
                     </v-btn>
@@ -294,6 +344,8 @@ export default {
       overlay: false,
       panel: null,
       confirmationDialog: false,
+      declineDialog: false,
+      declineMSG: '',
       confirmAllDialog: false,
       weeks: [],
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -484,7 +536,7 @@ export default {
               AND [EndDate] = @endDate 
             `,
             parameters: {
-              approvalStatus: 2,
+              approvalStatus: 4,
               employeeCode,
               startDate,
               endDate,
@@ -502,7 +554,58 @@ export default {
           this.overlay = false
 
           // Send a successful feedback to the user
-          await this.notifyUser('success', 'dtrApp.dtrPage.approved')
+          await this.notifyUser('success', 'dtrApp.dtrPage.successApproval')
+        }
+      } catch (e) {
+        this.overlay = false
+        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+      }
+    },
+
+    async singleDecline(employeeCode) {
+      try {
+        this.declineDialog = false
+        this.overlay = true
+        const startDate = this.flipDateString(this.dtrAppStartDate)
+        const endDate = this.flipDateString(this.dtrAppEndDate)
+        const declineMSG = this.declineMSG
+
+        const declineSingleEmployee = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/sql-params-call`,
+          {
+            query: `
+              UPDATE [dtr].[dtrEntries]
+              SET [ApprovalStatus] = @approvalStatus,
+              [DeclineMessage] = @declineMSG,
+              [DeclineFlag] = @declineFlag
+              WHERE [EmployeeCode] = @employeeCode
+              AND [StartDate] = @startDate
+              AND [EndDate] = @endDate
+            `,
+            parameters: {
+              approvalStatus: 2,
+              declineMSG,
+              declineFlag: true,
+              employeeCode,
+              startDate,
+              endDate,
+            },
+          }
+        )
+        if (declineSingleEmployee.status === 200) {
+          this.employeesWaitingApproval = this.employeesWaitingApproval.filter(
+            (item) => item.EmployeeCode !== employeeCode
+          )
+
+          // to close the following employee's expanded panel header
+          this.panel = -1
+
+          this.overlay = false
+
+          this.declineMSG = ''
+
+          // Send a successful feedback to the user
+          await this.notifyUser('success', 'dtrApp.dtrPage.successDecline')
         }
       } catch (e) {
         this.overlay = false
@@ -536,7 +639,7 @@ export default {
               AND [EndDate] = @endDate
             `,
             parameters: {
-              approvalStatus: 2,
+              approvalStatus: 4,
               startDate,
               endDate,
             },
@@ -547,7 +650,7 @@ export default {
           this.overlay = false
 
           // Send a successful feedback to the user
-          await this.notifyUser('success', 'dtrApp.dtrPage.approved')
+          await this.notifyUser('success', 'dtrApp.dtrPage.successApproval')
         }
       } catch (e) {
         this.overlay = false
