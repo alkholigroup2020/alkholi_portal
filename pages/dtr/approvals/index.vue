@@ -53,7 +53,12 @@
       </v-dialog>
 
       <div class="d-flex align-center px-3 px-xl-16" style="width: 100%">
-        <v-btn outlined text @click="confirmAllDialog = true">
+        <v-btn
+          outlined
+          text
+          :disabled="!employeesWaitingApproval.length > 0"
+          @click="confirmAllDialog = true"
+        >
           <v-icon color="green" small class="mx-2">mdi-check-all</v-icon>
           <span class="text-capitalize">
             {{ $t('dtrApp.approvalPage.sendAllForApproval') }}
@@ -71,7 +76,7 @@
         class="py-1 py-xl-3 px-1"
       >
         <v-col>
-          <h3 class="text-body-1 primaryText--text">
+          <h3 class="text-h5 primaryText--text">
             The following employees' DTR needs your approval.
           </h3>
         </v-col>
@@ -536,7 +541,7 @@ export default {
               AND [EndDate] = @endDate 
             `,
             parameters: {
-              approvalStatus: 4,
+              approvalStatus: 3,
               employeeCode,
               startDate,
               endDate,
@@ -639,7 +644,7 @@ export default {
               AND [EndDate] = @endDate
             `,
             parameters: {
-              approvalStatus: 4,
+              approvalStatus: 3,
               startDate,
               endDate,
             },

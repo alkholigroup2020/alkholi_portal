@@ -38,7 +38,7 @@
               </v-col>
 
               <!-- citrix -->
-              <v-dialog
+              <!-- <v-dialog
                 v-model="citrixDialog"
                 width="500"
                 overlay-opacity="0.9"
@@ -151,7 +151,7 @@
                     </v-col>
                   </v-row>
                 </v-card>
-              </v-dialog>
+              </v-dialog> -->
 
               <!-- sharePoint -->
               <v-dialog v-model="spDialog" width="800" overlay-opacity="0.9">
@@ -404,10 +404,15 @@ export default {
           url: 'http://attendance.alkholi.com/ess',
         },
         {
+          imgURL: '/websiteImages/citrix.png',
+          title: this.$t('portalPage.shortcuts.citrix'),
+          url: 'https://citrix.alkholi.com',
+        },
+        {
           imgURL: '/websiteImages/hrms.png',
           title: this.$t('portalPage.shortcuts.hrSystem'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/index.php',
-        },
+        }        
       ],
       sharepoint: [
         {
@@ -455,7 +460,7 @@ export default {
           url: 'https://alkholi.sharepoint.com/procurement',
         },
       ],
-      citrixDialog: false,
+      // citrixDialog: false,
       spDialog: false,
     }
   },

@@ -229,6 +229,14 @@
 </template>
 
 <script>
+/*
+No Record => pink => No Changes Yet
+0 => yellow => Ready to be sent
+1 => orange => Waiting for approval
+2 => red => Declined - Needs review!
+3 => green => Approved
+4 => gray => Migrated
+*/
 import { mapState } from 'vuex'
 export default {
   layout: 'dtr',
@@ -507,7 +515,7 @@ export default {
               } else if (employeeData.ApprovalStatus === 2) {
                 element.statusColor = 'red'
                 element.statusName = 'Declined - Needs Review'
-              } else if (employeeData.ApprovalStatus === 4) {
+              } else if (employeeData.ApprovalStatus === 3) {
                 element.statusColor = 'green'
                 element.statusName = 'Approved'
               }
