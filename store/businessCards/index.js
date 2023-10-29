@@ -34,6 +34,7 @@ export const actions = {
       dataToSend.append('qrLogo', payload.qrLogo)
       dataToSend.append('bgColor', payload.bgColor)
       dataToSend.append('frColor', payload.frColor)
+      dataToSend.append('mainColor', payload.mainColor)
       dataToSend.append('qrSize', payload.qrSize)
       dataToSend.append('faxLine', payload.faxLine)
       dataToSend.append('creator', payload.creator)

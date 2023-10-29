@@ -128,11 +128,13 @@ const saveEmployeeData = async (
   qrLogo,
   qrBackgroundColor,
   qrFrontColor,
+  mainColor,
   qrSize,
   companyLogo,
   employeePicture
 ) => {
   const portalDBConnection = await portalDB()
+
   try {
     // for the log record
     const D = new Date()
@@ -225,7 +227,7 @@ const saveEmployeeData = async (
       }, '${payload.employeeMailAddress}', '${payload.employeeWebSite}',
         '${qrFileName}', '${payload.employeeCompany}', ${
         payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
-      }
+      }, '${payload.mainColor}'
       `)
 
       // write the log record
@@ -248,23 +250,59 @@ const saveEmployeeData = async (
       }
     }
 
-    const employeeData = await portalDBConnection.request().query(`
-        exec businessCards.employeeData_addData '${payload.employeeID}',
-        '${companyLogo}', '${employeePicture}', N'${
-      payload.employeeArabicName
-    }',
-        '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
-        '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
-        ${
-          payload.employeeLandLines
-            ? `'${payload.employeeLandLines}'`
-            : 'undefined'
-        }, '${payload.employeeMailAddress}', '${
-      payload.employeeWebSite
-    }', '${qrFileName}', '${payload.employeeCompany}', ${
-      payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
-    }
-      `)
+    // const employeeData = await portalDBConnection.request().query(`
+    //     exec businessCards.employeeData_addData '${payload.employeeID}',
+    //     '${companyLogo}', '${employeePicture}', N'${
+    //   payload.employeeArabicName
+    // }',
+    //     '${payload.employeeEnglishName}', N'${payload.employeeArabicTitle}',
+    //     '${payload.employeeEnglishTitle}', '${payload.employeeMobileNumber}',
+    //     ${
+    //       payload.employeeLandLines
+    //         ? `'${payload.employeeLandLines}'`
+    //         : 'undefined'
+    //     }, '${payload.employeeMailAddress}', '${
+    //   payload.employeeWebSite
+    // }', '${qrFileName}', '${payload.employeeCompany}', ${
+    //   payload.faxLine ? `'${payload.faxLine}'` : 'undefined'
+    // }, '${payload.mainColor}'
+    //   `)
+
+    const request = portalDBConnection.request()
+
+    // These are the input parameters for the stored procedure
+    request.input('employeeID', sql.VarChar(20), payload.employeeID)
+    request.input('companyLogo', sql.NVarChar(100), companyLogo || 'undefined')
+    request.input(
+      'profilePic',
+      sql.NVarChar(100),
+      employeePicture || 'profile.png'
+    )
+    request.input('fullName_a', sql.NVarChar(100), payload.employeeArabicName)
+    request.input('fullName_e', sql.VarChar(100), payload.employeeEnglishName)
+    request.input('arabicTitle', sql.NVarChar(100), payload.employeeArabicTitle)
+    request.input('title', sql.VarChar(100), payload.employeeEnglishTitle)
+    request.input('mobileNumber', sql.VarChar(20), payload.employeeMobileNumber)
+    request.input(
+      'landLines',
+      sql.VarChar(150),
+      payload.employeeLandLines || 'undefined'
+    )
+    request.input('mailAddress', sql.VarChar(50), payload.employeeMailAddress)
+    request.input('webSite', sql.VarChar(50), payload.employeeWebSite)
+    request.input('qrCodePath', sql.VarChar(25), qrFileName)
+    request.input('company', sql.VarChar(100), payload.employeeCompany)
+    request.input('faxLine', sql.VarChar(150), payload.faxLine || 'undefined')
+    request.input(
+      'mainColor',
+      sql.VarChar(10),
+      payload.mainColor || 'undefined'
+    )
+
+    // Execute the stored procedure
+    const employeeData = await request.execute(
+      'businessCards.employeeData_addData'
+    )
 
     // write the log record
     await portalDBConnection.request().query(
@@ -285,6 +323,7 @@ const saveEmployeeData = async (
       return payload.employeeID
     }
   } catch (error) {
+    console.log('error :', error)
     throw new Error(error)
   } finally {
     await portalDBConnection.close()
@@ -332,6 +371,7 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
   try {
     const qrBackgroundColor = req.body.bgColor
     const qrFrontColor = req.body.frColor
+    const mainColor = req.body.mainColor
     let qrSize = req.body.qrSize
     if (qrSize === 'undefined') {
       qrSize = '300'
@@ -356,22 +396,13 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
       }
       if (req.files.employeePicture) {
         employeePicture = req.files.employeePicture[0].filename
+        console.log('employeePicture :', employeePicture)
       }
     }
 
-    // if employee ID is defined
-    const saveToDB = await saveEmployeeData(
-      req.body,
-      qrLogo,
-      qrBackgroundColor,
-      qrFrontColor,
-      qrSize,
-      companyLogo,
-      employeePicture
-    )
-
     // if no employee ID is defined
     if (req.body.employeeID === 'undefined') {
+      console.log(`There is NO employee ID`)
       const uniqueID = await generateID(10001, 99999)
       const employeeData = req.body
       employeeData.employeeID = `X${uniqueID}`
@@ -380,15 +411,28 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
         qrLogo,
         qrBackgroundColor,
         qrFrontColor,
+        mainColor,
         qrSize,
         companyLogo,
         employeePicture
       )
 
       return res.status(200).send(saveToDB)
+    } else {
+      // if employee ID is defined
+      console.log(`There is an employee ID`)
+      const saveToDB = await saveEmployeeData(
+        req.body,
+        qrLogo,
+        qrBackgroundColor,
+        qrFrontColor,
+        mainColor,
+        qrSize,
+        companyLogo,
+        employeePicture
+      )
+      res.status(200).send(saveToDB)
     }
-
-    res.status(200).send(saveToDB)
   } catch (error) {
     // delete the newly uploaded files
 

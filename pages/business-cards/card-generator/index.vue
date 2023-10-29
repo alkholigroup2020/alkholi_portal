@@ -7,7 +7,7 @@
           {{ $t('businessCards.cardGenerator.title') }}
         </h3>
         <hr
-          class="mt-3 mb-8"
+          class="mt-1 mb-4"
           :style="$vuetify.breakpoint.mdAndUp ? 'width: 91.5%' : ''"
         />
       </v-col>
@@ -45,7 +45,10 @@
 
         <v-row>
           <v-col class="py-2" cols="12" md="5">
-            <ValidationProvider v-slot="{ errors }" rules="required|email">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required|email' : 'email'"
+            >
               <v-text-field
                 v-model="employeeMailAddress"
                 :label="$t('businessCards.cardGenerator.empEmail')"
@@ -119,7 +122,10 @@
 
         <v-row>
           <v-col class="py-2" cols="12" md="5">
-            <ValidationProvider v-slot="{ errors }" rules="required">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required' : ''"
+            >
               <v-text-field
                 v-model="employeeEnglishName"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -130,7 +136,10 @@
             </ValidationProvider>
           </v-col>
           <v-col class="py-2" cols="12" md="5" offset-md="1">
-            <ValidationProvider v-slot="{ errors }" rules="required">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required' : ''"
+            >
               <v-text-field
                 v-model="employeeArabicName"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -145,7 +154,10 @@
 
         <v-row>
           <v-col class="py-2" cols="12" md="5">
-            <ValidationProvider v-slot="{ errors }" rules="required">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required' : ''"
+            >
               <v-text-field
                 v-model="employeeEnglishTitle"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -156,7 +168,10 @@
             </ValidationProvider>
           </v-col>
           <v-col class="py-2" cols="12" md="5" offset-md="1">
-            <ValidationProvider v-slot="{ errors }" rules="required">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required' : ''"
+            >
               <v-text-field
                 v-model="employeeArabicTitle"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -173,7 +188,22 @@
           <v-col class="py-2" cols="12" md="5">
             <ValidationProvider
               v-slot="{ errors, validate }"
-              rules="required|numeric|length:9"
+              :rules="company !== 'Custom' ? 'required|phone' : ''"
+            >
+              <v-text-field
+                v-model="employeeMobileNumber"
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                :label="$t('businessCards.cardGenerator.empMobile')"
+                :error-messages="errors[0]"
+                dense
+                @change="validate"
+              ></v-text-field>
+            </ValidationProvider>
+          </v-col>
+          <!-- <v-col class="py-2" cols="12" md="5">
+            <ValidationProvider
+              v-slot="{ errors, validate }"
+              :rules="company !== 'Custom' ? 'required|numeric|length:9' : ''"
             >
               <v-text-field
                 v-model="employeeMobileNumber"
@@ -185,9 +215,12 @@
                 @change="validate"
               ></v-text-field>
             </ValidationProvider>
-          </v-col>
+          </v-col> -->
           <v-col class="py-2" cols="12" md="5" offset-md="1">
-            <ValidationProvider v-slot="{ errors }" rules="required">
+            <ValidationProvider
+              v-slot="{ errors }"
+              :rules="company !== 'Custom' ? 'required' : ''"
+            >
               <v-text-field
                 v-model="employeeWebSite"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
@@ -244,6 +277,53 @@
 
         <v-row>
           <v-col class="py-3" cols="12" md="5">
+            <v-dialog
+              v-if="company === 'Custom'"
+              v-model="mainBGColor"
+              width="300"
+              persistent
+            >
+              <template #activator="{ on, attrs }">
+                <div class="d-flex align-center mb-3">
+                  <v-btn
+                    :color="mainColor"
+                    v-bind="attrs"
+                    small
+                    fab
+                    elevation="3"
+                    v-on="on"
+                  >
+                  </v-btn>
+                  <div>
+                    <span class="px-3 text-subtitle-2 primaryText--text">{{
+                      $t('businessCards.cardGenerator.mainBGColor')
+                    }}</span>
+                  </div>
+                </div>
+              </template>
+              <v-card>
+                <v-color-picker
+                  v-model="mainColor"
+                  dot-size="15"
+                  swatches-max-height="200"
+                  width="300"
+                  mode="rgba"
+                ></v-color-picker>
+                <v-divider class="mb-2"></v-divider>
+                <div class="d-flex justify-space-around pb-2">
+                  <v-btn color="success" text @click="mainBGColor = false">
+                    {{ $t('generals.save') }}
+                  </v-btn>
+                  <v-btn
+                    color="warning"
+                    text
+                    @click=";(mainBGColor = false), (mainColor = '#07074eFF')"
+                  >
+                    {{ $t('generals.cancel') }}
+                  </v-btn>
+                </div>
+              </v-card>
+            </v-dialog>
             <v-dialog v-model="frColorDialog" width="300" persistent>
               <template #activator="{ on, attrs }">
                 <div class="d-flex align-center mb-3">
@@ -354,13 +434,7 @@
                   $vuetify.theme.dark ? 'orange darken-4' : 'yellow darken-3'
                 "
                 type="reset"
-                class="
-                  py-3 py-md-5
-                  px-16
-                  text-subtitle-1 text-capitalize
-                  white--text
-                  mx-3
-                "
+                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text mx-3"
                 @click="resetValues"
               >
                 {{ $t('generals.reset') }}
@@ -371,12 +445,7 @@
                   $vuetify.theme.dark ? 'green darken-4' : 'green darken-1'
                 "
                 type="submit"
-                class="
-                  py-3 py-md-5
-                  px-16
-                  text-subtitle-1 text-capitalize
-                  white--text
-                "
+                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text"
               >
                 {{ $t('generals.submit') }}
               </v-btn>
@@ -390,6 +459,9 @@
 
 <script>
 import { mapState } from 'vuex'
+
+import { isValidNumber } from 'libphonenumber-js'
+
 import { extend, localize } from 'vee-validate'
 import {
   required,
@@ -442,6 +514,11 @@ localize({
   },
 })
 
+extend('phone', {
+  validate: (value) => isValidNumber(value),
+  message: 'This field must be a valid phone number',
+})
+
 export default {
   layout: 'businessCards',
   data() {
@@ -452,6 +529,7 @@ export default {
       companies: [
         'Alkholi Group',
         'Alkholi Holding',
+        'Custom',
         'AKTEK',
         'BTECO',
         'UPMOC',
@@ -464,7 +542,9 @@ export default {
       qrLogo: undefined,
       bgColor: '#FFFFFFFF',
       frColor: '#07074eFF',
+      mainColor: '#07074eFF',
       qrSize: undefined,
+      mainBGColor: false,
       bgColorDialog: false,
       frColorDialog: false,
       employeePicture: undefined,
@@ -511,6 +591,7 @@ export default {
             qrLogo: this.qrLogo,
             bgColor: this.bgColor,
             frColor: this.frColor,
+            mainColor: this.mainColor,
             qrSize: this.qrSize,
             faxLine: this.employeeFaxLine,
             creator,
@@ -554,8 +635,8 @@ export default {
         this.employeeLandLines =
           undefined
       this.bgColor = '#FFFFFFFF'
+      this.mainColor = '#07074eFF'
       this.frColor = '#07074eFF'
-
       this.$refs.theForm.reset()
     },
     async getEmployeeData(id) {
@@ -570,15 +651,25 @@ export default {
           const result = employeeData.data
           this.employeeID = result[0].employeeID
           this.company = result[0].company
-          this.employeeArabicTitle = result[0].arabicTitle
-          this.employeeFaxLine = result[0].faxLine
-          this.employeeArabicName = result[0].fullName_a
-          this.employeeEnglishName = result[0].fullName_e
-          this.employeeLandLines = result[0].landLines
-          this.employeeMailAddress = result[0].mailAddress
-          this.employeeMobileNumber = result[0].mobileNumber
-          this.employeeEnglishTitle = result[0].title
-          this.employeeWebSite = result[0].webSite
+          this.employeeArabicTitle =
+            result[0].arabicTitle === 'undefined' ? '' : result[0].arabicTitle
+          this.employeeFaxLine =
+            result[0].faxLine === 'undefined' ? '' : result[0].faxLine
+          this.employeeArabicName =
+            result[0].fullName_a === 'undefined' ? '' : result[0].fullName_a
+          this.employeeEnglishName =
+            result[0].fullName_e === 'undefined' ? '' : result[0].fullName_e
+          this.employeeLandLines =
+            result[0].landLines === 'undefined' ? '' : result[0].landLines
+          this.employeeMailAddress =
+            result[0].mailAddress === 'undefined' ? '' : result[0].mailAddress
+          this.employeeMobileNumber =
+            result[0].mobileNumber === 'undefined' ? '' : result[0].mobileNumber
+          this.employeeEnglishTitle =
+            result[0].title === 'undefined' ? '' : result[0].title
+          this.employeeWebSite =
+            result[0].webSite === 'undefined' ? '' : result[0].webSite
+          this.mainColor = result[0].mainColor
         }
       } catch (e) {
         const error = e.toString()

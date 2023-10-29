@@ -9,6 +9,8 @@
 
     <aktek v-if="result.company === 'AKTEK'" :result="result" />
 
+    <CustomLayout v-if="result.company === 'Custom'" :result="result" />
+
     <amosAndSBTMCManager
       v-if="result.company === 'AMOS & SBTMC Manager'"
       :result="result"
