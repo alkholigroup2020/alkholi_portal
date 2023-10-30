@@ -29,7 +29,9 @@
             ></v-img>
           </v-avatar>
           <div>
-            <p class="white--text pt-2">Permanent Delegation of Grenada</p>
+            <p class="white--text pt-3">
+              Permanent Delegation of Grenada to UNESCO
+            </p>
           </div>
         </div>
       </div>
@@ -128,12 +130,14 @@
             cols="12"
             class="mt-n9 d-flex justify-center"
           >
-            <p
-              class="primary--text text-center mb-2"
-              style="font-size: 17px; font-weight: 400"
-            >
-              {{ result.title }}
-            </p>
+            <div style="max-width: 80%">
+              <p
+                class="primary--text text-center mb-2"
+                style="font-size: 17px; font-weight: 400"
+              >
+                {{ result.title }}
+              </p>
+            </div>
           </v-col>
         </v-row>
 
@@ -186,7 +190,7 @@
               Maison de I'UNESCO 1, rue Miollis
             </p>
           </v-col>
-          <v-col cols="12" class="d-flex justify-center pt-0 mt-n3 pb-8">
+          <v-col cols="12" class="d-flex justify-center pt-0 mt-n2 pb-8">
             <p class="mb-0" style="font-size: 17px">
               75732 PARIS Cedex 15, France
             </p>
