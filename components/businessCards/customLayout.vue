@@ -141,7 +141,7 @@
           </v-col>
         </v-row>
 
-        <v-row style="font-size: 20px" class="pb-4">
+        <v-row style="font-size: 20px" class="pb-0">
           <!-- mobile number -->
           <v-col
             v-if="result.mobileNumber"
@@ -160,7 +160,7 @@
           <v-col
             v-if="firstLandLineCode != 'undefined'"
             cols="12"
-            class="d-flex justify-center pb-1"
+            class="d-flex justify-center pt-0 pb-3"
           >
             <a :href="`tel:${firstLandLineCode}`" class="textColor">
               <p class="mb-0">
@@ -174,18 +174,28 @@
           <v-col
             v-if="result.mailAddress"
             cols="12"
-            class="d-flex justify-center pb-3"
+            class="d-flex justify-center pb-2"
           >
             <a :href="`mailto:${result.mailAddress}`" class="textColor">
-              <p class="mb-0">
+              <p class="mb-0 text-center">
                 <span class="font-weight-bold">Email:&nbsp;</span>
                 {{ result.mailAddress }}
               </p>
             </a>
           </v-col>
 
+          <!-- private mailAddress -->
+          <v-col cols="12" class="d-flex justify-center pt-0">
+            <a :href="`mailto:hbkholi@gmail.com`" class="textColor">
+              <p class="mb-0 text-center">
+                <span class="font-weight-bold">Private email:&nbsp;</span>
+                hbkholi@gmail.com
+              </p>
+            </a>
+          </v-col>
+
           <!-- Addresses -->
-          <v-col cols="12" class="d-flex justify-center">
+          <v-col cols="12" class="d-flex justify-center pt-4">
             <p class="mb-0" style="font-size: 17px">
               Maison de I'UNESCO 1, rue Miollis
             </p>

@@ -92,10 +92,10 @@
         </v-row>
         <v-row style="font-size: 20px" class="pb-4">
           <v-col cols="12" class="d-flex justify-center pb-1">
-            <a :href="`tel:00966${result.mobileNumber}`" class="textColor">
+            <a :href="`tel:${result.mobileNumber}`" class="textColor">
               <p class="mb-0">
-                <span class="font-weight-bold">M.&nbsp;</span> +966
-                {{ result.mobileNumber }}
+                <span class="font-weight-bold">M.&nbsp;</span
+                >{{ result.mobileNumber }}
               </p>
             </a>
           </v-col>
@@ -305,7 +305,6 @@ export default {
   },
 }
 </script>
-
 
 <style lang="scss" scoped>
 .upDecoration {

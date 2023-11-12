@@ -37,122 +37,6 @@
                 <otherApps :data="card" />
               </v-col>
 
-              <!-- citrix -->
-              <!-- <v-dialog
-                v-model="citrixDialog"
-                width="500"
-                overlay-opacity="0.9"
-              >
-                <template #activator="{ on, attrs }">
-                  <v-col
-                    v-bind="attrs"
-                    cols="6"
-                    sm="4"
-                    lg="3"
-                    xl="2"
-                    class="d-flex justify-center py-3 py-md-5 animateItem"
-                    v-on="on"
-                    @click="citrixDialog = !citrixDialog"
-                  >
-                    <div class="d-flex flex-column align-center">
-                      <v-avatar
-                        :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
-                        class="mb-2 main-div"
-                        color="white"
-                      >
-                        <div
-                          v-if="$vuetify.theme.dark"
-                          class="the-overlay"
-                        ></div>
-                        <div class="the-image">
-                          <v-img
-                            alt="app-image"
-                            src="/websiteImages/citrix.png"
-                          ></v-img>
-                        </div>
-                      </v-avatar>
-                      <h5 class="text-body-2 text-md-body-1 text-center">
-                        {{ $t('portalPage.shortcuts.citrix') }}
-                      </h5>
-                    </div>
-                  </v-col>
-                </template>
-                <v-card class="pa-10" color="secondaryBG">
-                  <v-row>
-                    <v-col
-                      cols="6"
-                      class="px-2 px-md-5 px-xl-8 py-2 py-xl-3 animateItem"
-                      @click="citrixDialog = !citrixDialog"
-                    >
-                      <div class="d-flex flex-column align-center">
-                        <a
-                          href="http://ctx.alkholi.com/"
-                          target="_blank"
-                          class="text-decoration-none"
-                        >
-                          <v-avatar
-                            :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                            class="mb-2 main-div"
-                            color="white"
-                          >
-                            <div
-                              v-if="$vuetify.theme.dark"
-                              class="the-overlay"
-                            ></div>
-                            <div class="the-image">
-                              <v-img
-                                alt="app-image"
-                                src="/websiteImages/citrix.png"
-                              ></v-img>
-                            </div>
-                          </v-avatar>
-                        </a>
-                        <h5 class="text-body-2 text-md-body-1 text-center">
-                          {{
-                            $t('portalPage.shortcuts.citrixShortcuts.internal')
-                          }}
-                        </h5>
-                      </div>
-                    </v-col>
-                    <v-col
-                      cols="6"
-                      class="px-2 px-md-5 px-xl-8 py-2 py-xl-3 animateItem"
-                      @click="citrixDialog = !citrixDialog"
-                    >
-                      <div class="d-flex flex-column align-center">
-                        <a
-                          href="https://citrix.alkholi.com/"
-                          target="_blank"
-                          class="text-decoration-none"
-                        >
-                          <v-avatar
-                            :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
-                            class="mb-2 main-div"
-                            color="white"
-                          >
-                            <div
-                              v-if="$vuetify.theme.dark"
-                              class="the-overlay"
-                            ></div>
-                            <div class="the-image">
-                              <v-img
-                                alt="app-image"
-                                src="/websiteImages/citrix.png"
-                              ></v-img>
-                            </div>
-                          </v-avatar>
-                        </a>
-                        <h5 class="text-body-2 text-md-body-1 text-center">
-                          {{
-                            $t('portalPage.shortcuts.citrixShortcuts.external')
-                          }}
-                        </h5>
-                      </div>
-                    </v-col>
-                  </v-row>
-                </v-card>
-              </v-dialog> -->
-
               <!-- sharePoint -->
               <v-dialog v-model="spDialog" width="800" overlay-opacity="0.9">
                 <template #activator="{ on, attrs }">
@@ -412,7 +296,7 @@ export default {
           imgURL: '/websiteImages/hrms.png',
           title: this.$t('portalPage.shortcuts.hrSystem'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/index.php',
-        }        
+        },
       ],
       sharepoint: [
         {
@@ -487,5 +371,3 @@ export default {
   },
 }
 </script>
-
-

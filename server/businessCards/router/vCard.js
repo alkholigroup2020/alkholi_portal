@@ -36,13 +36,12 @@ router.get('/vcard', async (req, res) => {
       vCard.title = employeeData.recordset[0].title
       vCard.workPhone = employeeData.recordset[0].landLines
       vCard.workEmail = employeeData.recordset[0].mailAddress
-
+      // just for the Dr. Hamza case!
+      vCard.email = 'hbkholi@gmail.com'
       vCard.homeAddress.label = 'Address'
       vCard.homeAddress.street = req.query.firstAddress
-
       vCard.workAddress.label = 'Address'
       vCard.workAddress.street = req.query.secondAddress
-
       vCard.source = `https://portal.alkholi.com/portal-administrations/vcard/?employeeID=${employeeData.recordset[0].employeeID}` // set URL where the vCard can be found
       vCard.isOrganization = false // that fixes the iphone not saving the contact issue
       vCard.photo.embedFromFile(
@@ -69,7 +68,7 @@ router.get('/vcard', async (req, res) => {
       // vCard.lastName = 'Nesser'
       vCard.organization = employeeData.recordset[0].company
       vCard.uid = uuid
-      vCard.cellPhone = `+966${employeeData.recordset[0].mobileNumber}`
+      vCard.cellPhone = `${employeeData.recordset[0].mobileNumber}`
       // vCard.birthday = new Date(1985, 0, 1);
       vCard.title = employeeData.recordset[0].title
       vCard.url = employeeData.recordset[0].webSite
@@ -84,70 +83,72 @@ router.get('/vcard', async (req, res) => {
       // vCard.homePhone = '312-555-1313'
 
       // ---> Land Lines
-      if (employeeData.recordset[0].landLines[0] === '9') {
-        // the Elevators company land lines
-        const A = employeeData.recordset[0].landLines.split(' ')
-        const firstLandLineNumber = A[0]
-        const secondLandLineNumber = A[2]
-        vCard.workPhone = [
-          `+966${firstLandLineNumber}`,
-          `+966${secondLandLineNumber}`,
-        ]
-      } else {
-        // all other land lines
-        const A = employeeData.recordset[0].landLines.split(' ')
-        const firstLandLineCode = A[0]
-        const firstLandLineNumber = A[1]
-        const secondLandLineCode = A[3]
-        const secondLandLineNumber = A[4]
-        const thirdLandLineCode = A[6]
-        const thirdLandLineNumber = A[7]
-        const X = firstLandLineCode.replace('(', '')
-        const Y = X.replace(')', '')
-        let N
-        let Z
-        if (secondLandLineCode) {
-          const M = secondLandLineCode.replace('(', '')
-          N = M.replace(')', '')
-        }
-        if (thirdLandLineCode) {
-          const O = secondLandLineCode.replace('(', '')
-          Z = O.replace(')', '')
-        }
-
-        // if no second or third lines
-        if (!secondLandLineNumber && !thirdLandLineNumber) {
-          vCard.workPhone = [`+966${Y}${firstLandLineNumber}`]
-        }
-        // if no third
-        else if (!thirdLandLineNumber) {
+      if (employeeData.recordset[0].landLines !== 'undefined') {
+        if (employeeData.recordset[0].landLines[0] === '9') {
+          // the Elevators company land lines
+          const A = employeeData.recordset[0].landLines.split(' ')
+          const firstLandLineNumber = A[0]
+          const secondLandLineNumber = A[2]
           vCard.workPhone = [
-            `+966${Y}${firstLandLineNumber}`,
-            `${`+966${N}${secondLandLineNumber}`}`,
+            `+966${firstLandLineNumber}`,
+            `+966${secondLandLineNumber}`,
           ]
-        }
-        // if all are available
-        else {
-          vCard.workPhone = [
-            `+966${Y}${firstLandLineNumber}`,
-            `${`+966${N}${secondLandLineNumber}`}`,
-            `${`+966${Z}${thirdLandLineNumber}`}`,
-          ]
-        }
+        } else {
+          // all other land lines
+          const A = employeeData.recordset[0].landLines.split(' ')
+          const firstLandLineCode = A[0]
+          const firstLandLineNumber = A[1]
+          const secondLandLineCode = A[3]
+          const secondLandLineNumber = A[4]
+          const thirdLandLineCode = A[6]
+          const thirdLandLineNumber = A[7]
+          const X = firstLandLineCode.replace('(', '')
+          const Y = X.replace(')', '')
+          let N
+          let Z
+          if (secondLandLineCode) {
+            const M = secondLandLineCode.replace('(', '')
+            N = M.replace(')', '')
+          }
+          if (thirdLandLineCode) {
+            const O = secondLandLineCode.replace('(', '')
+            Z = O.replace(')', '')
+          }
 
-        // vCard.workPhone = [
-        //   `+966${Y}${firstLandLineNumber}`,
-        //   `${
-        //     secondLandLineCode != undefined
-        //       ? `${`+966${N}${secondLandLineNumber}`}`
-        //       : ''
-        //   }`,
-        //   `${
-        //     thirdLandLineCode != undefined
-        //       ? `${`+966${Z}${thirdLandLineNumber}`}`
-        //       : null
-        //   }`,
-        // ]
+          // if no second or third lines
+          if (!secondLandLineNumber && !thirdLandLineNumber) {
+            vCard.workPhone = [`+966${Y}${firstLandLineNumber}`]
+          }
+          // if no third
+          else if (!thirdLandLineNumber) {
+            vCard.workPhone = [
+              `+966${Y}${firstLandLineNumber}`,
+              `${`+966${N}${secondLandLineNumber}`}`,
+            ]
+          }
+          // if all are available
+          else {
+            vCard.workPhone = [
+              `+966${Y}${firstLandLineNumber}`,
+              `${`+966${N}${secondLandLineNumber}`}`,
+              `${`+966${Z}${thirdLandLineNumber}`}`,
+            ]
+          }
+
+          // vCard.workPhone = [
+          //   `+966${Y}${firstLandLineNumber}`,
+          //   `${
+          //     secondLandLineCode != undefined
+          //       ? `${`+966${N}${secondLandLineNumber}`}`
+          //       : ''
+          //   }`,
+          //   `${
+          //     thirdLandLineCode != undefined
+          //       ? `${`+966${Z}${thirdLandLineNumber}`}`
+          //       : null
+          //   }`,
+          // ]
+        }
       }
 
       // vCard.workPhone = '312-555-1414';
@@ -157,7 +158,7 @@ router.get('/vcard', async (req, res) => {
       // vCard.homeFax = '312-555-1616'
 
       // ---> Fax Lines
-      if (employeeData.recordset[0].faxLine) {
+      if (employeeData.recordset[0].faxLine !== 'undefined') {
         const B = employeeData.recordset[0].faxLine.split(' ')
         const firstFaxLineCode = B[0]
         const firstFaxLineNumber = B[1]

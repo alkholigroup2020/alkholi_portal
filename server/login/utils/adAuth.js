@@ -1,6 +1,10 @@
 const ldap = require('ldapjs')
 
 const adAuth = (userAccount, password, domain, dcIP) => {
+  console.log('dcIP :', dcIP)
+  console.log('domain :', domain)
+  console.log('password :', password)
+  console.log('userAccount :', userAccount)
   return new Promise((resolve, reject) => {
     const client = ldap.createClient({
       url: [`ldap://${dcIP}:389`],
