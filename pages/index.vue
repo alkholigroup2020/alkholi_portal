@@ -270,32 +270,43 @@ export default {
         {
           imgURL: '/websiteImages/owa.png',
           title: this.$t('portalPage.shortcuts.owa'),
-          url: this.owaURL(),
+          // url: this.owaURL(),
+          url: 'https://outlook.office.com/',
         },
         {
           imgURL: '/websiteImages/mena-me.jpg',
           title: this.$t('portalPage.shortcuts.menaMe'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/mename/index.php',
         },
+
         {
-          imgURL: '/websiteImages/KAP+.jpg',
-          title: this.$t('portalPage.shortcuts.kap'),
-          url: 'https://kap.alkholi.com/',
+          imgURL: '/websiteImages/MenaTracks.png',
+          title: 'MenaTracks',
+          url: 'https://hr.alkholi.com/MENATRACKS/',
         },
-        {
-          imgURL: '/websiteImages/hrw-1.png',
-          title: this.$t('portalPage.shortcuts.oldAttendance'),
-          url: 'http://attendance.alkholi.com/ess',
-        },
+
         {
           imgURL: '/websiteImages/citrix.png',
           title: this.$t('portalPage.shortcuts.citrix'),
           url: 'https://citrix.alkholi.com',
         },
+
+        // {
+        //   imgURL: '/websiteImages/hrw-1.png',
+        //   title: this.$t('portalPage.shortcuts.oldAttendance'),
+        //   url: 'http://attendance.alkholi.com/ess',
+        // },
+
         {
           imgURL: '/websiteImages/hrms.png',
           title: this.$t('portalPage.shortcuts.hrSystem'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/index.php',
+        },
+
+        {
+          imgURL: '/websiteImages/KAP+.jpg',
+          title: this.$t('portalPage.shortcuts.kap'),
+          url: 'https://kap.alkholi.com/',
         },
       ],
       sharepoint: [
