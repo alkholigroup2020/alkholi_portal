@@ -22,6 +22,7 @@
       "kap": "KAP+",
       "oldAttendance": "HR Works",
       "hrSystem": "الموارد البشرية",
+      "CoC": "Code of Conduct",
       "hrSurvey": "إستبيان المـوارد البشرية",
       "dtrApp": "الحضور والإنصراف",
       "citrix": "Citrix",
@@ -164,6 +165,30 @@
       "theAction": "نوع الحركة",
       "bCardID": "رقم الموظف",
       "bCardName": "إسم الموظف"
+    }
+  },
+  "codeOfConduct": {
+    "appPageNames": {
+      "cocForm": "CoC Form",
+      "cocVersions": "CoC Versions",
+      "employeesList": "Employees List"
+    },
+    "cocVersions": {
+      "addNew": "Add New CoC Document",
+      "formTitle": "New CoC Document",
+      "formLabel": "Upload a new CoC document",
+      "uploadAt": "Uploaded At",
+      "uploadBy": "Uploaded By",
+      "versionNumber": "Version Number",
+      "deleteDocument": "Delete",
+      "confirmDelete": "Delete Confirmation",
+      "viewPDFFile": "View CoC Document",
+      "deleteWarning": "Are you sure you want to delete this document? This action can't be undone!",
+      "deleteCancel": "Cancel",
+      "deleteConfirm": "Delete",
+      "formVersionNumber": "Version Number:",
+      "status": "Status",
+      "documentLink": "Document Link"
     }
   },
   "elevatorsSurvey": {

@@ -323,7 +323,6 @@ const saveEmployeeData = async (
       return payload.employeeID
     }
   } catch (error) {
-    console.log('error :', error)
     throw new Error(error)
   } finally {
     await portalDBConnection.close()
@@ -396,13 +395,11 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
       }
       if (req.files.employeePicture) {
         employeePicture = req.files.employeePicture[0].filename
-        console.log('employeePicture :', employeePicture)
       }
     }
 
     // if no employee ID is defined
     if (req.body.employeeID === 'undefined') {
-      console.log(`There is NO employee ID`)
       const uniqueID = await generateID(10001, 99999)
       const employeeData = req.body
       employeeData.employeeID = `X${uniqueID}`
@@ -420,7 +417,6 @@ router.post('/save-employee-data', auth, allFiles, async (req, res) => {
       return res.status(200).send(saveToDB)
     } else {
       // if employee ID is defined
-      console.log(`There is an employee ID`)
       const saveToDB = await saveEmployeeData(
         req.body,
         qrLogo,

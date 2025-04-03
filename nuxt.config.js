@@ -147,6 +147,7 @@ export default {
     '~server/administration/main.js',
     '~server/businessCards/main.js',
     '~server/elevatorsSurveys/main.js',
+    '~server/coc/main.js',
     '~server/hrSurveys/main.js',
     '~server/dtr/main.js',
   ],

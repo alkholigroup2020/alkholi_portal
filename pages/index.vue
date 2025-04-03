@@ -92,6 +92,41 @@
               </v-dialog>
 
               <!-- portalApps -->
+
+              <!-- Code of Conduct -->
+              <v-col
+                v-if="true"
+                cols="6"
+                sm="4"
+                lg="3"
+                xl="2"
+                class="d-flex justify-center py-3 py-md-5 animateItem"
+              >
+                <div class="d-flex flex-column align-center">
+                  <nuxt-link
+                    :to="`${localePath('/code-of-conduct/coc-form')}`"
+                    class="text-decoration-none"
+                  >
+                    <v-avatar
+                      :size="$vuetify.breakpoint.mdAndUp ? '110' : '90'"
+                      class="mb-2 main-div"
+                    >
+                      <div v-if="$vuetify.theme.dark" class="the-overlay"></div>
+                      <div class="the-image">
+                        <v-img
+                          alt="app-image"
+                          src="/websiteImages/CoC.jpg"
+                        ></v-img>
+                      </div>
+                    </v-avatar>
+                  </nuxt-link>
+                  <h5 class="text-body-2 text-md-body-1 text-center">
+                    {{ $t('portalPage.shortcuts.CoC') }}
+                  </h5>
+                </div>
+              </v-col>
+
+              <!-- Online Business Cards -->
               <v-col
                 v-if="isBusinessCardsAdmin"
                 cols="6"

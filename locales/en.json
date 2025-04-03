@@ -23,6 +23,7 @@
       "oldAttendance": "Attendance System",
       "hrSystem": "HR System",
       "hrSurvey": "HR Survey",
+      "CoC": "Code of Conduct",
       "dtrApp": "Daily Time Record",
       "citrix": "Citrix",
       "citrixShortcuts": {
@@ -164,6 +165,30 @@
       "theAction": "Action",
       "bCardID": "Employee ID",
       "bCardName": "Employee's Name"
+    }
+  },
+  "codeOfConduct": {
+    "appPageNames": {
+      "cocForm": "CoC Form",
+      "cocVersions": "CoC Versions",
+      "employeesList": "Employees List"
+    },
+    "cocVersions": {
+      "addNew": "Add New CoC Document",
+      "formTitle": "New CoC Document",
+      "formLabel": "Upload a new CoC document",
+      "uploadAt": "Uploaded At",
+      "uploadBy": "Uploaded By",
+      "versionNumber": "Version Number",
+      "deleteDocument": "Delete",
+      "confirmDelete": "Delete Confirmation",
+      "viewPDFFile": "View CoC Document",
+      "deleteWarning": "Are you sure you want to delete this document? This action can't be undone!",
+      "deleteCancel": "Cancel",
+      "deleteConfirm": "Delete",
+      "formVersionNumber": "Version Number:",
+      "status": "Status",
+      "documentLink": "Document Link"
     }
   },
   "elevatorsSurvey": {
