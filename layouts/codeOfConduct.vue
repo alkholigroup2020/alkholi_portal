@@ -147,6 +147,7 @@
       v-model="drawer"
       :right="$i18n.locale === 'ar'"
       class="mainBG"
+      width="300"
       app
     >
       <div class="d-flex flex-column" style="height: 100%">

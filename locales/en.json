@@ -169,9 +169,22 @@
   },
   "codeOfConduct": {
     "appPageNames": {
-      "cocForm": "CoC Form",
+      "cocForm": "Acknowledgment Form",
       "cocVersions": "CoC Versions",
       "employeesList": "Employees List"
+    },
+    "cocForm": {
+      "title": "Code of Conduct",
+      "formTitle": "Acknowledgment Form",
+      "formIntro": "Please read the Code of Conduct document carefully, then acknowledge that you have read and understood it.",
+      "employeeInfo": "Employee Information:",
+      "acknowledgementDetailsTitle": "Acknowledgment Details:",
+      "acknowledgementDetails1": "I, the undersigned, hereby acknowledge that I have received and reviewed the Alkholi Group’s Code of Conduct. I understand that it is my responsibility to read, understand, and comply with the guidelines set forth in the Code of Conduct while performing my duties at Alkholi Group.",
+      "acknowledgementDetails2": "I further acknowledge that failure to adhere to the Code of Conduct may result in disciplinary action in accordance with the company’s policies.",
+      "acknowledgementDetails3": "I understand that if I have any questions or require clarification regarding any part of the Code of Conduct, I am encouraged to reach out to Human Resources or my supervisor.",
+      "acknowledgmentPreSignTitle": "Acknowledgement Steps:",
+      "acknowledgmentForm": "Acknowledge",
+      "submitBTN": "Submit"
     },
     "cocVersions": {
       "addNew": "Add New CoC Document",

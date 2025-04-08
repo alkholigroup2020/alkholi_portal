@@ -6,7 +6,7 @@
 
     <div class="d-flex justify-space-between align-center mb-3">
       <div>
-        <h3 class="text-h5 primaryText--text">
+        <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
           {{ $t('codeOfConduct.appPageNames.cocVersions') }}
         </h3>
       </div>
