@@ -9,8 +9,12 @@ api.use(cocJS)
 
 // set up a static file serving
 api.use(
-  '/coc-documents',
-  express.static(path.join(__dirname, '../../uploads/coc/cocDocuments'))
+  '/coc-versions',
+  express.static(path.join(__dirname, '../../uploads/coc/cocVersions'))
+)
+api.use(
+  '/printed-copies',
+  express.static(path.join(__dirname, '../../uploads/coc/printedCopies'))
 )
 
 module.exports = {

@@ -44,7 +44,7 @@
       <div class="pdf-container px-3">
         <embed
           v-if="currentCoC"
-          :src="`${$config.baseURL}/coc-api/coc-documents/${currentCoC.file_path}`"
+          :src="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
           type="application/pdf"
           class="pdf-viewer"
         />
@@ -122,6 +122,7 @@
               </v-col>
             </v-row>
 
+            <!-- Acknowledgement Stepper -->
             <v-row>
               <v-col cols="12">
                 <div>
@@ -142,19 +143,19 @@
                     <v-divider></v-divider>
 
                     <v-stepper-step :complete="signatureStepper > 2" step="2">
-                      Upload
+                      Upload & Submit
                     </v-stepper-step>
 
                     <v-divider></v-divider>
 
-                    <v-stepper-step step="3">Submit</v-stepper-step>
+                    <v-stepper-step step="3">Result</v-stepper-step>
                   </v-stepper-header>
 
                   <v-stepper-items>
                     <!-- step #1 -->
                     <v-stepper-content step="1">
                       <div>
-                        <p class="text-subtitle-1 primaryText--text">
+                        <p class="text-subtitle-1 primaryText--text py-5">
                           Please click the print button below, print the
                           document, sign it, then click next.
                         </p>
@@ -190,7 +191,45 @@
                           Upload the signed form here.
                         </p>
                       </div>
-                      <div class="d-flex align-center pb-2">
+                      <div>
+                        <ValidationObserver v-slot="valid">
+                          <v-form @submit.prevent="saveUploadedDocument">
+                            <ValidationProvider
+                              v-slot="{ errors, validate }"
+                              rules="ext:pdf|size:5120|required"
+                            >
+                              <v-file-input
+                                v-model="uploadedDocument"
+                                show-size
+                                type="file"
+                                class="py-5"
+                                :color="
+                                  $vuetify.theme.dark ? 'white' : 'primary'
+                                "
+                                :error-messages="errors[0]"
+                                accept="application/pdf"
+                                prepend-icon="mdi-file-document"
+                                :label="$t('codeOfConduct.cocForm.uploadLabel')"
+                                @input="validate"
+                              ></v-file-input>
+
+                              <div class="d-flex align-center py-3">
+                                <v-btn
+                                  :disabled="valid.invalid"
+                                  color="primary"
+                                  class="px-5 py-0 text-capitalize"
+                                  type="submit"
+                                  @click="signatureStepper = 3"
+                                  >{{
+                                    $t('codeOfConduct.cocForm.submitBTN')
+                                  }}</v-btn
+                                >
+                              </div>
+                            </ValidationProvider>
+                          </v-form>
+                        </ValidationObserver>
+                      </div>
+                      <!-- <div class="d-flex align-center pb-2">
                         <div>
                           <v-btn
                             class="text-capitalize"
@@ -200,12 +239,27 @@
                             Next
                           </v-btn>
                         </div>
-                      </div>
+                      </div> -->
                     </v-stepper-content>
 
                     <!-- step #3 -->
                     <v-stepper-content step="3">
-                      <!--  -->
+                      <div>
+                        <p class="text-subtitle-1 primaryText--text">
+                          Success! Your signed form has been uploaded.
+                        </p>
+                      </div>
+                      <div class="d-flex align-center pb-2">
+                        <div>
+                          <v-btn
+                            class="text-capitalize"
+                            color="primary"
+                            @click="showForm = false"
+                          >
+                            Close
+                          </v-btn>
+                        </div>
+                      </div>
                     </v-stepper-content>
                   </v-stepper-items>
                 </v-stepper>
@@ -213,23 +267,42 @@
             </v-row>
           </v-container>
         </v-card-text>
-
-        <v-divider></v-divider>
-        <!-- <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn text @click="showForm = false">
-            {{ $t('codeOfConduct.cocForm.cancel') }}
-          </v-btn>
-          <v-btn color="primary" :disabled="!formValid" @click="submitForm">
-            {{ $t('codeOfConduct.cocForm.submit') }}
-          </v-btn>
-        </v-card-actions> -->
       </v-card>
     </v-dialog>
   </v-container>
 </template>
 
 <script>
+import { extend, localize } from 'vee-validate'
+import { ext, size, required } from 'vee-validate/dist/rules'
+
+// Override the default message.
+extend('ext', {
+  ...ext,
+})
+extend('size', {
+  ...size,
+})
+extend('required', {
+  ...required,
+})
+
+localize({
+  en: {
+    messages: {
+      ext: 'Should be a PDF file!',
+      size: "File size shouldn't exceed 5MB!",
+      required: 'This field is required!',
+    },
+  },
+  ar: {
+    messages: {
+      ext: 'يجب أن يكون نوع الملف، PDF!',
+      size: 'حجم الملف يجب أن يكون أقل من 5 ميجا بايت!',
+      required: 'هــذا حــقل مطــلوب!',
+    },
+  },
+})
 export default {
   layout: 'codeOfConduct',
   data() {
@@ -238,6 +311,7 @@ export default {
       currentCoC: null,
       generatingForm: false,
       showForm: false,
+      uploadedDocument: null,
       formData: {
         name: 'Fawzy Mohamed', // Will be populated from HR sync later
         position: 'Senior Full Stack Web Developer', // Will be populated from HR sync later
@@ -318,6 +392,25 @@ export default {
         this.generatingForm = false
       }
     },
+
+    async saveUploadedDocument() {
+      this.overlay = true
+
+      const employeeID = localStorage.getItem('employeeCode')
+      const employeeName = localStorage.getItem('userFullName')
+
+      const uploadedDocData = {
+        employeeID,
+        employeeName,
+        uploadedDocument: this.uploadedDocument,
+        versionNumber: this.currentCoC.version_number,
+      }
+
+      await this.$store.dispatch('coc/processSignedDocument', uploadedDocData)
+
+      this.overlay = false
+    },
+
     submitForm() {
       try {
         // Future implementation for form submission

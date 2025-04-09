@@ -5,7 +5,6 @@ const router = express.Router()
 const multer = require('multer')
 const { PDFDocument, rgb } = require('pdf-lib')
 const fontkit = require('@pdf-lib/fontkit')
-
 const sql = require('mssql')
 const sqlConfigs = require('../configs/sql')
 const authorize = require('../middleware/authorization.js')
@@ -172,7 +171,7 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     drawFormField(
       page,
       'Employee Signature: ',
-      '................................',
+      '...................................................',
       320
     )
 
@@ -183,7 +182,7 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     const fileName = `PRINTFORM_B11088_${Date.now()}.pdf`
     const filePath = path.join(
       __dirname,
-      '../../../uploads/coc/cocDocuments',
+      '../../../uploads/coc/printedCopies',
       fileName
     )
 
@@ -192,7 +191,7 @@ router.post('/generate-print-form', authorize, async (req, res) => {
 
     // Send the file URL in the response
     res.status(200).json({
-      url: `/coc-api/coc-documents/${fileName}`,
+      url: `/coc-api/printed-copies/${fileName}`,
     })
   } catch (error) {
     res.status(500).json({ message: 'Form generation failed' })
@@ -204,7 +203,7 @@ router.post('/generate-print-form', authorize, async (req, res) => {
 // attachments storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../../uploads/coc/cocDocuments'))
+    cb(null, path.join(__dirname, '../../../uploads/coc/cocVersions'))
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}_${file.originalname}`)
@@ -302,11 +301,189 @@ router.get('/get-coc-versions', authorize, async (req, res) => {
   }
 })
 
+// Configure multer for signed form uploads
+const uploadSignedForm = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      // Define where uploaded signed forms will be temporarily stored
+      cb(null, path.join(__dirname, '../../../uploads/coc/signedForms'))
+    },
+    filename: (req, file, cb) => {
+      const employeeId = req.body.employeeID
+      // Create a unique filename using employeeId and timestamp
+      cb(null, `SIGNED_${employeeId}_${Date.now()}.pdf`)
+    },
+  }),
+  fileFilter: (req, file, cb) => {
+    // Ensure only PDF files are accepted
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true)
+    } else {
+      cb(new Error('Only PDF files are allowed'), false)
+    }
+  },
+  limits: { fileSize: 5242880 }, // Set a 5MB file size limit
+})
+
+// Define the endpoint to handle signed form uploads
+router.post(
+  '/upload-signed-form',
+  authorize, // Middleware to ensure the user is authenticated
+  uploadSignedForm.single('signedForm'), // Handle single file upload with field name 'signedForm'
+  async (req, res) => {
+    const portalDBConnection = await portalDB()
+    try {
+      const employeeId = req.body.employeeID // Extract employeeId from request body
+      const signedFormPath = req.file.path // Get the path of the uploaded signed form
+
+      // Validate required fields
+      if (!employeeId || !signedFormPath) {
+        throw new Error('Missing employeeId or signed form file')
+      }
+
+      // Step 2: Append the signature page to the CoC document
+      const combinedPdfPath = await appendSignatureToCoC(
+        employeeId,
+        signedFormPath
+      )
+
+      // Step 3: Store the combined document metadata in the database
+      await storeSignatureMetadata(employeeId, combinedPdfPath)
+
+      // Step 4: Update the employee's signature status
+      await updateEmployeeSignatureStatus(employeeId)
+
+      // Respond with success message
+      res
+        .status(200)
+        .json({ message: 'Signed form uploaded and processed successfully' })
+
+      // Clean up the temporary signed form file
+      if (fs.existsSync(signedFormPath)) {
+        fs.unlinkSync(signedFormPath)
+      }
+    } catch (error) {
+      // Handle errors and send appropriate response
+      res.status(500).json({ message: error.message })
+    } finally {
+      // Ensure database connection is closed
+      await portalDBConnection.close()
+    }
+  }
+)
+
+// Function to append the signature page to the CoC document
+async function appendSignatureToCoC(employeeId, signedFormPath) {
+  const portalDBConnection = await portalDB()
+  try {
+    // Query the latest active CoC version from the database
+    const result = await portalDBConnection.request().query(`
+      SELECT TOP 1 file_path
+      FROM coc.coc_versions
+      WHERE active_flag = 1
+      ORDER BY created_at DESC
+    `)
+
+    // Check if an active CoC version exists
+    if (result.recordset.length === 0) {
+      throw new Error('No active CoC version found')
+    }
+
+    // Construct the full path to the latest CoC document
+    const cocFilePath = path.join(
+      __dirname,
+      '../../../uploads/coc/cocVersions',
+      result.recordset[0].file_path
+    )
+
+    // Load the CoC document into a PDFDocument object
+    const cocPdfBytes = fs.readFileSync(cocFilePath)
+    const cocPdfDoc = await PDFDocument.load(cocPdfBytes)
+
+    // Load the uploaded signed form into a PDFDocument object
+    const signedFormBytes = fs.readFileSync(signedFormPath)
+    const signedFormDoc = await PDFDocument.load(signedFormBytes)
+
+    // Create a new PDF document to hold the combined result
+    const combinedPdfDoc = await PDFDocument.create()
+
+    // Copy all pages from the CoC document to the combined document
+    const cocPages = await combinedPdfDoc.copyPages(
+      cocPdfDoc,
+      cocPdfDoc.getPageIndices()
+    )
+    cocPages.forEach((page) => combinedPdfDoc.addPage(page))
+
+    // Copy the first page (signature page) from the signed form
+    const signedFormPages = await combinedPdfDoc.copyPages(signedFormDoc, [0]) // Assuming single-page signature
+    combinedPdfDoc.addPage(signedFormPages[0])
+
+    // Save the combined PDF document
+    const combinedPdfBytes = await combinedPdfDoc.save()
+    const combinedFileName = `COMBINED_${employeeId}_${Date.now()}.pdf`
+    const combinedFilePath = path.join(
+      __dirname,
+      '../../../uploads/coc/combinedDocuments',
+      combinedFileName
+    )
+    fs.writeFileSync(combinedFilePath, combinedPdfBytes)
+
+    // Return the filename of the combined document (relative path for DB storage)
+    return combinedFileName
+  } finally {
+    await portalDBConnection.close()
+  }
+}
+
+// Function to store metadata of the combined document in the database
+async function storeSignatureMetadata(employeeId, combinedPdfPath) {
+  const portalDBConnection = await portalDB()
+  try {
+    // Get the ID of the latest active CoC version
+    const versionResult = await portalDBConnection.request().query(`
+      SELECT TOP 1 id
+      FROM coc.coc_versions
+      WHERE active_flag = 1
+      ORDER BY created_at DESC
+    `)
+    const versionId = versionResult.recordset[0].id
+
+    // Insert metadata into the employee_signatures table
+    await portalDBConnection
+      .request()
+      .input('employee_id', sql.NVarChar(20), employeeId)
+      .input('coc_version_id', sql.Int, versionId)
+      .input('file_path', sql.NVarChar(255), combinedPdfPath)
+      .input('signed_at', sql.DateTime, new Date()) // Record the signing timestamp
+      .query(`
+        INSERT INTO coc.employee_signatures (employee_id, coc_version_id, file_path, signed_at)
+        VALUES (@employee_id, @coc_version_id, @file_path, @signed_at)
+      `)
+  } finally {
+    await portalDBConnection.close()
+  }
+}
+
+// Function to update the employee's signature status
+async function updateEmployeeSignatureStatus(employeeId) {
+  const portalDBConnection = await portalDB()
+  try {
+    // Update the employees table to reflect that the employee has signed
+    await portalDBConnection
+      .request()
+      .input('employee_id', sql.NVarChar(20), employeeId).query(`
+        UPDATE coc.employees
+        SET has_signed = 1, last_signed_at = GETDATE()
+        WHERE employee_id = @employee_id
+      `)
+  } finally {
+    await portalDBConnection.close()
+  }
+}
+
 // Add endpoint to delete a specific version
-/*
-Something still missing here! When a version is deleted, no active document is assigned!
-The delete feature is disabled in the frontend for now.
-*/
+/* Something still missing here! When a version is deleted, no active document is assigned!
+The delete feature is disabled in the frontend for now. */
 router.delete('/delete-version/:id', authorize, async (req, res) => {
   const portalDBConnection = await portalDB()
   try {
@@ -322,7 +499,7 @@ router.delete('/delete-version/:id', authorize, async (req, res) => {
 
     const filePath = path.join(
       __dirname,
-      '../../../uploads/coc/cocDocuments',
+      '../../../uploads/coc/cocVersions',
       versionRecord.recordset[0].file_path
     )
 
