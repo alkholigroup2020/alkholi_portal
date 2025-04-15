@@ -350,7 +350,7 @@ export default {
     },
 
     openPdf(filePath) {
-      this.selectedPdfUrl = `${this.$config.baseURL}/coc-api/coc-documents/${filePath}`
+      this.selectedPdfUrl = `${this.$config.baseURL}/coc-api/coc-versions/${filePath}`
       this.pdfDialog = true
     },
   },

@@ -13,262 +13,345 @@
           </h3>
         </div>
 
-        <div>
-          <v-btn
-            color="success"
-            class="text-capitalize"
-            large
-            @click="showForm = true"
-          >
-            {{ $t('codeOfConduct.cocForm.acknowledgmentForm') }}
-          </v-btn>
+        <div v-if="showContent" class="d-flex align-center justify-center">
+          <div v-if="formApproved">
+            <p class="text-subtitle1 error--text mx-3 mb-0">
+              {{ $t('codeOfConduct.cocForm.alreadySigned') }}
+            </p>
+          </div>
+          <div v-if="formPending">
+            <p class="text-subtitle1 error--text mx-3 mb-0">
+              {{ $t('codeOfConduct.cocForm.pendingApproval') }}
+            </p>
+          </div>
+          <div>
+            <v-btn
+              color="success"
+              class="text-capitalize"
+              large
+              :disabled="formApproved || formPending"
+              @click="showForm = true"
+            >
+              {{ $t('codeOfConduct.cocForm.acknowledgmentForm') }}
+            </v-btn>
+          </div>
         </div>
       </div>
     </v-row>
 
     <hr class="mt-3 mb-3" />
 
-    <!-- subtitle -->
-    <v-row>
-      <v-col cols="12">
-        <div class="subtitle-1 primaryText--text px-3">
-          <p class="mb-0 py-1">
-            {{ $t('codeOfConduct.cocForm.formIntro') }}
-          </p>
-        </div>
-      </v-col>
-    </v-row>
+    <div v-if="showContent === true">
+      <!-- subtitle -->
+      <v-row>
+        <v-col cols="12">
+          <div class="text-h6 font-weight-light primaryText--text px-3">
+            <p class="mb-0 py-3">
+              {{ $t('codeOfConduct.cocForm.formIntro') }}
+            </p>
+          </div>
+        </v-col>
+      </v-row>
 
-    <!-- the actual coc document -->
-    <v-row>
-      <div class="pdf-container px-3">
-        <embed
-          v-if="currentCoC"
-          :src="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
-          type="application/pdf"
-          class="pdf-viewer"
-        />
-      </div>
-    </v-row>
+      <!-- the actual coc document -->
+      <v-row>
+        <v-col cols="12">
+          <div class="w-full d-flex">
+            <div class="pdf-container px-3">
+              <embed
+                v-if="currentCoC"
+                :src="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
+                type="application/pdf"
+                class="pdf-viewer"
+              />
+            </div>
+          </div>
+        </v-col>
+      </v-row>
 
-    <!-- Acknowledgment Form Dialog -->
-    <v-dialog
-      v-model="showForm"
-      max-width="1000px"
-      overlay-opacity="1"
-      overlay-color="primary"
-    >
-      <v-card class="secondaryBG" dir="ltr" rounded="0">
-        <v-card-title
-          class="text-h6 text-md-h5 primaryText--text font-weight-bold text-center d-flex justify-center"
-        >
-          <p class="mb-1 py-3">
-            {{ $t('codeOfConduct.cocForm.formTitle') }}
-          </p>
-        </v-card-title>
+      <!-- Acknowledgment Form Dialog -->
+      <v-dialog
+        v-model="showForm"
+        max-width="1000px"
+        overlay-opacity="1"
+        overlay-color="primary"
+      >
+        <v-card dir="ltr" rounded="0" class="white">
+          <v-card-title
+            class="text-h6 text-md-h5 font-weight-bold text-center d-flex justify-center"
+          >
+            <p class="mb-1 py-3 primary--text">
+              {{ $t('codeOfConduct.cocForm.formTitle') }}
+            </p>
+          </v-card-title>
 
-        <v-divider></v-divider>
+          <hr class="mb-5" />
 
-        <v-card-text>
-          <v-container>
-            <!-- Employee Information Section -->
-            <v-row>
-              <v-col
-                cols="12"
-                class="text-subtitle-1 primaryText--text font-weight-bold"
-              >
-                {{ $t('codeOfConduct.cocForm.employeeInfo') }}
-              </v-col>
-            </v-row>
+          <v-card-text>
+            <v-container>
+              <v-row>
+                <v-col
+                  cols="12"
+                  md="6"
+                  class="py-0 primary--text text-subtitle-1"
+                >
+                  <div>
+                    <p class="mb-1">
+                      <span class="font-weight-bold">Name:</span>
+                      {{ formData.name_eng }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="mb-1">
+                      <span class="font-weight-bold">Title:</span>
+                      {{ formData.title_e }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="mb-1">
+                      <span class="font-weight-bold">ID:</span>
+                      {{ formData.employee_id }}
+                    </p>
+                  </div>
+                </v-col>
+              </v-row>
 
-            <v-row>
-              <v-col cols="12" md="6" class="py-0">
-                <v-text-field
-                  v-model="formData.name"
-                  disabled
-                  dense
-                ></v-text-field>
-                <v-text-field
-                  v-model="formData.position"
-                  disabled
-                  dense
-                ></v-text-field>
-                <v-text-field
-                  v-model="formData.employeeID"
-                  disabled
-                  dense
-                ></v-text-field>
-              </v-col>
-            </v-row>
+              <!-- Acknowledgement Details Section -->
+              <v-row>
+                <v-col cols="12" class="text-subtitle-1 primary--text">
+                  <div>
+                    <p>
+                      {{ $t('codeOfConduct.cocForm.acknowledgementDetails1') }}
+                    </p>
+                  </div>
+                  <div>
+                    <p>
+                      {{ $t('codeOfConduct.cocForm.acknowledgementDetails2') }}
+                    </p>
+                  </div>
+                  <div>
+                    <p class="mb-0">
+                      {{ $t('codeOfConduct.cocForm.acknowledgementDetails3') }}
+                    </p>
+                  </div>
+                </v-col>
+              </v-row>
 
-            <!-- Acknowledgement Details Section -->
-            <v-row>
-              <v-col cols="12" class="text-subtitle-1 primaryText--text">
-                <div>
-                  <p>
-                    {{ $t('codeOfConduct.cocForm.acknowledgementDetails1') }}
-                  </p>
-                </div>
-                <div>
-                  <p>
-                    {{ $t('codeOfConduct.cocForm.acknowledgementDetails2') }}
-                  </p>
-                </div>
-                <div>
-                  <p class="mb-0">
-                    {{ $t('codeOfConduct.cocForm.acknowledgementDetails3') }}
-                  </p>
-                </div>
-              </v-col>
-            </v-row>
-
-            <!-- Acknowledgement Stepper -->
-            <v-row>
-              <v-col cols="12">
-                <div>
-                  <p
-                    class="text-subtitle-1 primaryText--text font-weight-bold mb-0"
+              <!-- Acknowledgement Stepper -->
+              <v-row>
+                <v-col cols="12">
+                  <div>
+                    <p
+                      class="text-subtitle-1 font-weight-bold mb-0 primary--text"
+                    >
+                      {{
+                        $t('codeOfConduct.cocForm.acknowledgmentPreSignTitle')
+                      }}
+                    </p>
+                  </div>
+                </v-col>
+                <v-col cols="12" class="pb-8 pt-3">
+                  <!-- :class="$vuetify.theme.dark ? 'secondaryBG outlined' : ''" -->
+                  <v-stepper
+                    v-model="signatureStepper"
+                    class="primary--text"
+                    light
                   >
-                    {{ $t('codeOfConduct.cocForm.acknowledgmentPreSignTitle') }}
-                  </p>
-                </div>
-              </v-col>
-              <v-col cols="12" class="pt-0 pb-5">
-                <v-stepper v-model="signatureStepper">
-                  <v-stepper-header>
-                    <v-stepper-step :complete="signatureStepper > 1" step="1">
-                      Print
-                    </v-stepper-step>
+                    <v-stepper-header>
+                      <v-stepper-step :complete="signatureStepper > 1" step="1">
+                        {{ $t('codeOfConduct.cocForm.formStepper.print') }}
+                      </v-stepper-step>
 
-                    <v-divider></v-divider>
+                      <v-divider></v-divider>
 
-                    <v-stepper-step :complete="signatureStepper > 2" step="2">
-                      Upload & Submit
-                    </v-stepper-step>
+                      <v-stepper-step :complete="signatureStepper > 2" step="2">
+                        {{
+                          $t(
+                            'codeOfConduct.cocForm.formStepper.uploadAndSubmit'
+                          )
+                        }}
+                      </v-stepper-step>
 
-                    <v-divider></v-divider>
+                      <v-divider></v-divider>
 
-                    <v-stepper-step step="3">Result</v-stepper-step>
-                  </v-stepper-header>
+                      <v-stepper-step step="3">
+                        {{ $t('codeOfConduct.cocForm.formStepper.result') }}
+                      </v-stepper-step>
+                    </v-stepper-header>
 
-                  <v-stepper-items>
-                    <!-- step #1 -->
-                    <v-stepper-content step="1">
-                      <div>
-                        <p class="text-subtitle-1 primaryText--text py-5">
-                          Please click the print button below, print the
-                          document, sign it, then click next.
-                        </p>
-                      </div>
-                      <div class="d-flex align-center pb-2">
+                    <v-stepper-items>
+                      <!-- step #1 -->
+                      <v-stepper-content step="1">
                         <div>
-                          <v-btn
-                            class="text-capitalize"
-                            color="primary"
-                            :loading="generatingForm"
-                            @click="generateAndPrint"
-                          >
-                            <v-icon left>mdi-printer</v-icon>
-                            Print Form
-                          </v-btn>
+                          <p class="text-subtitle-1 py-5">
+                            {{
+                              $t('codeOfConduct.cocForm.formStepper.step1msg')
+                            }}
+                          </p>
                         </div>
-                        <div class="mx-3">
-                          <v-btn
-                            class="text-capitalize"
-                            color="primary"
-                            @click="signatureStepper = 2"
-                          >
-                            Next
-                          </v-btn>
-                        </div>
-                      </div>
-                    </v-stepper-content>
-
-                    <!-- step #2 -->
-                    <v-stepper-content step="2">
-                      <div>
-                        <p class="text-subtitle-1 primaryText--text">
-                          Upload the signed form here.
-                        </p>
-                      </div>
-                      <div>
-                        <ValidationObserver v-slot="valid">
-                          <v-form @submit.prevent="saveUploadedDocument">
-                            <ValidationProvider
-                              v-slot="{ errors, validate }"
-                              rules="ext:pdf|size:5120|required"
+                        <div class="d-flex align-center pb-2">
+                          <div>
+                            <v-btn
+                              class="text-capitalize px-5"
+                              color="primary"
+                              :loading="generatingForm"
+                              @click="generateAndPrint"
                             >
-                              <v-file-input
-                                v-model="uploadedDocument"
-                                show-size
-                                type="file"
-                                class="py-5"
-                                :color="
-                                  $vuetify.theme.dark ? 'white' : 'primary'
-                                "
-                                :error-messages="errors[0]"
-                                accept="application/pdf"
-                                prepend-icon="mdi-file-document"
-                                :label="$t('codeOfConduct.cocForm.uploadLabel')"
-                                @input="validate"
-                              ></v-file-input>
-
-                              <div class="d-flex align-center py-3">
-                                <v-btn
-                                  :disabled="valid.invalid"
-                                  color="primary"
-                                  class="px-5 py-0 text-capitalize"
-                                  type="submit"
-                                  @click="signatureStepper = 3"
-                                  >{{
-                                    $t('codeOfConduct.cocForm.submitBTN')
-                                  }}</v-btn
-                                >
-                              </div>
-                            </ValidationProvider>
-                          </v-form>
-                        </ValidationObserver>
-                      </div>
-                      <!-- <div class="d-flex align-center pb-2">
-                        <div>
-                          <v-btn
-                            class="text-capitalize"
-                            color="primary"
-                            @click="signatureStepper = 3"
-                          >
-                            Next
-                          </v-btn>
+                              <v-icon left>mdi-printer</v-icon>
+                              {{
+                                $t(
+                                  'codeOfConduct.cocForm.formStepper.step1print'
+                                )
+                              }}
+                            </v-btn>
+                          </div>
+                          <div class="mx-3">
+                            <v-btn
+                              class="text-capitalize"
+                              color="primary"
+                              :loading="downloadingForm"
+                              @click="generateAndDownload"
+                            >
+                              <v-icon left>mdi-download</v-icon>
+                              {{
+                                $t(
+                                  'codeOfConduct.cocForm.formStepper.step1download'
+                                )
+                              }}
+                            </v-btn>
+                          </div>
+                          <div>
+                            <v-btn
+                              class="text-capitalize px-8"
+                              color="primary"
+                              @click="signatureStepper = 2"
+                            >
+                              {{
+                                $t(
+                                  'codeOfConduct.cocForm.formStepper.step1next'
+                                )
+                              }}
+                            </v-btn>
+                          </div>
                         </div>
-                      </div> -->
-                    </v-stepper-content>
+                      </v-stepper-content>
 
-                    <!-- step #3 -->
-                    <v-stepper-content step="3">
-                      <div>
-                        <p class="text-subtitle-1 primaryText--text">
-                          Success! Your signed form has been uploaded.
-                        </p>
-                      </div>
-                      <div class="d-flex align-center pb-2">
+                      <!-- step #2 -->
+                      <v-stepper-content step="2">
                         <div>
-                          <v-btn
-                            class="text-capitalize"
-                            color="primary"
-                            @click="showForm = false"
-                          >
-                            Close
-                          </v-btn>
+                          <p class="text-subtitle-1 mb-2">
+                            {{
+                              $t(
+                                'codeOfConduct.cocForm.formStepper.uploadLabel'
+                              )
+                            }}
+                          </p>
                         </div>
-                      </div>
-                    </v-stepper-content>
-                  </v-stepper-items>
-                </v-stepper>
-              </v-col>
-            </v-row>
-          </v-container>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+                        <div>
+                          <ValidationObserver v-slot="valid">
+                            <v-form @submit.prevent="saveUploadedDocument">
+                              <ValidationProvider
+                                v-slot="{ errors, validate }"
+                                rules="ext:pdf|size:5120|required"
+                              >
+                                <v-file-input
+                                  v-model="uploadedDocument"
+                                  show-size
+                                  type="file"
+                                  class="py-5"
+                                  :color="
+                                    $vuetify.theme.dark ? 'white' : 'primary'
+                                  "
+                                  :error-messages="errors[0]"
+                                  accept="application/pdf"
+                                  prepend-icon="mdi-file-document"
+                                  :label="
+                                    $t('codeOfConduct.cocForm.uploadLabel')
+                                  "
+                                  @input="validate"
+                                ></v-file-input>
+
+                                <div class="d-flex align-center py-3">
+                                  <!-- back btn -->
+                                  <v-btn
+                                    class="text-capitalize mx-3 px-8"
+                                    color="primary"
+                                    @click="signatureStepper = 1"
+                                  >
+                                    {{
+                                      $t(
+                                        'codeOfConduct.cocForm.formStepper.step2back'
+                                      )
+                                    }}
+                                  </v-btn>
+                                  <!-- submit btn -->
+                                  <v-btn
+                                    :disabled="valid.invalid"
+                                    color="success"
+                                    class="px-5 py-0 text-capitalize"
+                                    type="submit"
+                                    @click="signatureStepper = 3"
+                                    >{{
+                                      $t('codeOfConduct.cocForm.submitBTN')
+                                    }}</v-btn
+                                  >
+                                </div>
+                              </ValidationProvider>
+                            </v-form>
+                          </ValidationObserver>
+                        </div>
+                      </v-stepper-content>
+
+                      <!-- step #3 -->
+                      <v-stepper-content step="3">
+                        <div>
+                          <p
+                            v-if="showSuccessMessage"
+                            class="text-subtitle-1 success--text"
+                          >
+                            {{ $t('codeOfConduct.cocForm.successMessage') }}
+                          </p>
+                          <p v-else class="text-subtitle-1 primary--text">
+                            {{ $t('codeOfConduct.cocForm.uploading') }}
+                          </p>
+                        </div>
+                        <div class="d-flex align-center pb-2">
+                          <div>
+                            <v-btn
+                              class="text-capitalize"
+                              color="primary"
+                              @click="showForm = false"
+                            >
+                              {{
+                                $t(
+                                  'codeOfConduct.cocForm.formStepper.step3close'
+                                )
+                              }}
+                            </v-btn>
+                          </div>
+                        </div>
+                      </v-stepper-content>
+                    </v-stepper-items>
+                  </v-stepper>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-card-text>
+        </v-card>
+      </v-dialog>
+    </div>
+    <div v-if="showContent === false">
+      <!-- subtitle -->
+      <v-row>
+        <v-col cols="12">
+          <div class="error--text px-3">
+            <p class="mb-0 py-3 text-subtitle-1">
+              {{ $t('codeOfConduct.cocForm.noPermission') }}
+            </p>
+          </div>
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
 
@@ -308,24 +391,17 @@ export default {
   data() {
     return {
       overlay: false,
+      showContent: undefined,
       currentCoC: null,
       generatingForm: false,
+      downloadingForm: false,
       showForm: false,
       uploadedDocument: null,
-      formData: {
-        name: 'Fawzy Mohamed', // Will be populated from HR sync later
-        position: 'Senior Full Stack Web Developer', // Will be populated from HR sync later
-        employeeID: 'B11088', // Will be populated from HR sync later
-
-        date: new Date().toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-        }),
-
-        // signature: '',
-      },
+      formData: {},
       signatureStepper: 1,
+      formApproved: false,
+      formPending: false,
+      showSuccessMessage: false,
     }
   },
   computed: {
@@ -336,21 +412,83 @@ export default {
   },
 
   async mounted() {
-    await this.loadDocument()
+    await this.getEmployeeData()
   },
   methods: {
+    /**         
+      {
+        "employee_id": "B11088",
+        "name_eng": "Fawzy Mohamed Fawzy Mahmoud",
+        "position": "306",
+        "has_signed": false,
+        "last_signed_at": "2025-04-14T12:08:20.470Z",
+        "name_a": "فوزي محمد فوزي محمود",
+        "branch_code": "SBTMC",
+        "email": "fawzy.mohamed@alkholi.com",
+        "employee_picture": "147815649714781564971254616000.jpg",
+        "title_e": "Senior Full Stack Web Developer",
+        "title_a": "كبير مطورين الويب المتكامل",
+        "signature_status": "pending",
+        "signed_at": "2025-04-14T12:08:20.470Z",
+        "file_path": "COMBINED_B11088_1744632500410.pdf",
+        "date": "14 April 2025"
+      }
+    */
+
     async loadDocument() {
       try {
-        this.overlay = true
         const versions = await this.$store.dispatch('coc/fetchCoCVersions')
         this.currentCoC = versions.find((v) => v.active_flag)
-        this.overlay = false
         if (!this.currentCoC) throw new Error('No active CoC found!')
       } catch (error) {
-        this.overlay = false
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
           message: 'No active Code of Conduct document found!',
+        })
+      }
+    },
+
+    async getEmployeeData() {
+      try {
+        this.overlay = true
+
+        const employeeID = localStorage.getItem('employeeCode')
+
+        const employeeData = await this.$store.dispatch(
+          'coc/fetchEmployeeData',
+          {
+            employeeID,
+          }
+        )
+
+        this.formData = {
+          ...employeeData,
+          date: new Date().toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          }),
+        }
+
+        if (employeeData.position) {
+          await this.loadDocument()
+          this.showContent = true
+          if (employeeData.signature_status === 'approved') {
+            this.formApproved = true
+          } else if (employeeData.signature_status === 'pending') {
+            this.formPending = true
+          }
+        } else {
+          this.showContent = false
+        }
+
+        this.overlay = false
+      } catch (error) {
+        this.overlay = false
+
+        this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: 'Could not fetch employee data!',
         })
       }
     },
@@ -362,7 +500,10 @@ export default {
         const response = await this.$axios.post(
           '/coc-api/generate-print-form',
           {
-            employeeID: 'B11088',
+            employeeID: this.formData.employee_id,
+            position: this.formData.title_e,
+            name: this.formData.name_eng,
+            date: this.formData.date,
           }
         )
 
@@ -393,37 +534,65 @@ export default {
       }
     },
 
-    async saveUploadedDocument() {
-      this.overlay = true
-
-      const employeeID = localStorage.getItem('employeeCode')
-      const employeeName = localStorage.getItem('userFullName')
-
-      const uploadedDocData = {
-        employeeID,
-        employeeName,
-        uploadedDocument: this.uploadedDocument,
-        versionNumber: this.currentCoC.version_number,
-      }
-
-      await this.$store.dispatch('coc/processSignedDocument', uploadedDocData)
-
-      this.overlay = false
-    },
-
-    submitForm() {
+    async generateAndDownload() {
+      this.downloadingForm = true
       try {
-        // Future implementation for form submission
-        this.showForm = false
-        this.$store.dispatch('appNotifications/addNotification', {
-          type: 'success',
-          message: 'Acknowledgement received successfully!',
-        })
+        // Call server to generate PDF
+        const response = await this.$axios.post(
+          '/coc-api/generate-print-form',
+          {
+            employeeID: this.formData.employee_id,
+            position: this.formData.title_e,
+            name: this.formData.name_eng,
+            date: this.formData.date,
+          }
+        )
+
+        const pdfUrl = `${this.$config.baseURL}${response.data.url}`
+
+        // Create a link element to trigger the download
+        const link = document.createElement('a')
+        link.href = pdfUrl
+        link.download = 'Code_of_Conduct_Acknowledgment_Form.pdf'
+        document.body.appendChild(link) // Append it to the DOM
+        link.click() // Trigger the download
+        document.body.removeChild(link) // Cleanup after download
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Submission failed. Please try again.',
+          message: 'Form generation failed. Please try again.',
         })
+      } finally {
+        this.downloadingForm = false
+      }
+    },
+
+    async saveUploadedDocument() {
+      try {
+        const employeeID = localStorage.getItem('employeeCode')
+        const employeeName = localStorage.getItem('userFullName')
+
+        const uploadedDocData = {
+          employeeID,
+          employeeName,
+          uploadedDocument: this.uploadedDocument,
+          versionNumber: this.currentCoC.version_number,
+        }
+
+        const submit = await this.$store.dispatch(
+          'coc/processSignedDocument',
+          uploadedDocData
+        )
+
+        if (
+          submit.message === 'Signed form uploaded and processed successfully'
+        ) {
+          this.showSuccessMessage = true
+          // to update the acknowledgment status right after the user submission
+          await this.getEmployeeData()
+        }
+      } catch (error) {
+        //
       }
     },
   },
@@ -434,6 +603,7 @@ export default {
 .pdf-container {
   height: 75vh;
   width: 100%;
+  max-width: 1050px;
 }
 
 .pdf-viewer {

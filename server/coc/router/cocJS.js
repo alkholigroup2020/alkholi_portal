@@ -19,14 +19,15 @@ async function portalDB() {
   }
 }
 
+// Add endpoint to generate the print form
 router.post('/generate-print-form', authorize, async (req, res) => {
   const portalDBConnection = await portalDB()
   try {
     // Extract data from request body
-    const { name, position, employeeId, dateOfReceipt } = req.body
+    const { name, position, employeeID, date } = req.body
 
     const fontBytes = fs.readFileSync(
-      path.join(__dirname, '../../../uploads/coc/fonts/Calibri.ttf')
+      path.join(__dirname, '../../../uploads/coc/fonts/AA_Stetica_Regular.otf')
     )
 
     // Create a new PDF document
@@ -44,10 +45,10 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     const contentWidth = rightMargin - leftMargin // 475 points
 
     // Define font sizes
-    const fontSizeTitle = 20 // Title font size
-    const fontSizeSubtitle = 18 // Subtitle font size
+    const fontSizeTitle = 22 // Title font size
+    const fontSizeSubtitle = 19 // Subtitle font size
     const fontSizeSection = 16 // Section header font size
-    const fontSizeField = 14 // Field label and paragraph font size
+    const fontSizeField = 15 // Field label and paragraph font size
 
     // Add the logo
     const logoPath = path.join(__dirname, '../../../uploads/coc/logo.png')
@@ -55,10 +56,10 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     const logoImage = await pdfDoc.embedPng(logoBytes) // Use embedJpg if it’s a JPEG
     const originalWidth = logoImage.width
     const originalHeight = logoImage.height
-    const logoWidth = 100 // Desired width in points
+    const logoWidth = 120 // Desired width in points
     const logoHeight = (originalHeight / originalWidth) * logoWidth // Maintain aspect ratio
     const marginRight = 40 // Margin from right edge
-    const marginTop = 40 // Margin from top edge
+    const marginTop = 25 // Margin from top edge
     const x = 595 - logoWidth - marginRight // x-coordinate (bottom-left of logo)
     const y = 842 - marginTop - logoHeight // y-coordinate (bottom of logo)
     page.drawImage(logoImage, {
@@ -74,7 +75,7 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     const xTitle = (595 - textWidthTitle) / 2 // Center within 595 points
     page.drawText(title, {
       x: xTitle,
-      y: 720,
+      y: 725,
       size: fontSizeTitle,
       font: documentFont,
       color: rgb(0, 0, 0),
@@ -117,23 +118,23 @@ router.post('/generate-print-form', authorize, async (req, res) => {
     }
 
     // Draw "Employee Information" section
-    page.drawText('Employee Details:', {
-      x: leftMargin,
-      y: 660,
-      size: fontSizeSection,
-      font: documentFont,
-      color: rgb(0, 0, 0),
-    })
+    // page.drawText('Employee Details:', {
+    //   x: leftMargin,
+    //   y: 660,
+    //   size: fontSizeSection,
+    //   font: documentFont,
+    //   color: rgb(0, 0, 0),
+    // })
 
     // Draw employee information fields with data from request
-    drawFormField(page, 'Name: ', name || 'Not Provided', 640)
+    drawFormField(page, 'Name: ', name || 'Not Provided', 650)
     drawFormField(page, 'Position: ', position || 'Not Provided', 620)
-    drawFormField(page, 'Employee ID: ', employeeId || 'Not Provided', 600)
+    drawFormField(page, 'Employee ID: ', employeeID || 'Not Provided', 590)
 
     // Draw "Acknowledgement Details" section
     page.drawText('Acknowledgement Details:', {
       x: leftMargin,
-      y: 570,
+      y: 550,
       size: fontSizeSection,
       font: documentFont,
       color: rgb(0, 0, 0),
@@ -144,35 +145,30 @@ router.post('/generate-print-form', authorize, async (req, res) => {
       'I, the undersigned, hereby acknowledge that I have received and reviewed the Alkholi Group’s Code of Conduct. I understand that it is my responsibility to read, understand, and comply with the guidelines set forth in the Code of Conduct while performing my duties at Alkholi Group. I further acknowledge that failure to adhere to the Code of Conduct may result in disciplinary action in accordance with the company’s policies. I understand that if I have any questions or require clarification regarding any part of the Code of Conduct, I am encouraged to reach out to Human Resources or my supervisor.'
     page.drawText(paragraph, {
       x: leftMargin,
-      y: 540,
+      y: 520,
       size: fontSizeField,
       font: documentFont,
       color: rgb(0, 0, 0),
       maxWidth: contentWidth,
-      lineHeight: 18,
+      lineHeight: 22,
     })
 
     // Draw "Acknowledgement of Receipt" section
     page.drawText('Acknowledgement of Receipt:', {
       x: leftMargin,
-      y: 380,
+      y: 280,
       size: fontSizeSection,
       font: documentFont,
       color: rgb(0, 0, 0),
     })
 
     // Draw receipt fields with data from request
-    drawFormField(
-      page,
-      'Date of Receipt: ',
-      dateOfReceipt || 'Not Provided',
-      360
-    )
+    drawFormField(page, 'Date of Receipt: ', date || 'Not Provided', 250)
     drawFormField(
       page,
       'Employee Signature: ',
-      '...................................................',
-      320
+      '.............................................................',
+      165
     )
 
     // Serialize the PDF to bytes
@@ -293,6 +289,69 @@ router.get('/get-coc-versions', authorize, async (req, res) => {
       .query(`SELECT * FROM coc.coc_versions ORDER BY created_at DESC`)
 
     res.status(200).json(result.recordset)
+  } catch (e) {
+    const error = e.toString().replace('Error: ', '')
+    res.status(500).json({ message: error })
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
+// get-single-employee-data
+// router.post('/get-single-employee-data', authorize, async (req, res) => {
+//   const portalDBConnection = await portalDB()
+//   try {
+//     const employeeId = req.body.employeeID // Extract employeeId from request body
+//     if (!employeeId) {
+//       return res.status(400).json({ message: 'Missing employee ID!' })
+//     }
+//     // Query the employee's signature data from the database
+//     const result = await portalDBConnection
+//       .request()
+//       .input('employee_id', sql.NVarChar(20), employeeId).query(`
+//         SELECT * FROM coc.employees WHERE employee_id = @employee_id
+//       `)
+//     if (result.recordset.length === 0) {
+//       return res.status(404).json({ message: 'Employee not found!' })
+//     }
+//     res.status(200).json(result.recordset[0])
+//   } catch (e) {
+//     const error = e.toString().replace('Error: ', '')
+//     res.status(500).json({ message: error })
+//   } finally {
+//     await portalDBConnection.close()
+//   }
+// })
+
+router.post('/get-single-employee-data', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const employeeId = req.body.employeeID // Extract employeeId from request body
+    if (!employeeId) {
+      return res.status(400).json({ message: 'Missing employee ID!' })
+    }
+    // Query the employee's data including the approval state of the last submitted form
+    const result = await portalDBConnection
+      .request()
+      .input('employee_id', sql.NVarChar(20), employeeId).query(`
+        SELECT 
+          e.*,
+          es.status AS signature_status,
+          es.signed_at,
+          es.file_path
+        FROM coc.employees e
+        LEFT JOIN (
+          SELECT TOP 1 status, signed_at, file_path, employee_id
+          FROM coc.employee_signatures
+          WHERE employee_id = @employee_id
+          ORDER BY signed_at DESC
+        ) es ON e.employee_id = es.employee_id
+        WHERE e.employee_id = @employee_id
+      `)
+    if (result.recordset.length === 0) {
+      return res.status(404).json({ message: 'Employee not found!' })
+    }
+    res.status(200).json(result.recordset[0])
   } catch (e) {
     const error = e.toString().replace('Error: ', '')
     res.status(500).json({ message: error })
@@ -435,45 +494,175 @@ async function appendSignatureToCoC(employeeId, signedFormPath) {
   }
 }
 
-// Function to store metadata of the combined document in the database
+// Function to store the signature metadata in the database
+// async function storeSignatureMetadata(employeeId, combinedPdfPath) {
+//   const portalDBConnection = await portalDB()
+//   try {
+//     // Get the ID of the latest active CoC version
+//     const versionResult = await portalDBConnection.request().query(`
+//       SELECT TOP 1 id
+//       FROM coc.coc_versions
+//       WHERE active_flag = 1
+//       ORDER BY created_at DESC
+//     `)
+//     const versionId = versionResult.recordset[0].id
+
+//     // Check if a record for this employee already exists
+//     const existingRecord = await portalDBConnection
+//       .request()
+//       .input('employee_id', sql.NVarChar(20), employeeId)
+//       .query(
+//         `SELECT id FROM coc.employee_signatures WHERE employee_id = @employee_id`
+//       )
+
+//     if (existingRecord.recordset.length > 0) {
+//       // Update existing record
+//       await portalDBConnection
+//         .request()
+//         .input('employee_id', sql.NVarChar(20), employeeId)
+//         .input('coc_version_id', sql.Int, versionId)
+//         .input('file_path', sql.NVarChar(255), combinedPdfPath)
+//         .input('signed_at', sql.DateTime, new Date()).query(`
+//           UPDATE coc.employee_signatures
+//           SET coc_version_id = @coc_version_id,
+//               file_path = @file_path,
+//               signed_at = @signed_at
+//           WHERE employee_id = @employee_id
+//         `)
+//     } else {
+//       // Insert new record
+//       await portalDBConnection
+//         .request()
+//         .input('employee_id', sql.NVarChar(20), employeeId)
+//         .input('coc_version_id', sql.Int, versionId)
+//         .input('file_path', sql.NVarChar(255), combinedPdfPath)
+//         .input('signed_at', sql.DateTime, new Date()).query(`
+//           INSERT INTO coc.employee_signatures (employee_id, coc_version_id, file_path, signed_at)
+//           VALUES (@employee_id, @coc_version_id, @file_path, @signed_at)
+//         `)
+//     }
+//   } finally {
+//     await portalDBConnection.close()
+//   }
+// }
+
 async function storeSignatureMetadata(employeeId, combinedPdfPath) {
   const portalDBConnection = await portalDB()
   try {
-    // Get the ID of the latest active CoC version
+    // Get the current active CoC version
     const versionResult = await portalDBConnection.request().query(`
       SELECT TOP 1 id
       FROM coc.coc_versions
       WHERE active_flag = 1
       ORDER BY created_at DESC
     `)
+    if (versionResult.recordset.length === 0) {
+      throw new Error('No active CoC version found')
+    }
     const versionId = versionResult.recordset[0].id
 
-    // Insert metadata into the employee_signatures table
-    await portalDBConnection
+    // Check if a signature already exists for this employee and version
+    const existingRecord = await portalDBConnection
       .request()
       .input('employee_id', sql.NVarChar(20), employeeId)
-      .input('coc_version_id', sql.Int, versionId)
-      .input('file_path', sql.NVarChar(255), combinedPdfPath)
-      .input('signed_at', sql.DateTime, new Date()) // Record the signing timestamp
-      .query(`
-        INSERT INTO coc.employee_signatures (employee_id, coc_version_id, file_path, signed_at)
-        VALUES (@employee_id, @coc_version_id, @file_path, @signed_at)
+      .input('coc_version_id', sql.Int, versionId).query(`
+        SELECT id, status FROM coc.employee_signatures
+        WHERE employee_id = @employee_id AND coc_version_id = @coc_version_id
       `)
+
+    if (existingRecord.recordset.length > 0) {
+      const status = existingRecord.recordset[0].status
+      if (status === 'pending') {
+        // If pending, update the existing record with the new file
+        await portalDBConnection
+          .request()
+          .input('employee_id', sql.NVarChar(20), employeeId)
+          .input('coc_version_id', sql.Int, versionId)
+          .input('file_path', sql.NVarChar(255), combinedPdfPath)
+          .input('signed_at', sql.DateTime, new Date()).query(`
+            UPDATE coc.employee_signatures
+            SET file_path = @file_path,
+                signed_at = @signed_at
+            WHERE employee_id = @employee_id AND coc_version_id = @coc_version_id
+          `)
+      } else if (status === 'rejected') {
+        // If rejected, update the existing record with the new file and set status to 'pending'
+        await portalDBConnection
+          .request()
+          .input('employee_id', sql.NVarChar(20), employeeId)
+          .input('coc_version_id', sql.Int, versionId)
+          .input('file_path', sql.NVarChar(255), combinedPdfPath)
+          .input('signed_at', sql.DateTime, new Date()).query(`
+            UPDATE coc.employee_signatures
+            SET file_path = @file_path,
+                signed_at = @signed_at,
+                status = 'pending'
+            WHERE employee_id = @employee_id AND coc_version_id = @coc_version_id
+          `)
+      } else {
+        // If approved or rejected, prevent re-submission
+        throw new Error('Signature already processed for this version')
+      }
+    } else {
+      // Insert a new record with status 'pending'
+      await portalDBConnection
+        .request()
+        .input('employee_id', sql.NVarChar(20), employeeId)
+        .input('coc_version_id', sql.Int, versionId)
+        .input('file_path', sql.NVarChar(255), combinedPdfPath)
+        .input('signed_at', sql.DateTime, new Date())
+        .input('status', sql.VarChar(20), 'pending').query(`
+          INSERT INTO coc.employee_signatures (employee_id, coc_version_id, file_path, signed_at, status)
+          VALUES (@employee_id, @coc_version_id, @file_path, @signed_at, @status)
+        `)
+    }
   } finally {
     await portalDBConnection.close()
   }
 }
 
 // Function to update the employee's signature status
+// async function updateEmployeeSignatureStatus(employeeId) {
+//   const portalDBConnection = await portalDB()
+//   try {
+//     // Update the employees table to reflect that the employee has signed
+//     await portalDBConnection
+//       .request()
+//       .input('employee_id', sql.NVarChar(20), employeeId).query(`
+//         UPDATE coc.employees
+//         SET has_signed = 1, last_signed_at = GETDATE()
+//         WHERE employee_id = @employee_id
+//       `)
+//   } finally {
+//     await portalDBConnection.close()
+//   }
+// }
+
 async function updateEmployeeSignatureStatus(employeeId) {
   const portalDBConnection = await portalDB()
   try {
-    // Update the employees table to reflect that the employee has signed
+    // Only update has_signed if the latest signature is approved
     await portalDBConnection
       .request()
       .input('employee_id', sql.NVarChar(20), employeeId).query(`
         UPDATE coc.employees
-        SET has_signed = 1, last_signed_at = GETDATE()
+        SET has_signed = CASE 
+            WHEN EXISTS (
+              SELECT 1 
+              FROM coc.employee_signatures es
+              JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
+              WHERE es.employee_id = @employee_id 
+              AND cv.active_flag = 1 
+              AND es.status = 'approved'
+            ) THEN 1 
+            ELSE 0 
+            END,
+            last_signed_at = (
+              SELECT TOP 1 es.signed_at
+              FROM coc.employee_signatures es
+              WHERE es.employee_id = @employee_id
+              ORDER BY es.signed_at DESC
+            )
         WHERE employee_id = @employee_id
       `)
   } finally {
@@ -518,6 +707,141 @@ router.delete('/delete-version/:id', authorize, async (req, res) => {
   } catch (e) {
     const error = e.toString().replace('Error: ', '')
     res.status(500).json({ message: error })
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
+// This endpoint retrieves the list of employees and their compliance status with the CoC from portal db
+// router.get('/get-employee-compliance', authorize, async (req, res) => {
+//   const portalDBConnection = await portalDB()
+//   try {
+//     const result = await portalDBConnection.request().query(`
+//       SELECT
+//         e.employee_id,
+//         e.name_eng,
+//         e.name_a,
+//         e.position,
+//         e.branch_code,
+//         e.email,
+//         e.employee_picture,
+//         e.has_signed,
+//         e.last_signed_at,
+//         e.title_e,
+//         e.title_a,
+//         es.file_path AS signed_document_path,
+//         es.signed_at,
+//         cv.version_number,
+//         CASE
+//           WHEN cv.active_flag = 1 THEN 1
+//           ELSE 0
+//         END AS is_current_version
+//       FROM coc.employees e
+//       LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
+//       LEFT JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
+//       ORDER BY e.employee_id
+//     `)
+//     res.status(200).json(result.recordset)
+//   } catch (e) {
+//     const error = e.toString().replace('Error: ', '')
+//     res.status(500).json({ message: error })
+//   } finally {
+//     await portalDBConnection.close()
+//   }
+// })
+
+router.get('/get-employee-compliance', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const result = await portalDBConnection.request().query(`
+      SELECT
+        e.employee_id,
+        e.name_eng,
+        e.name_a,
+        e.position,
+        e.branch_code,
+        e.email,
+        e.employee_picture,
+        e.title_e,
+        e.title_a,
+        es.id AS signature_id,
+        es.file_path AS signed_document_path,
+        es.signed_at,
+        es.status,
+        cv.version_number
+      FROM coc.employees e
+      LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
+        AND es.coc_version_id = (SELECT TOP 1 id FROM coc.coc_versions WHERE active_flag = 1 ORDER BY created_at DESC)
+      LEFT JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
+      ORDER BY e.employee_id
+    `)
+    res.status(200).json(result.recordset)
+  } catch (e) {
+    res.status(500).json({ message: e.message.replace('Error: ', '') })
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
+// Approve a signature
+router.post('/approve-signature', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const { signatureId, adminId } = req.body
+
+    if (!signatureId) {
+      return res.status(400).json({ message: 'Missing signature ID' })
+    }
+
+    // Update status to 'approved', set approver and timestamp
+    await portalDBConnection
+      .request()
+      .input('id', sql.Int, signatureId)
+      .input('approved_by', sql.NVarChar(20), adminId)
+      .input('approved_at', sql.DateTime, new Date()).query(`
+        UPDATE coc.employee_signatures
+        SET status = 'approved',
+            approved_by = @approved_by,
+            approved_at = @approved_at
+        WHERE id = @id AND status = 'pending'
+      `)
+    // Update employee's has_signed status
+    const signature = await portalDBConnection
+      .request()
+      .input('id', sql.Int, signatureId)
+      .query(`SELECT employee_id FROM coc.employee_signatures WHERE id = @id`)
+    await updateEmployeeSignatureStatus(signature.recordset[0].employee_id)
+    res.status(200).json({ message: 'Signature approved successfully' })
+  } catch (e) {
+    res.status(500).json({ message: e.message.replace('Error: ', '') })
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
+// Reject a signature
+router.post('/reject-signature', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const { signatureId } = req.body
+    if (!signatureId) {
+      return res.status(400).json({ message: 'Missing signature ID' })
+    }
+    // Update status to 'rejected'
+    await portalDBConnection.request().input('id', sql.Int, signatureId).query(`
+        UPDATE coc.employee_signatures
+        SET status = 'rejected'
+        WHERE id = @id AND status = 'pending'
+      `)
+    // Update employee's has_signed status
+    const signature = await portalDBConnection
+      .request()
+      .input('id', sql.Int, signatureId)
+      .query(`SELECT employee_id FROM coc.employee_signatures WHERE id = @id`)
+    await updateEmployeeSignatureStatus(signature.recordset[0].employee_id)
+    res.status(200).json({ message: 'Signature rejected successfully' })
+  } catch (e) {
+    res.status(500).json({ message: e.message.replace('Error: ', '') })
   } finally {
     await portalDBConnection.close()
   }

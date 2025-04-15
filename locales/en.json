@@ -176,15 +176,32 @@
     "cocForm": {
       "title": "Code of Conduct",
       "formTitle": "Acknowledgment Form",
-      "formIntro": "Please read the Code of Conduct document carefully, then acknowledge that you have read and understood it.",
+      "formIntro": "Kindly read through the Code of Conduct document carefully, then acknowledge that you have read and understood it.",
+      "noPermission": "You don't have permission to access this page!",
       "employeeInfo": "Employee Information:",
       "acknowledgementDetailsTitle": "Acknowledgment Details:",
       "acknowledgementDetails1": "I, the undersigned, hereby acknowledge that I have received and reviewed the Alkholi Group’s Code of Conduct. I understand that it is my responsibility to read, understand, and comply with the guidelines set forth in the Code of Conduct while performing my duties at Alkholi Group.",
       "acknowledgementDetails2": "I further acknowledge that failure to adhere to the Code of Conduct may result in disciplinary action in accordance with the company’s policies.",
       "acknowledgementDetails3": "I understand that if I have any questions or require clarification regarding any part of the Code of Conduct, I am encouraged to reach out to Human Resources or my supervisor.",
       "acknowledgmentPreSignTitle": "Acknowledgement Steps:",
+      "formStepper": {
+        "print": "Print",
+        "uploadAndSubmit": "Upload & Submit",
+        "result": "Result",
+        "step1msg": "Click the print button below, print the document physically and sign it. Or click the download option to save it and sign it digitally, then click next.",
+        "step1print": "Print",
+        "step1download": "Download",
+        "step1next": "Next",
+        "step3close": "Close",
+        "step2back": "Back",
+        "uploadLabel": "If you have signed the document physically, please scan it, save it to your disk, and upload it here. If you have signed it digitally, please upload it here."
+      },
+      "alreadySigned": "You have already signed this version!",
+      "pendingApproval": "Your submission is pending approval!",
       "acknowledgmentForm": "Acknowledge",
-      "uploadLabel": "Upload your signed copy of the Acknowledgment Form",
+      "uploading": "Uploading ...",
+      "uploadLabel": "Upload Signed Document",
+      "successMessage": "Success! Your signed form has been uploaded.",
       "submitBTN": "Submit"
     },
     "cocVersions": {
@@ -201,8 +218,14 @@
       "deleteCancel": "Cancel",
       "deleteConfirm": "Delete",
       "formVersionNumber": "Version Number:",
-      "status": "Status",
+      "status": "Active",
       "documentLink": "Document Link"
+    },
+    "employeesList": {
+      "approvalTitle": "Confirmation",
+      "approvalMessage": "Are you sure you want to approve this employee's acknowledgment?",
+      "rejectTitle": "Confirmation",
+      "rejectMessage": "Are you sure you want to reject this employee's acknowledgment?"
     }
   },
   "elevatorsSurvey": {
