@@ -5,6 +5,7 @@ export const state = () => ({
   isElevatorsSurveysUser: undefined,
   isHRSurveysUser: undefined,
   isDTRUser: undefined,
+  isCOCAdmin: undefined,
   toolbarWidth: undefined,
 })
 
@@ -35,6 +36,7 @@ export const mutations = {
   SET_USER_AUTHORIZATIONS_DATA(state, data) {
     state.isPortalAdmin = data.isPortalAdmin
     state.isBusinessCardsAdmin = data.isBusinessCardsAdmin
+    state.isCOCAdmin = data.isCOCAdmin
     state.isElevatorsSurveysUser = data.isElevatorsSurveysUser
     state.isHRSurveysUser = data.isHRSurveysUser
     state.isDTRUser = data.isDTRUser

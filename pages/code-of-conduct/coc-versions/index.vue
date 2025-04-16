@@ -223,6 +223,7 @@
 <script>
 import { extend, localize } from 'vee-validate'
 import { ext, numeric, size, required } from 'vee-validate/dist/rules'
+import { mapState } from 'vuex'
 
 // Override the default message.
 extend('ext', {
@@ -270,6 +271,19 @@ export default {
       selectedPdfUrl: '',
       deleteDialog: false,
       selectedVersion: null,
+    }
+  },
+
+  computed: {
+    ...mapState({
+      isCOCAdmin: (state) => state.portal.isCOCAdmin,
+    }),
+  },
+
+  created() {
+    // check authorization
+    if (!this.isCOCAdmin) {
+      this.$router.push(this.localePath('/code-of-conduct/coc-form'))
     }
   },
   async mounted() {

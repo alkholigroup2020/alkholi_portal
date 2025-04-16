@@ -20,7 +20,7 @@ router.post('/send-survey-request', auth, async (req, res) => {
 
     // send mail
     const transporter = nodemailer.createTransport({
-      host: '10.11.10.20',
+      host: '10.10.10.20',
       port: 587,
       secure: false, // true for 465, false for other ports
       auth: {

@@ -40,6 +40,14 @@ router.post('/get-user-authorizations', authorize, async (req, res) => {
       results.isBusinessCardsAdmin = true
     }
 
+    const isCOCAdmin = await portalDBConnection
+      .request()
+      .query(`exec dbo.coc_admins_checkIfExist '${req.body.employeeID}'`)
+
+    if (isCOCAdmin.recordset[0].exist) {
+      results.isCOCAdmin = true
+    }
+
     const isElevatorsSurveysUser = await portalDBConnection
       .request()
       .query(`exec dbo.elevators_users_checkIfExist '${req.body.employeeID}'`)

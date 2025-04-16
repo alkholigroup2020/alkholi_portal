@@ -7,6 +7,7 @@ const hrSurveys = require('./router/hrSurveys.js')
 const dtrUsers = require('./router/dtrUsers.js')
 const sqlCalls = require('./router/sqlCalls.js')
 const dtrSetup = require('./router/dtrSetup.js')
+const cocAdmins = require('./router/cocAdmins.js')
 
 api.use(express.json())
 api.use(express.urlencoded({ extended: true }))
@@ -17,6 +18,7 @@ api.use(hrSurveys)
 api.use(dtrUsers)
 api.use(sqlCalls)
 api.use(dtrSetup)
+api.use(cocAdmins)
 
 module.exports = {
   path: '/administration-api',

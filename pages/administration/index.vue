@@ -96,6 +96,19 @@
                 ></v-img>
               </v-avatar>
             </div>
+            <div
+              v-if="selectedApp === $t('adminPage.choices.app6')"
+              class="mx-5"
+            >
+              <v-avatar size="40" tile>
+                <v-img
+                  src="/websiteImages/CoC.jpg"
+                  alt="App Image"
+                  contain
+                  style="border-radius: 5px; background-color: white"
+                ></v-img>
+              </v-avatar>
+            </div>
           </div>
         </div>
       </v-col>
@@ -120,6 +133,9 @@
         <div v-if="selectedApp === $t('adminPage.choices.app5')">
           <dtrUsers />
         </div>
+        <div v-if="selectedApp === $t('adminPage.choices.app6')">
+          <cocAdmins />
+        </div>
       </v-col>
     </v-row>
   </v-container>
@@ -136,6 +152,7 @@ export default {
         `${this.$t('adminPage.choices.app3')}`,
         `${this.$t('adminPage.choices.app4')}`,
         `${this.$t('adminPage.choices.app5')}`,
+        `${this.$t('adminPage.choices.app6')}`,
       ],
       selectedApp: `${this.$t('adminPage.choices.app1')}`,
     }

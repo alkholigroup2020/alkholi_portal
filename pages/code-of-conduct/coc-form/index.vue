@@ -15,7 +15,7 @@
 
         <div v-if="showContent" class="d-flex align-center justify-center">
           <div v-if="formApproved">
-            <p class="text-subtitle1 error--text mx-3 mb-0">
+            <p class="text-subtitle1 success--text mx-3 mb-0">
               {{ $t('codeOfConduct.cocForm.alreadySigned') }}
             </p>
           </div>
@@ -45,7 +45,7 @@
       <!-- subtitle -->
       <v-row>
         <v-col cols="12">
-          <div class="text-h6 font-weight-light primaryText--text px-3">
+          <div class="text-subtitle1 primaryText--text px-3">
             <p class="mb-0 py-3">
               {{ $t('codeOfConduct.cocForm.formIntro') }}
             </p>
@@ -72,6 +72,7 @@
       <!-- Acknowledgment Form Dialog -->
       <v-dialog
         v-model="showForm"
+        persistent
         max-width="1000px"
         overlay-opacity="1"
         overlay-color="primary"
@@ -233,6 +234,15 @@
                               }}
                             </v-btn>
                           </div>
+                          <div>
+                            <v-btn
+                              class="text-capitalize px-8 mx-3"
+                              color="error"
+                              @click="showForm = false"
+                            >
+                              {{ $t('generals.cancel') }}
+                            </v-btn>
+                          </div>
                         </div>
                       </v-stepper-content>
 
@@ -295,6 +305,13 @@
                                       $t('codeOfConduct.cocForm.submitBTN')
                                     }}</v-btn
                                   >
+                                  <v-btn
+                                    class="text-capitalize px-8 mx-3"
+                                    color="error"
+                                    @click="showForm = false"
+                                  >
+                                    {{ $t('generals.cancel') }}
+                                  </v-btn>
                                 </div>
                               </ValidationProvider>
                             </v-form>
@@ -318,8 +335,10 @@
                         <div class="d-flex align-center pb-2">
                           <div>
                             <v-btn
-                              class="text-capitalize"
+                              class="text-capitalize px-8 py-1"
                               color="primary"
+                              :disabled="!showSuccessMessage"
+                              :loading="!showSuccessMessage"
                               @click="showForm = false"
                             >
                               {{
@@ -585,14 +604,17 @@ export default {
         )
 
         if (
-          submit.message === 'Signed form uploaded and processed successfully'
+          submit.message === 'Signed form uploaded and processed successfully!'
         ) {
           this.showSuccessMessage = true
           // to update the acknowledgment status right after the user submission
           await this.getEmployeeData()
         }
       } catch (error) {
-        //
+        this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: 'Failed to upload the signed document. Please try again.',
+        })
       }
     },
   },

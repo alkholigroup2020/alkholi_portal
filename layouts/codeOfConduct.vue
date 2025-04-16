@@ -254,6 +254,7 @@
           </v-list-item>
 
           <v-list-item
+            v-if="isCOCAdmin"
             nuxt
             :to="localePath('/code-of-conduct/coc-versions')"
             exact
@@ -270,6 +271,7 @@
           </v-list-item>
 
           <v-list-item
+            v-if="isCOCAdmin"
             nuxt
             :to="localePath('/code-of-conduct/employees-list')"
             exact
@@ -326,7 +328,7 @@ export default {
   computed: {
     ...mapState({
       appNotifications: (state) => state.appNotifications.notifications,
-      isBusinessCardsAdmin: (state) => state.portal.isBusinessCardsAdmin,
+      isCOCAdmin: (state) => state.portal.isCOCAdmin,
     }),
     availableLocales() {
       return this.$i18n.locales.filter((i) => i.code !== this.$i18n.locale)
@@ -390,11 +392,6 @@ export default {
               domainName,
             }
             await this.$store.dispatch('login/reAuthenticate', payload)
-
-            // check authorization
-            if (!this.isBusinessCardsAdmin) {
-              this.$router.push(this.localePath('/'))
-            }
           } else {
             this.$router.push(this.localePath('/login'))
           }
