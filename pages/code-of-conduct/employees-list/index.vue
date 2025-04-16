@@ -104,20 +104,21 @@
               <tr>
                 <th class="text-subtitle-2 primaryText--text"></th>
                 <th class="text-subtitle-2 primaryText--text"></th>
-                <th class="text-subtitle-2 primaryText--text">Name</th>
                 <th class="text-subtitle-2 primaryText--text">ID</th>
                 <th class="text-subtitle-2 primaryText--text">Title</th>
+                <th class="text-subtitle-2 primaryText--text">Name</th>
                 <th class="text-subtitle-2 primaryText--text">Email</th>
                 <th class="text-subtitle-2 primaryText--text">Company</th>
-                <th class="text-subtitle-2 primaryText--text">Signature</th>
-                <th class="text-subtitle-2 primaryText--text">Version</th>
-                <th class="text-subtitle-2 primaryText--text">Signed At</th>
-                <th class="text-subtitle-2 primaryText--text">
-                  Signed Document
-                </th>
+                <th class="text-subtitle-2 primaryText--text">Status</th>
                 <th class="text-subtitle-2 primaryText--text">
                   Send Notification
                 </th>
+
+                <!-- <th class="text-subtitle-2 primaryText--text">Signed At</th> -->
+                <th class="text-subtitle-2 primaryText--text">
+                  Signed Document
+                </th>
+                <th class="text-subtitle-2 primaryText--text">Version</th>
                 <th class="text-subtitle-2 primaryText--text">Approval</th>
               </tr>
             </thead>
@@ -184,8 +185,8 @@
                 <!-- Compliance Status -->
                 <td class="w-full text-center">
                   <!-- rejected -->
+                  <!-- v-if="employee.signature_id" -->
                   <v-chip
-                    v-if="employee.signature_id"
                     :color="
                       employee.status === 'approved'
                         ? 'success'
@@ -193,7 +194,7 @@
                         ? 'error'
                         : employee.status === 'pending'
                         ? 'warning'
-                        : ''
+                        : 'cyan accent-4'
                     "
                     small
                   >
@@ -204,49 +205,18 @@
                         ? 'Rejected'
                         : employee.status === 'pending'
                         ? 'Pending Approval'
-                        : employee.status === 'not_signed'
-                        ? 'Not Signed'
+                        : employee.status === null
+                        ? 'No Action'
                         : ''
                     }}
                   </v-chip>
+                  <!-- <pre>{{ employee }}</pre> -->
                   <!-- <v-chip v-else color="error" small>Not Signed</v-chip> -->
-                </td>
-
-                <!-- version_number -->
-                <td class="w-full text-center">
-                  <span>{{ employee.version_number }}</span>
-                </td>
-
-                <!-- last_signed_at -->
-                <td>
-                  {{
-                    employee.last_signed_at
-                      ? formattedDate(employee.last_signed_at)
-                      : ''
-                  }}
-                </td>
-
-                <!-- signed_document_path -->
-                <td>
-                  <div
-                    v-if="employee.signed_document_path"
-                    class="w-full d-flex justify-center align-center"
-                  >
-                    <v-btn
-                      rounded
-                      fab
-                      small
-                      text
-                      class="mx-1 py-0 px-0 text-capitalize"
-                      @click.prevent="openPdf(employee.signed_document_path)"
-                      ><v-icon>mdi-file-document</v-icon></v-btn
-                    >
-                  </div>
                 </td>
 
                 <!-- send notification -->
                 <td>
-                  <div class="w-full d-flex justify-center align-center">
+                  <div>
                     <v-btn
                       v-if="
                         employee.status === 'rejected' ||
@@ -267,6 +237,38 @@
                       ><v-icon>mdi-email</v-icon>
                     </v-btn>
                   </div>
+                </td>
+
+                <!-- last_signed_at -->
+                <!-- <td>
+                  {{
+                    employee.last_signed_at
+                      ? formattedDate(employee.last_signed_at)
+                      : ''
+                  }}
+                </td> -->
+
+                <!-- signed_document_path -->
+                <td>
+                  <div
+                    v-if="employee.signed_document_path"
+                    class="w-full d-flex justify-center align-center"
+                  >
+                    <v-btn
+                      rounded
+                      fab
+                      small
+                      text
+                      class="mx-1 py-0 px-0 text-capitalize"
+                      @click.prevent="openPdf(employee.signed_document_path)"
+                      ><v-icon>mdi-file-document</v-icon></v-btn
+                    >
+                  </div>
+                </td>
+
+                <!-- version_number -->
+                <td class="w-full text-center">
+                  <span>{{ employee.version_number }}</span>
                 </td>
 
                 <!-- approve_signature -->

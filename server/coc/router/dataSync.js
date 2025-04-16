@@ -240,14 +240,12 @@ async function syncToPortalDB(portalDBConnection, employees) {
         .input('employee_picture', sql.NVarChar(255), employeePicture)
         .input('position', sql.NVarChar(100), position)
         .input('title_e', sql.NVarChar(100), titleE)
-        .input('title_a', sql.NVarChar(100), titleA)
-        .input('has_signed', sql.Bit, 0)
-        .input('last_signed_at', sql.DateTime, null).query(`
+        .input('title_a', sql.NVarChar(100), titleA).query(`
           INSERT INTO coc.employees 
           (employee_id, name_eng, name_a, branch_code, email, 
-           employee_picture, position, title_e, title_a, has_signed, last_signed_at)
+           employee_picture, position, title_e, title_a)
           VALUES (@employee_id, @name_eng, @name_a, @branch_code, @email, 
-                  @employee_picture, @position, @title_e, @title_a, @has_signed, @last_signed_at)
+                  @employee_picture, @position, @title_e, @title_a)
         `)
     }
   }

@@ -341,55 +341,30 @@ router.get('/get-coc-versions', authorize, async (req, res) => {
   }
 })
 
-// get-single-employee-data
-// router.post('/get-single-employee-data', authorize, async (req, res) => {
-//   const portalDBConnection = await portalDB()
-//   try {
-//     const employeeId = req.body.employeeID // Extract employeeId from request body
-//     if (!employeeId) {
-//       return res.status(400).json({ message: 'Missing employee ID!' })
-//     }
-//     // Query the employee's signature data from the database
-//     const result = await portalDBConnection
-//       .request()
-//       .input('employee_id', sql.NVarChar(20), employeeId).query(`
-//         SELECT * FROM coc.employees WHERE employee_id = @employee_id
-//       `)
-//     if (result.recordset.length === 0) {
-//       return res.status(404).json({ message: 'Employee not found!' })
-//     }
-//     res.status(200).json(result.recordset[0])
-//   } catch (e) {
-//     const error = e.toString().replace('Error: ', '')
-//     res.status(500).json({ message: error })
-//   } finally {
-//     await portalDBConnection.close()
-//   }
-// })
-
+// Add endpoint to fetch a single employee's data
 router.post('/get-single-employee-data', authorize, async (req, res) => {
   const portalDBConnection = await portalDB()
   try {
-    const employeeId = req.body.employeeID // Extract employeeId from request body
+    const employeeId = req.body.employeeID
     if (!employeeId) {
       return res.status(400).json({ message: 'Missing employee ID!' })
     }
-    // Query the employee's data including the approval state of the last submitted form
     const result = await portalDBConnection
       .request()
       .input('employee_id', sql.NVarChar(20), employeeId).query(`
-        SELECT 
+        SELECT
           e.*,
           es.status AS signature_status,
           es.signed_at,
           es.file_path
         FROM coc.employees e
-        LEFT JOIN (
-          SELECT TOP 1 status, signed_at, file_path, employee_id
-          FROM coc.employee_signatures
-          WHERE employee_id = @employee_id
-          ORDER BY signed_at DESC
-        ) es ON e.employee_id = es.employee_id
+        LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
+          AND es.coc_version_id = (
+            SELECT TOP 1 id
+            FROM coc.coc_versions
+            WHERE active_flag = 1
+            ORDER BY created_at DESC
+          )
         WHERE e.employee_id = @employee_id
       `)
     if (result.recordset.length === 0) {
@@ -429,74 +404,148 @@ const uploadSignedForm = multer({
 })
 
 // Define the endpoint to handle signed form uploads
+// router.post(
+//   '/upload-signed-form',
+//   authorize, // Middleware to ensure the user is authenticated
+//   uploadSignedForm.single('signedForm'), // Handle single file upload with field name 'signedForm'
+//   async (req, res) => {
+//     const portalDBConnection = await portalDB()
+//     try {
+//       const employeeId = req.body.employeeID // Extract employeeId from request body
+//       const signedFormPath = req.file.path // Get the path of the uploaded signed form
+//       const employeeFullName = req.body.employeeName // Extract employee's first name from request body
+
+//       // Validate required fields
+//       if (!employeeId || !signedFormPath) {
+//         throw new Error('Missing employeeId or signed form file')
+//       }
+
+//       // Step 2: Append the signature page to the CoC document
+//       const combinedPdfPath = await appendSignatureToCoC(
+//         employeeId,
+//         signedFormPath
+//       )
+
+//       // Step 3: Store the combined document metadata in the database
+//       await storeSignatureMetadata(employeeId, combinedPdfPath)
+
+//       // Step 4: Update the employee's signature status
+//       // await updateEmployeeSignatureStatus(employeeId)
+
+//       // Fetch HR admin emails
+//       const adminEmails = await getAdminEmails()
+
+//       // Define email content for notification
+//       const subject = 'New CoC Form Submission.'
+//       const text = `An employee has submitted a signed Code of Conduct form.\n\nEmployee ID: ${employeeId}\nEmployee Name:${employeeFullName}\nSubmission Time: ${new Date().toLocaleString()}`
+//       const html = `<p>An employee has submitted a signed Code of Conduct form.</p><p><strong>Employee ID:</strong> ${employeeId}</p><p><strong>Employee Name:</strong> ${employeeFullName}</p><p><strong>Submission Time:</strong> ${new Date().toLocaleString()}</p>`
+
+//       // Prepare the combined PDF as an email attachment
+//       const attachment = {
+//         filename: path.basename(combinedPdfPath), // Extract the file name from the path
+//         path: path.join(
+//           __dirname,
+//           '../../../uploads/coc/combinedDocuments',
+//           combinedPdfPath
+//         ), // Construct full path to the PDF
+//       }
+
+//       // Send the email to all HR admins with the PDF attached
+//       await Promise.all(
+//         adminEmails.map(
+//           (email) => sendEmail(email, subject, text, html, [attachment]) // Send email with attachment to each admin
+//         )
+//       )
+
+//       // Respond with success message
+//       res
+//         .status(200)
+//         .json({ message: 'Signed form uploaded and processed successfully!' })
+
+//       // Clean up the temporary signed form file
+//       if (fs.existsSync(signedFormPath)) {
+//         fs.unlinkSync(signedFormPath)
+//       }
+//     } catch (error) {
+//       // Handle errors and send appropriate response
+//       res.status(500).json({ message: error.message })
+//     } finally {
+//       // Ensure database connection is closed
+//       await portalDBConnection.close()
+//     }
+//   }
+// )
+
+// Uploads a signed CoC form, processes it, and notifies admins asynchronously
 router.post(
   '/upload-signed-form',
-  authorize, // Middleware to ensure the user is authenticated
-  uploadSignedForm.single('signedForm'), // Handle single file upload with field name 'signedForm'
+  authorize,
+  uploadSignedForm.single('signedForm'),
   async (req, res) => {
-    const portalDBConnection = await portalDB()
+    let portalDBConnection
     try {
-      const employeeId = req.body.employeeID // Extract employeeId from request body
-      const signedFormPath = req.file.path // Get the path of the uploaded signed form
-      const employeeFullName = req.body.employeeName // Extract employee's first name from request body
+      // Establish connection to the database
+      portalDBConnection = await portalDB()
 
-      // Validate required fields
+      // Extract required data from the request
+      const employeeId = req.body.employeeID
+      const signedFormPath = req.file.path
+      const employeeFullName = req.body.employeeName
       if (!employeeId || !signedFormPath) {
         throw new Error('Missing employeeId or signed form file')
       }
 
-      // Step 2: Append the signature page to the CoC document
+      // Process the signed form by appending it to the CoC and storing metadata
       const combinedPdfPath = await appendSignatureToCoC(
         employeeId,
         signedFormPath
       )
-
-      // Step 3: Store the combined document metadata in the database
       await storeSignatureMetadata(employeeId, combinedPdfPath)
 
-      // Step 4: Update the employee's signature status
-      await updateEmployeeSignatureStatus(employeeId)
+      // Send immediate response to the frontend after main tasks are complete
+      res.status(200).json({
+        message: 'Signed form uploaded and processed successfully!',
+      })
 
-      // Fetch HR admin emails
-      const adminEmails = await getAdminEmails()
+      // Asynchronously send notification emails to admins
+      setImmediate(async () => {
+        try {
+          // Retrieve admin emails
+          const adminEmails = await getAdminEmails()
+          const subject = 'New CoC Form Submission'
+          const text = `An employee has submitted a signed Code of Conduct form.\n\nEmployee ID: ${employeeId}\nEmployee Name: ${employeeFullName}\nSubmission Time: ${new Date().toLocaleString()}`
+          const html = `<p>An employee has submitted a signed Code of Conduct form.</p><p><strong>Employee ID:</strong> ${employeeId}</p><p><strong>Employee Name:</strong> ${employeeFullName}</p><p><strong>Submission Time:</strong> ${new Date().toLocaleString()}</p>`
+          const attachment = {
+            filename: path.basename(combinedPdfPath),
+            path: path.join(
+              __dirname,
+              '../../../uploads/coc/combinedDocuments',
+              combinedPdfPath
+            ),
+          }
 
-      // Define email content for notification
-      const subject = 'New CoC Form Submission.'
-      const text = `An employee has submitted a signed Code of Conduct form.\n\nEmployee ID: ${employeeId}\nEmployee Name:${employeeFullName}\nSubmission Time: ${new Date().toLocaleString()}`
-      const html = `<p>An employee has submitted a signed Code of Conduct form.</p><p><strong>Employee ID:</strong> ${employeeId}</p><p><strong>Employee Name:</strong> ${employeeFullName}</p><p><strong>Submission Time:</strong> ${new Date().toLocaleString()}</p>`
+          // Send emails to all admins concurrently
+          await Promise.all(
+            adminEmails.map((email) =>
+              sendEmail(email, subject, text, html, [attachment])
+            )
+          )
+        } catch (error) {
+          // Log any errors during admin notification
+          throw new Error(error)
+        } finally {
+          // Close the database connection
+          if (portalDBConnection) await portalDBConnection.close()
+        }
+      })
 
-      // Prepare the combined PDF as an email attachment
-      const attachment = {
-        filename: path.basename(combinedPdfPath), // Extract the file name from the path
-        path: path.join(
-          __dirname,
-          '../../../uploads/coc/combinedDocuments',
-          combinedPdfPath
-        ), // Construct full path to the PDF
-      }
-
-      // Send the email to all HR admins with the PDF attached
-      await Promise.all(
-        adminEmails.map(
-          (email) => sendEmail(email, subject, text, html, [attachment]) // Send email with attachment to each admin
-        )
-      )
-
-      // Respond with success message
-      res
-        .status(200)
-        .json({ message: 'Signed form uploaded and processed successfully!' })
-
-      // Clean up the temporary signed form file
+      // Clean up the temporary uploaded signed form file
       if (fs.existsSync(signedFormPath)) {
         fs.unlinkSync(signedFormPath)
       }
     } catch (error) {
-      // Handle errors and send appropriate response
+      // Handle errors during main tasks
       res.status(500).json({ message: error.message })
-    } finally {
-      // Ensure database connection is closed
-      await portalDBConnection.close()
     }
   }
 )
@@ -563,58 +612,6 @@ async function appendSignatureToCoC(employeeId, signedFormPath) {
     await portalDBConnection.close()
   }
 }
-
-// Function to store the signature metadata in the database
-// async function storeSignatureMetadata(employeeId, combinedPdfPath) {
-//   const portalDBConnection = await portalDB()
-//   try {
-//     // Get the ID of the latest active CoC version
-//     const versionResult = await portalDBConnection.request().query(`
-//       SELECT TOP 1 id
-//       FROM coc.coc_versions
-//       WHERE active_flag = 1
-//       ORDER BY created_at DESC
-//     `)
-//     const versionId = versionResult.recordset[0].id
-
-//     // Check if a record for this employee already exists
-//     const existingRecord = await portalDBConnection
-//       .request()
-//       .input('employee_id', sql.NVarChar(20), employeeId)
-//       .query(
-//         `SELECT id FROM coc.employee_signatures WHERE employee_id = @employee_id`
-//       )
-
-//     if (existingRecord.recordset.length > 0) {
-//       // Update existing record
-//       await portalDBConnection
-//         .request()
-//         .input('employee_id', sql.NVarChar(20), employeeId)
-//         .input('coc_version_id', sql.Int, versionId)
-//         .input('file_path', sql.NVarChar(255), combinedPdfPath)
-//         .input('signed_at', sql.DateTime, new Date()).query(`
-//           UPDATE coc.employee_signatures
-//           SET coc_version_id = @coc_version_id,
-//               file_path = @file_path,
-//               signed_at = @signed_at
-//           WHERE employee_id = @employee_id
-//         `)
-//     } else {
-//       // Insert new record
-//       await portalDBConnection
-//         .request()
-//         .input('employee_id', sql.NVarChar(20), employeeId)
-//         .input('coc_version_id', sql.Int, versionId)
-//         .input('file_path', sql.NVarChar(255), combinedPdfPath)
-//         .input('signed_at', sql.DateTime, new Date()).query(`
-//           INSERT INTO coc.employee_signatures (employee_id, coc_version_id, file_path, signed_at)
-//           VALUES (@employee_id, @coc_version_id, @file_path, @signed_at)
-//         `)
-//     }
-//   } finally {
-//     await portalDBConnection.close()
-//   }
-// }
 
 async function storeSignatureMetadata(employeeId, combinedPdfPath) {
   const portalDBConnection = await portalDB()
@@ -686,38 +683,6 @@ async function storeSignatureMetadata(employeeId, combinedPdfPath) {
           VALUES (@employee_id, @coc_version_id, @file_path, @signed_at, @status)
         `)
     }
-  } finally {
-    await portalDBConnection.close()
-  }
-}
-
-async function updateEmployeeSignatureStatus(employeeId) {
-  const portalDBConnection = await portalDB()
-  try {
-    // Only update has_signed if the latest signature is approved
-    await portalDBConnection
-      .request()
-      .input('employee_id', sql.NVarChar(20), employeeId).query(`
-        UPDATE coc.employees
-        SET has_signed = CASE 
-            WHEN EXISTS (
-              SELECT 1 
-              FROM coc.employee_signatures es
-              JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
-              WHERE es.employee_id = @employee_id 
-              AND cv.active_flag = 1 
-              AND es.status = 'approved'
-            ) THEN 1 
-            ELSE 0 
-            END,
-            last_signed_at = (
-              SELECT TOP 1 es.signed_at
-              FROM coc.employee_signatures es
-              WHERE es.employee_id = @employee_id
-              ORDER BY es.signed_at DESC
-            )
-        WHERE employee_id = @employee_id
-      `)
   } finally {
     await portalDBConnection.close()
   }
@@ -804,7 +769,7 @@ router.post('/send-single-email', authorize, async (req, res) => {
     const employeeName = req.body.name
 
     // Construct the notification email content
-    const subject = 'Code of Conduct Form Acknowledgement Request'
+    const subject = 'Code of Conduct - Acknowledgement Request'
     const text = `Dear ${employeeName},\n\nPlease review and acknowledge the Code of Conduct at your earliest convenience.\n\nYou can access the submission page here: https://portal.alkholi.com/code-of-conduct/coc-form\n\nBest regards,\nHR Team`
     const html = `<p>Dear ${employeeName},</p><p>Please review and acknowledge the Code of Conduct at your earliest convenience.</p><p>You can access the submission page here: <a href="https://portal.alkholi.com/code-of-conduct/coc-form">Code of Conduct Form</a></p><p>Best regards,<br>HR Team</p>`
 
@@ -817,17 +782,21 @@ router.post('/send-single-email', authorize, async (req, res) => {
   }
 })
 
-// Approve a signature
+// Endpoint: /approve-signature
+// Approves a signature and notifies the employee asynchronously
 router.post('/approve-signature', authorize, async (req, res) => {
-  const portalDBConnection = await portalDB()
+  let portalDBConnection
   try {
-    const { signatureId, adminId } = req.body
+    // Establish connection to the database
+    portalDBConnection = await portalDB()
 
+    // Extract required data from the request
+    const { signatureId, adminId } = req.body
     if (!signatureId) {
       return res.status(400).json({ message: 'Missing signature ID' })
     }
 
-    // Update status to 'approved', set approver and timestamp
+    // Update the signature status to 'approved' in the database
     await portalDBConnection
       .request()
       .input('id', sql.Int, signatureId)
@@ -840,103 +809,117 @@ router.post('/approve-signature', authorize, async (req, res) => {
         WHERE id = @id AND status = 'pending'
       `)
 
-    // Retrieve the employee_id associated with the signature
-    const signature = await portalDBConnection
-      .request()
-      .input('id', sql.Int, signatureId)
-      .query(`SELECT employee_id FROM coc.employee_signatures WHERE id = @id`)
+    // Send immediate response to the frontend after main task is complete
+    res.status(200).json({
+      message: 'Signature approved successfully.',
+    })
 
-    // Update the employee's signature status
-    const employeeId = signature.recordset[0].employee_id
+    // Asynchronously send notification email to the employee
+    setImmediate(async () => {
+      try {
+        // Retrieve the employee ID associated with the signature
+        const signature = await portalDBConnection
+          .request()
+          .input('id', sql.Int, signatureId)
+          .query(
+            `SELECT employee_id FROM coc.employee_signatures WHERE id = @id`
+          )
+        const employeeId = signature.recordset[0].employee_id
 
-    // Fetch the employee's name and email from the coc.employees table
-    const employeeResult = await portalDBConnection
-      .request()
-      .input('employee_id', sql.NVarChar(20), employeeId)
-      .query(
-        `SELECT name_eng, email FROM coc.employees WHERE employee_id = @employee_id`
-      )
+        // Fetch employee details (name and email)
+        const employeeResult = await portalDBConnection
+          .request()
+          .input('employee_id', sql.NVarChar(20), employeeId)
+          .query(
+            `SELECT name_eng, email FROM coc.employees WHERE employee_id = @employee_id`
+          )
+        const employee = employeeResult.recordset[0]
+        const firstName = employee.name_eng.split(' ')[0]
+        const employeeEmail = employee.email
 
-    const employee = employeeResult.recordset[0]
-    const employeeName = employee.name_eng
-    const firstName = employeeName.split(' ')[0]
-    const employeeEmail = employee.email
-
-    // Construct the approval email content
-    const subject = 'Your Code of Conduct Form Submission Was Approved'
-    const text = `Dear ${firstName},\n\nYour recent submission for the Code of Conduct acknowledgment form has been reviewed and approved.\n\nThank you for completing this important step.\n\nBest regards,\nHR Team`
-    const html = `<p>Dear ${firstName},</p><p>Your recent submission for the Code of Conduct acknowledgment form has been reviewed and <strong>approved</strong>.</p><p>Thank you for completing this important step.</p><p>Best regards,<br>HR Team</p>`
-
-    // Send the approval email
-    await sendEmail(employeeEmail, subject, text, html)
-
-    // Update the employee's signature status
-    await updateEmployeeSignatureStatus(employeeId)
-
-    // Send success response to the client
-    res.status(200).json({ message: 'Signature approved successfully' })
+        // Prepare and send the approval notification email
+        const subject = 'Your Code of Conduct Form Submission Was Approved'
+        const text = `Dear ${firstName},\n\nYour recent submission for the Code of Conduct acknowledgment form has been reviewed and approved.\n\nThank you for completing this important step.\n\nBest regards,\nHR Team`
+        const html = `<p>Dear ${firstName},</p><p>Your recent submission for the Code of Conduct acknowledgment form has been reviewed and <strong>approved</strong>.</p><p>Thank you for completing this important step.</p><p>Best regards,<br>HR Team</p>`
+        await sendEmail(employeeEmail, subject, text, html)
+      } catch (error) {
+        throw new Error(error)
+      } finally {
+        // Close the database connection
+        if (portalDBConnection) await portalDBConnection.close()
+      }
+    })
   } catch (e) {
+    // Handle errors during main task
     res.status(500).json({ message: e.message.replace('Error: ', '') })
-  } finally {
-    await portalDBConnection.close()
   }
 })
 
-// Reject a signature
+// Endpoint: /reject-signature
+// Rejects a signature and notifies the employee asynchronously
 router.post('/reject-signature', authorize, async (req, res) => {
-  const portalDBConnection = await portalDB()
+  let portalDBConnection
   try {
+    // Establish connection to the database
+    portalDBConnection = await portalDB()
+
+    // Extract required data from the request
     const { signatureId } = req.body
     if (!signatureId) {
       return res.status(400).json({ message: 'Missing signature ID' })
     }
 
-    // Update status to 'rejected'
+    // Update the signature status to 'rejected' in the database
     await portalDBConnection.request().input('id', sql.Int, signatureId).query(`
         UPDATE coc.employee_signatures
         SET status = 'rejected'
         WHERE id = @id AND status = 'pending'
       `)
 
-    // Retrieve the employee_id associated with the signature
-    const signature = await portalDBConnection
-      .request()
-      .input('id', sql.Int, signatureId)
-      .query(`SELECT employee_id FROM coc.employee_signatures WHERE id = @id`)
+    // Send immediate response to the frontend after main task is complete
+    res.status(200).json({
+      message: 'Signature rejected successfully.',
+    })
 
-    // Update the employee's signature status
-    await updateEmployeeSignatureStatus(signature.recordset[0].employee_id)
+    // Asynchronously send notification email to the employee
+    setImmediate(async () => {
+      try {
+        // Retrieve the employee ID associated with the signature
+        const signature = await portalDBConnection
+          .request()
+          .input('id', sql.Int, signatureId)
+          .query(
+            `SELECT employee_id FROM coc.employee_signatures WHERE id = @id`
+          )
+        const employeeId = signature.recordset[0].employee_id
 
-    // Retrieve the employee_id associated with the signature
-    const employeeId = signature.recordset[0].employee_id
+        // Fetch employee details (name and email)
+        const employeeResult = await portalDBConnection
+          .request()
+          .input('employee_id', sql.NVarChar(20), employeeId)
+          .query(
+            `SELECT name_eng, email FROM coc.employees WHERE employee_id = @employee_id`
+          )
+        const employee = employeeResult.recordset[0]
+        const firstName = employee.name_eng.split(' ')[0]
+        const employeeEmail = employee.email
 
-    // Fetch the employee's name and email from the coc.employees table
-    const employeeResult = await portalDBConnection
-      .request()
-      .input('employee_id', sql.NVarChar(20), employeeId)
-      .query(
-        `SELECT name_eng, email FROM coc.employees WHERE employee_id = @employee_id`
-      )
-
-    const employee = employeeResult.recordset[0]
-    const employeeName = employee.name_eng
-    const firstName = employeeName.split(' ')[0]
-    const employeeEmail = employee.email
-
-    // Construct the rejection email content
-    const subject =
-      'Action Required: Your Code of Conduct Form Submission Was Rejected'
-    const text = `Dear ${firstName},\n\nYour recent submission for the Code of Conduct acknowledgment form has been reviewed and rejected. Please review the form and resubmit it at your earliest convenience.\n\nYou can access the submission page here: https://portal.alkholi.com/code-of-conduct/coc-form\n\nIf you have any questions, please contact HR.\n\nBest regards,\nHR Team`
-    const html = `<p>Dear ${firstName},</p><p>Your recent submission for the Code of Conduct acknowledgment form has been reviewed and <strong>rejected</strong>. Please review the form and resubmit it at your earliest convenience.</p><p>You can access the submission page <a href="https://portal.alkholi.com/code-of-conduct/coc-form">here</a>.</p><p>If you have any questions, please contact HR.</p><p>Best regards,<br>HR Team</p>`
-
-    // Send the rejection email to the employee
-    await sendEmail(employeeEmail, subject, text, html)
-    res.status(200).json({ message: 'Signature rejected successfully' })
+        // Prepare and send the rejection notification email
+        const subject =
+          'Action Required: Your Code of Conduct Form Submission Was Rejected'
+        const text = `Dear ${firstName},\n\nYour recent submission for the Code of Conduct acknowledgment form has been reviewed and rejected. Please review the form and resubmit it at your earliest convenience.\n\nYou can access the submission page here: https://portal.alkholi.com/code-of-conduct/coc-form\n\nIf you have any questions, please contact HR.\n\nBest regards,\nHR Team`
+        const html = `<p>Dear ${firstName},</p><p>Your recent submission for the Code of Conduct acknowledgment form has been reviewed and <strong>rejected</strong>. Please review the form and resubmit it at your earliest convenience.</p><p>You can access the submission page <a href="https://portal.alkholi.com/code-of-conduct/coc-form">here</a>.</p><p>If you have any questions, please contact HR.</p><p>Best regards,<br>HR Team</p>`
+        await sendEmail(employeeEmail, subject, text, html)
+      } catch (error) {
+        throw new Error(error)
+      } finally {
+        // Close the database connection
+        if (portalDBConnection) await portalDBConnection.close()
+      }
+    })
   } catch (e) {
+    // Handle errors during main task
     res.status(500).json({ message: e.message.replace('Error: ', '') })
-  } finally {
-    await portalDBConnection.close()
   }
 })
-
 module.exports = router

@@ -434,26 +434,6 @@ export default {
     await this.getEmployeeData()
   },
   methods: {
-    /**         
-      {
-        "employee_id": "B11088",
-        "name_eng": "Fawzy Mohamed Fawzy Mahmoud",
-        "position": "306",
-        "has_signed": false,
-        "last_signed_at": "2025-04-14T12:08:20.470Z",
-        "name_a": "فوزي محمد فوزي محمود",
-        "branch_code": "SBTMC",
-        "email": "fawzy.mohamed@alkholi.com",
-        "employee_picture": "147815649714781564971254616000.jpg",
-        "title_e": "Senior Full Stack Web Developer",
-        "title_a": "كبير مطورين الويب المتكامل",
-        "signature_status": "pending",
-        "signed_at": "2025-04-14T12:08:20.470Z",
-        "file_path": "COMBINED_B11088_1744632500410.pdf",
-        "date": "14 April 2025"
-      }
-    */
-
     async loadDocument() {
       try {
         const versions = await this.$store.dispatch('coc/fetchCoCVersions')
