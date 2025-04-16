@@ -84,6 +84,19 @@
                 dense
               ></v-text-field>
             </div>
+
+            <div>
+              <!-- Export Report button -->
+              <v-btn
+                outlined
+                :color="$vuetify.theme.dark ? 'white' : 'primary'"
+                class="mx-3 text-capitalize"
+                @click="reportDialog = true"
+              >
+                <v-icon left>mdi-file-export</v-icon>
+                Export Report
+              </v-btn>
+            </div>
           </div>
         </div>
         <hr class="mt-3 mb-1" />
@@ -430,6 +443,64 @@
         <v-divider></v-divider>
       </v-card>
     </v-dialog>
+
+    <!--  Report Export Dialog -->
+    <v-dialog v-model="reportDialog" max-width="500" persistent>
+      <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
+        <v-card-title class="text-h6 primaryText--text">
+          Select Report Type
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text class="pb-0">
+          <!-- Report Type Selection -->
+          <v-radio-group v-model="reportType">
+            <v-radio
+              :color="$vuetify.theme.dark ? 'white' : 'primary'"
+              label="Signed Employees"
+              value="signed"
+            >
+            </v-radio>
+            <v-radio
+              :color="$vuetify.theme.dark ? 'white' : 'primary'"
+              label="Unsigned Employees"
+              value="unsigned"
+            ></v-radio>
+          </v-radio-group>
+
+          <!-- Format Selection -->
+          <!-- menu-props="{color: 'primary'}" -->
+          <v-select
+            v-model="exportFormat"
+            :items="formats"
+            label="Select Format"
+            outlined
+            :item-color="$vuetify.theme.dark ? 'white' : 'primary'"
+            dense
+          ></v-select>
+        </v-card-text>
+        <v-divider></v-divider>
+        <v-card-actions class="py-5">
+          <v-btn
+            outlined
+            color="error"
+            class="text-capitalize mx-3"
+            @click="reportDialog = false"
+          >
+            Cancel
+          </v-btn>
+          <v-spacer></v-spacer>
+          <v-btn
+            outlined
+            color="success"
+            class="text-capitalize mx-3"
+            :loading="generating"
+            @click="generateReport"
+          >
+            Generate
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -445,12 +516,18 @@ export default {
       pdfDialog: false,
       acceptDialog: false,
       sendingEmails: false,
+      sendingEmail: false,
       rejectDialog: false,
       selectedPdfUrl: null,
       sendEmailsDialog: false,
       rejecting: false,
       approving: false,
       employeesData: [],
+      reportDialog: false,
+      reportType: 'signed',
+      generating: false,
+      exportFormat: 'csv',
+      formats: ['csv', 'xlsx', 'pdf'],
     }
   },
 
@@ -591,6 +668,107 @@ export default {
         })
       }
     },
+
+    // async generateReport() {
+    //   this.overlay = true // Show loading state
+    //   this.generating = true // Show loading state
+    //   try {
+    //     // Make API request to get the CSV file
+    //     const response = await this.$axios.get(
+    //       `/coc-api/export-report?type=${this.reportType}`,
+    //       {
+    //         responseType: 'blob', // Expect a binary file response
+    //       }
+    //     )
+
+    //     // Create a temporary URL for the downloaded file
+    //     const url = window.URL.createObjectURL(new Blob([response.data]))
+    //     const link = document.createElement('a')
+    //     link.href = url
+    //     link.setAttribute('download', `${this.reportType}_employees.csv`) // Set filename
+    //     document.body.appendChild(link)
+    //     link.click() // Trigger download
+    //     document.body.removeChild(link) // Clean up
+    //     window.URL.revokeObjectURL(url) // Free memory
+
+    //     // Show success notification
+    //     this.$store.dispatch('appNotifications/addNotification', {
+    //       type: 'success',
+    //       message: `Report (${this.reportType}) generated successfully`,
+    //     })
+
+    //     // Close the dialog
+    //     this.reportDialog = false
+    //   } catch (error) {
+    //     // Handle errors and show notification
+    //     this.$store.dispatch('appNotifications/addNotification', {
+    //       type: 'error',
+    //       message: 'Failed to generate report',
+    //     })
+    //   } finally {
+    //     this.overlay = false // Hide loading state
+    //     this.generating = false // Reset loading state
+    //   }
+    // },
+
+    async generateReport() {
+      this.generating = true
+      this.overlay = true
+      try {
+        const format = this.exportFormat
+        const type = this.reportType
+        const response = await this.$axios.get(
+          `/coc-api/export-report?type=${type}&format=${format}`,
+          {
+            responseType: 'blob',
+          }
+        )
+
+        let fileExtension = format
+        let mimeType = ''
+        if (format === 'csv') {
+          mimeType = 'text/csv'
+        } else if (format === 'xlsx') {
+          mimeType =
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          fileExtension = 'xlsx'
+        } else if (format === 'pdf') {
+          mimeType = 'application/pdf'
+        }
+
+        const url = window.URL.createObjectURL(
+          new Blob([response.data], { type: mimeType })
+        )
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `${type}_employees.${fileExtension}`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+
+        this.$store.dispatch('appNotifications/addNotification', {
+          type: 'success',
+          message: `Report (${type}) in ${format.toUpperCase()} format generated successfully`,
+        })
+
+        this.reportDialog = false
+      } catch (error) {
+        this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: 'Failed to generate report',
+        })
+      } finally {
+        this.generating = false
+        this.overlay = false
+      }
+    },
   },
 }
 </script>
+
+<style>
+.v-list-item--highlighted {
+  color: #f0f0f0 !important;
+}
+</style>

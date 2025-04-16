@@ -5,8 +5,10 @@ const router = express.Router()
 const multer = require('multer')
 const { PDFDocument, rgb } = require('pdf-lib')
 const fontkit = require('@pdf-lib/fontkit')
+const ExcelJS = require('exceljs')
 const sql = require('mssql')
 const nodemailer = require('nodemailer')
+const { Parser } = require('json2csv')
 const sqlConfigs = require('../configs/sql')
 const authorize = require('../middleware/authorization.js')
 
@@ -403,79 +405,6 @@ const uploadSignedForm = multer({
   limits: { fileSize: 5242880 }, // Set a 5MB file size limit
 })
 
-// Define the endpoint to handle signed form uploads
-// router.post(
-//   '/upload-signed-form',
-//   authorize, // Middleware to ensure the user is authenticated
-//   uploadSignedForm.single('signedForm'), // Handle single file upload with field name 'signedForm'
-//   async (req, res) => {
-//     const portalDBConnection = await portalDB()
-//     try {
-//       const employeeId = req.body.employeeID // Extract employeeId from request body
-//       const signedFormPath = req.file.path // Get the path of the uploaded signed form
-//       const employeeFullName = req.body.employeeName // Extract employee's first name from request body
-
-//       // Validate required fields
-//       if (!employeeId || !signedFormPath) {
-//         throw new Error('Missing employeeId or signed form file')
-//       }
-
-//       // Step 2: Append the signature page to the CoC document
-//       const combinedPdfPath = await appendSignatureToCoC(
-//         employeeId,
-//         signedFormPath
-//       )
-
-//       // Step 3: Store the combined document metadata in the database
-//       await storeSignatureMetadata(employeeId, combinedPdfPath)
-
-//       // Step 4: Update the employee's signature status
-//       // await updateEmployeeSignatureStatus(employeeId)
-
-//       // Fetch HR admin emails
-//       const adminEmails = await getAdminEmails()
-
-//       // Define email content for notification
-//       const subject = 'New CoC Form Submission.'
-//       const text = `An employee has submitted a signed Code of Conduct form.\n\nEmployee ID: ${employeeId}\nEmployee Name:${employeeFullName}\nSubmission Time: ${new Date().toLocaleString()}`
-//       const html = `<p>An employee has submitted a signed Code of Conduct form.</p><p><strong>Employee ID:</strong> ${employeeId}</p><p><strong>Employee Name:</strong> ${employeeFullName}</p><p><strong>Submission Time:</strong> ${new Date().toLocaleString()}</p>`
-
-//       // Prepare the combined PDF as an email attachment
-//       const attachment = {
-//         filename: path.basename(combinedPdfPath), // Extract the file name from the path
-//         path: path.join(
-//           __dirname,
-//           '../../../uploads/coc/combinedDocuments',
-//           combinedPdfPath
-//         ), // Construct full path to the PDF
-//       }
-
-//       // Send the email to all HR admins with the PDF attached
-//       await Promise.all(
-//         adminEmails.map(
-//           (email) => sendEmail(email, subject, text, html, [attachment]) // Send email with attachment to each admin
-//         )
-//       )
-
-//       // Respond with success message
-//       res
-//         .status(200)
-//         .json({ message: 'Signed form uploaded and processed successfully!' })
-
-//       // Clean up the temporary signed form file
-//       if (fs.existsSync(signedFormPath)) {
-//         fs.unlinkSync(signedFormPath)
-//       }
-//     } catch (error) {
-//       // Handle errors and send appropriate response
-//       res.status(500).json({ message: error.message })
-//     } finally {
-//       // Ensure database connection is closed
-//       await portalDBConnection.close()
-//     }
-//   }
-// )
-
 // Uploads a signed CoC form, processes it, and notifies admins asynchronously
 router.post(
   '/upload-signed-form',
@@ -501,6 +430,27 @@ router.post(
         signedFormPath
       )
       await storeSignatureMetadata(employeeId, combinedPdfPath)
+
+      // Insert submission history into the database
+      const versionResult = await portalDBConnection.request().query(`
+          SELECT TOP 1 id
+          FROM coc.coc_versions
+          WHERE active_flag = 1
+          ORDER BY created_at DESC
+        `)
+      if (!versionResult.recordset[0]) {
+        throw new Error('No active CoC version found')
+      }
+      const cocVersionId = versionResult.recordset[0].id
+      await portalDBConnection
+        .request()
+        .input('employee_id', sql.NVarChar(20), employeeId)
+        .input('coc_version_id', sql.Int, cocVersionId)
+        .input('status', sql.NVarChar(20), 'pending')
+        .input('file_path', sql.NVarChar(255), combinedPdfPath).query(`
+          INSERT INTO coc.submission_history (employee_id, coc_version_id, status, file_path, submitted_at)
+          VALUES (@employee_id, @coc_version_id, @status, @file_path, GETDATE())
+        `)
 
       // Send immediate response to the frontend after main tasks are complete
       res.status(200).json({
@@ -809,6 +759,37 @@ router.post('/approve-signature', authorize, async (req, res) => {
         WHERE id = @id AND status = 'pending'
       `)
 
+    // get the employee ID and CoC version ID from the signature record
+    const signature = await portalDBConnection
+      .request()
+      .input('id', sql.Int, signatureId).query(`
+        SELECT employee_id, coc_version_id, file_path
+        FROM coc.employee_signatures
+        WHERE id = @id
+      `)
+    if (!signature.recordset[0]) {
+      throw new Error('Signature not found')
+    }
+    const employeeId = signature.recordset[0].employee_id
+    const cocVersionId = signature.recordset[0].coc_version_id
+    const filePath = signature.recordset[0].file_path
+    // update the submission history with the approved status
+    await portalDBConnection
+      .request()
+      .input('employee_id', sql.NVarChar(20), employeeId)
+      .input('coc_version_id', sql.Int, cocVersionId)
+      .input('status', sql.NVarChar(20), 'approved')
+      .input('file_path', sql.NVarChar(255), filePath)
+      .input('approved_by', sql.NVarChar(20), adminId)
+      .input('approved_at', sql.DateTime, new Date()).query(`
+        INSERT INTO coc.submission_history (
+          employee_id, coc_version_id, status, file_path, submitted_at, approved_by, approved_at
+        )
+        VALUES (
+          @employee_id, @coc_version_id, @status, @file_path, GETDATE(), @approved_by, @approved_at
+        )
+      `)
+
     // Send immediate response to the frontend after main task is complete
     res.status(200).json({
       message: 'Signature approved successfully.',
@@ -876,6 +857,37 @@ router.post('/reject-signature', authorize, async (req, res) => {
         WHERE id = @id AND status = 'pending'
       `)
 
+    // get the employee ID and CoC version ID from the signature record
+    const signature = await portalDBConnection
+      .request()
+      .input('id', sql.Int, signatureId).query(`
+        SELECT employee_id, coc_version_id, file_path
+        FROM coc.employee_signatures
+        WHERE id = @id
+      `)
+
+    if (!signature.recordset[0]) {
+      throw new Error('Signature not found')
+    }
+    const employeeId = signature.recordset[0].employee_id
+    const cocVersionId = signature.recordset[0].coc_version_id
+    const filePath = signature.recordset[0].file_path
+    // update the submission history with the rejected status
+    await portalDBConnection
+      .request()
+      .input('employee_id', sql.NVarChar(20), employeeId)
+      .input('coc_version_id', sql.Int, cocVersionId)
+      .input('status', sql.NVarChar(20), 'rejected')
+      .input('file_path', sql.NVarChar(255), filePath)
+      .input('approved_at', sql.DateTime, new Date()).query(`
+        INSERT INTO coc.submission_history (
+          employee_id, coc_version_id, status, file_path, submitted_at, approved_at
+        )
+        VALUES (
+          @employee_id, @coc_version_id, @status, @file_path, GETDATE(), @approved_at
+        )
+      `)
+
     // Send immediate response to the frontend after main task is complete
     res.status(200).json({
       message: 'Signature rejected successfully.',
@@ -922,4 +934,228 @@ router.post('/reject-signature', authorize, async (req, res) => {
     res.status(500).json({ message: e.message.replace('Error: ', '') })
   }
 })
+
+// Endpoint: /get-submissions-history
+// Fetches the history of submissions made by employees
+// This includes the status of each submission and the associated CoC version
+router.get('/get-submissions-history', authorize, async (req, res) => {
+  let portalDBConnection
+  try {
+    portalDBConnection = await portalDB()
+    // Query to fetch submission history for only approved and rejected submissions
+    const result = await portalDBConnection.request().query(`
+      SELECT
+        sh.id,
+        e.employee_id,
+        e.name_eng,
+        e.title_e,
+        e.branch_code,
+        e.employee_picture,
+        sh.status,
+        sh.submitted_at AS signed_at,
+        cv.version_number,
+        sh.file_path
+      FROM coc.submission_history sh
+      INNER JOIN coc.employees e ON sh.employee_id = e.employee_id
+      INNER JOIN coc.coc_versions cv ON sh.coc_version_id = cv.id
+      WHERE sh.status IN ('approved', 'rejected')
+      ORDER BY sh.submitted_at DESC
+    `)
+
+    res.status(200).json(result.recordset)
+  } catch (e) {
+    res.status(500).json({ message: e.message.replace('Error: ', '') })
+  } finally {
+    if (portalDBConnection) await portalDBConnection.close()
+  }
+})
+
+// export signed or unsigned employees report
+router.get('/export-report', authorize, async (req, res) => {
+  const portalDBConnection = await portalDB()
+  try {
+    const type = req.query.type
+    const format = req.query.format || 'csv'
+
+    if (!type || (type !== 'signed' && type !== 'unsigned')) {
+      return res.status(400).json({ message: 'Invalid or missing report type' })
+    }
+    if (!['csv', 'xlsx', 'pdf'].includes(format)) {
+      return res.status(400).json({ message: 'Invalid format specified' })
+    }
+
+    const activeVersionResult = await portalDBConnection.request().query(`
+      SELECT TOP 1 id FROM coc.coc_versions WHERE active_flag = 1 ORDER BY created_at DESC
+    `)
+    const activeVersionId = activeVersionResult.recordset[0]?.id
+    if (!activeVersionId) {
+      return res.status(404).json({ message: 'No active CoC version found' })
+    }
+
+    let query
+    if (type === 'signed') {
+      query = `
+        SELECT
+          e.employee_id,
+          e.name_eng,
+          e.title_e,
+          e.branch_code,
+          CONVERT(varchar, es.signed_at, 120) as signed_at,
+          cv.version_number
+        FROM coc.employees e
+        INNER JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
+        INNER JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
+        WHERE es.status = 'approved' AND es.coc_version_id = @versionId
+      `
+    } else {
+      query = `
+        SELECT
+          e.employee_id,
+          e.name_eng,
+          e.title_e,
+          e.branch_code
+        FROM coc.employees e
+        LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id AND es.coc_version_id = @versionId
+        WHERE es.id IS NULL OR es.status != 'approved'
+      `
+    }
+
+    const request = portalDBConnection.request()
+    request.input('versionId', sql.Int, activeVersionId)
+    const result = await request.query(query)
+    const data = result.recordset
+
+    if (format === 'csv') {
+      const fields =
+        type === 'signed'
+          ? [
+              { label: 'Employee ID', value: 'employee_id' },
+              { label: 'Name', value: 'name_eng' },
+              { label: 'Title', value: 'title_e' },
+              { label: 'Branch', value: 'branch_code' },
+              { label: 'Signed At', value: 'signed_at' },
+              { label: 'Version', value: 'version_number' },
+            ]
+          : [
+              { label: 'Employee ID', value: 'employee_id' },
+              { label: 'Name', value: 'name_eng' },
+              { label: 'Title', value: 'title_e' },
+              { label: 'Branch', value: 'branch_code' },
+            ]
+      const parser = new Parser({ fields })
+      const csv = parser.parse(data)
+      res.header('Content-Type', 'text/csv')
+      res.attachment(`${type}_employees.csv`)
+      res.send(csv)
+    } else if (format === 'xlsx') {
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet('Employees')
+      const columns =
+        type === 'signed'
+          ? [
+              { header: 'Employee ID', key: 'employee_id', width: 15 },
+              { header: 'Name', key: 'name_eng', width: 30 },
+              { header: 'Title', key: 'title_e', width: 20 },
+              { header: 'Branch', key: 'branch_code', width: 15 },
+              { header: 'Signed At', key: 'signed_at', width: 20 },
+              { header: 'Version', key: 'version_number', width: 10 },
+            ]
+          : [
+              { header: 'Employee ID', key: 'employee_id', width: 15 },
+              { header: 'Name', key: 'name_eng', width: 30 },
+              { header: 'Title', key: 'title_e', width: 20 },
+              { header: 'Branch', key: 'branch_code', width: 15 },
+            ]
+      worksheet.columns = columns
+      worksheet.addRows(data)
+      res.header(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      )
+      res.attachment(`${type}_employees.xlsx`)
+      await workbook.xlsx.write(res)
+      res.end()
+    } else if (format === 'pdf') {
+      const pdfDoc = await PDFDocument.create()
+      let page = pdfDoc.addPage([842, 595]) // Landscape orientation
+      const fontSize = 10 // Smaller font size
+      const margin = 50
+      let y = 550
+
+      // Draw report title
+      page.drawText(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} Employees Report`,
+        {
+          x: margin,
+          y,
+          size: 16,
+          color: rgb(0, 0, 0),
+        }
+      )
+      y -= 30
+
+      // Define column headers and their x positions for landscape
+      const headers =
+        type === 'signed'
+          ? ['Employee ID', 'Name', 'Branch', 'Version']
+          : ['Employee ID', 'Name', 'Branch']
+
+      // Adjusted x positions for landscape with fewer columns
+      const xPositionsSigned = [50, 150, 450, 600]
+      const xPositionsUnsigned = [50, 150, 450]
+      const xPositions =
+        type === 'signed' ? xPositionsSigned : xPositionsUnsigned
+
+      // Draw headers
+      headers.forEach((header, index) => {
+        page.drawText(header, {
+          x: xPositions[index],
+          y,
+          size: fontSize,
+          color: rgb(0, 0, 0),
+        })
+      })
+      y -= 20
+
+      // Draw data rows
+      data.forEach((row) => {
+        const rowData =
+          type === 'signed'
+            ? [
+                row.employee_id,
+                row.name_eng,
+                row.branch_code,
+                row.version_number,
+              ]
+            : [row.employee_id, row.name_eng, row.branch_code]
+
+        rowData.forEach((cell, index) => {
+          page.drawText(cell ? cell.toString() : '', {
+            x: xPositions[index],
+            y,
+            size: fontSize,
+            color: rgb(0, 0, 0),
+          })
+        })
+        y -= 20
+
+        // Add new page if needed
+        if (y < 50) {
+          page = pdfDoc.addPage([842, 595])
+          y = 550
+        }
+      })
+
+      const pdfBytes = await pdfDoc.save()
+      res.header('Content-Type', 'application/pdf')
+      res.attachment(`${type}_employees.pdf`)
+      res.send(Buffer.from(pdfBytes))
+    }
+  } catch (e) {
+    res.status(500).json({ message: e.message.replace('Error: ', '') })
+  } finally {
+    await portalDBConnection.close()
+  }
+})
+
 module.exports = router

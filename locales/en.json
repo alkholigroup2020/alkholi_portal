@@ -178,6 +178,7 @@
     "appPageNames": {
       "cocForm": "Acknowledgment Form",
       "cocVersions": "CoC Versions",
+      "submissionsHistory": "Submissions History",
       "employeesList": "Employees List"
     },
     "cocForm": {
@@ -233,6 +234,18 @@
       "approvalMessage": "Are you sure you want to approve this employee's acknowledgment?",
       "rejectTitle": "Confirmation",
       "rejectMessage": "Are you sure you want to reject this employee's acknowledgment?"
+    },
+    "submissionsHistory": {
+      "pageTitle": "Employee Submissions History",
+      "employeePicture": "Picture",
+      "employeeID": "ID",
+      "employeeName": "Name",
+      "title": "Title",
+      "company": "Company",
+      "status": "Status",
+      "recordDate": "Record Date",
+      "version": "Version",
+      "documentLink": "Document"
     }
   },
   "elevatorsSurvey": {
