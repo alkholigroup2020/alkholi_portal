@@ -231,9 +231,21 @@
     },
     "employeesList": {
       "approvalTitle": "Confirmation",
+      "pageTitle": "Employees List",
       "approvalMessage": "Are you sure you want to approve this employee's acknowledgment?",
       "rejectTitle": "Confirmation",
-      "rejectMessage": "Are you sure you want to reject this employee's acknowledgment?"
+      "rejectMessage": "Are you sure you want to reject this employee's acknowledgment?",
+      "exportButton": "Generate Report",
+      "search": "Search by name, ID, or company",
+      "exportMessage": "Select Report Type",
+      "reportSignedEmployees": "Signed Employees",
+      "reportUnsignedEmployees": "Unsigned Employees",
+      "reportFormat": "Select Report Format",
+      "pdfViewer": "PDF Viewer",
+      "emailConfirmationTitle": "Confirmation",
+      "emailConfirmationMessage": "Are you sure you want to send this notification email?",
+      "reportGenerate": "Generate",
+      "reportCancel": "Cancel"
     },
     "submissionsHistory": {
       "pageTitle": "Employee Submissions History",
@@ -241,6 +253,9 @@
       "employeeID": "ID",
       "employeeName": "Name",
       "title": "Title",
+      "email": "Email",
+      "notification": "Send Notification",
+      "approval": "Approval",
       "company": "Company",
       "status": "Status",
       "recordDate": "Record Date",

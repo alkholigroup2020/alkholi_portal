@@ -9,7 +9,9 @@
       <v-col>
         <div class="w-full d-flex justify-space-between">
           <!-- title -->
-          <h3 class="text-h5 primaryText--text">Employees List</h3>
+          <h3 class="text-h5 primaryText--text">
+            {{ $t('codeOfConduct.employeesList.pageTitle') }}
+          </h3>
           <!-- utilities -->
           <div class="w-full d-flex justify-end align-center">
             <!-- bulk notifications emails -->
@@ -71,13 +73,15 @@
                 </v-dialog>
               </div>
             </div> -->
+
             <!-- search bar -->
-            <div>
+            <div class="mx-4">
               <v-text-field
                 v-model="searchTerm"
+                height="38"
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
                 append-icon="mdi-magnify"
-                label="Search"
+                :label="$t('codeOfConduct.employeesList.search')"
                 single-line
                 hide-details
                 outlined
@@ -85,16 +89,75 @@
               ></v-text-field>
             </div>
 
+            <!-- toggle buttons -->
+            <!-- <div>
+              <v-btn-toggle v-model="statusIcon" class="mx-5">
+                <v-btn
+                  dense
+                  height="41"
+                  value="Approved"
+                  :color="$vuetify.theme.dark ? 'primary' : ''"
+                  @click.prevent="showApproved"
+                >
+                  <span class="hidden-sm-and-down text-capitalize"
+                    >Approved</span
+                  >
+
+                  <v-icon right>mdi-check-decagram-outline</v-icon>
+                </v-btn>
+
+                <v-btn
+                  dense
+                  height="41"
+                  value="Pending Approval"
+                  :color="$vuetify.theme.dark ? 'primary' : ''"
+                >
+                  <span class="hidden-sm-and-down text-capitalize"
+                    >Pending Approval</span
+                  >
+
+                  <v-icon right>mdi-receipt-text-clock</v-icon>
+                </v-btn>
+
+                <v-btn
+                  dense
+                  height="41"
+                  value="Rejected"
+                  :color="$vuetify.theme.dark ? 'primary' : ''"
+                >
+                  <span class="hidden-sm-and-down text-capitalize"
+                    >Rejected</span
+                  >
+
+                  <v-icon right>mdi-cancel</v-icon>
+                </v-btn>
+
+                <v-btn
+                  dense
+                  height="41"
+                  value="No Action"
+                  :color="$vuetify.theme.dark ? 'primary' : ''"
+                >
+                  <span class="hidden-sm-and-down text-capitalize"
+                    >No Action</span
+                  >
+
+                  <v-icon right>mdi-account-alert-outline</v-icon>
+                </v-btn>
+              </v-btn-toggle>
+            </div> -->
+
             <div>
               <!-- Export Report button -->
               <v-btn
                 outlined
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
-                class="mx-3 text-capitalize"
+                class="text-capitalize"
+                height="38"
                 @click="reportDialog = true"
               >
                 <v-icon left>mdi-file-export</v-icon>
-                Export Report
+                {{ $t('codeOfConduct.employeesList.exportButton') }}
               </v-btn>
             </div>
           </div>
@@ -117,22 +180,38 @@
               <tr>
                 <th class="text-subtitle-2 primaryText--text"></th>
                 <th class="text-subtitle-2 primaryText--text"></th>
-                <th class="text-subtitle-2 primaryText--text">ID</th>
-                <th class="text-subtitle-2 primaryText--text">Title</th>
-                <th class="text-subtitle-2 primaryText--text">Name</th>
-                <th class="text-subtitle-2 primaryText--text">Email</th>
-                <th class="text-subtitle-2 primaryText--text">Company</th>
-                <th class="text-subtitle-2 primaryText--text">Status</th>
                 <th class="text-subtitle-2 primaryText--text">
-                  Send Notification
+                  {{ $t('codeOfConduct.submissionsHistory.employeeID') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.title') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.employeeName') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.email') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.company') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.status') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.notification') }}
                 </th>
 
                 <!-- <th class="text-subtitle-2 primaryText--text">Signed At</th> -->
                 <th class="text-subtitle-2 primaryText--text">
-                  Signed Document
+                  {{ $t('codeOfConduct.submissionsHistory.documentLink') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">Version</th>
-                <th class="text-subtitle-2 primaryText--text">Approval</th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.version') }}
+                </th>
+                <th class="text-subtitle-2 primaryText--text">
+                  {{ $t('codeOfConduct.submissionsHistory.approval') }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -186,9 +265,11 @@
                 <!-- email -->
                 <td>
                   {{
-                    employee.email === 'NoEmail@admin.com'
-                      ? 'N/A'
-                      : employee.email
+                    /^[A-Za-z]+\.[A-Za-z]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/.test(
+                      employee.email
+                    )
+                      ? employee.email
+                      : 'N/A'
                   }}
                 </td>
 
@@ -198,8 +279,8 @@
                 <!-- Compliance Status -->
                 <td class="w-full text-center">
                   <!-- rejected -->
-                  <!-- v-if="employee.signature_id" -->
                   <v-chip
+                    small
                     :color="
                       employee.status === 'approved'
                         ? 'success'
@@ -209,7 +290,6 @@
                         ? 'warning'
                         : 'cyan accent-4'
                     "
-                    small
                   >
                     {{
                       employee.status === 'approved'
@@ -223,32 +303,30 @@
                         : ''
                     }}
                   </v-chip>
-                  <!-- <pre>{{ employee }}</pre> -->
-                  <!-- <v-chip v-else color="error" small>Not Signed</v-chip> -->
                 </td>
 
                 <!-- send notification -->
+
                 <td>
-                  <div>
-                    <v-btn
-                      v-if="
-                        employee.status === 'rejected' ||
-                        employee.status === null
-                      "
-                      rounded
-                      fab
-                      small
-                      text
-                      class="mx-1 py-0 px-0 text-capitalize"
-                      :disabled="sendingEmail"
-                      @click.prevent="
-                        sendEmail(
-                          employee.email,
-                          employee.name_eng.split(' ')[0]
-                        )
-                      "
-                      ><v-icon>mdi-email</v-icon>
-                    </v-btn>
+                  <div
+                    v-if="
+                      (employee.status === null &&
+                        /^[A-Za-z]+\.[A-Za-z]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/.test(
+                          employee.email
+                        )) ||
+                      (employee.status === 'rejected' &&
+                        /^[A-Za-z]+\.[A-Za-z]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/.test(
+                          employee.email
+                        ))
+                    "
+                  >
+                    <EmailConfirmation
+                      :email="employee.email"
+                      :name="employee.name_eng.split(' ')[0]"
+                      @sending="overlay = true"
+                      @sent="overlay = false"
+                      @error="overlay = false"
+                    />
                   </div>
                 </td>
 
@@ -427,7 +505,7 @@
     <v-dialog v-model="pdfDialog" max-width="900">
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
         <v-card-title class="d-flex justify-space-between">
-          <span>PDF Viewer</span>
+          <span>{{ $t('codeOfConduct.employeesList.pdfViewer') }}</span>
           <v-btn icon @click="pdfDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
@@ -448,7 +526,7 @@
     <v-dialog v-model="reportDialog" max-width="500" persistent>
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
         <v-card-title class="text-h6 primaryText--text">
-          Select Report Type
+          {{ $t('codeOfConduct.employeesList.exportMessage') }}
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text class="pb-0">
@@ -456,13 +534,13 @@
           <v-radio-group v-model="reportType">
             <v-radio
               :color="$vuetify.theme.dark ? 'white' : 'primary'"
-              label="Signed Employees"
+              :label="$t('codeOfConduct.employeesList.reportSignedEmployees')"
               value="signed"
             >
             </v-radio>
             <v-radio
               :color="$vuetify.theme.dark ? 'white' : 'primary'"
-              label="Unsigned Employees"
+              :label="$t('codeOfConduct.employeesList.reportUnsignedEmployees')"
               value="unsigned"
             ></v-radio>
           </v-radio-group>
@@ -472,7 +550,7 @@
           <v-select
             v-model="exportFormat"
             :items="formats"
-            label="Select Format"
+            :label="$t('codeOfConduct.employeesList.reportFormat')"
             outlined
             :item-color="$vuetify.theme.dark ? 'white' : 'primary'"
             dense
@@ -486,7 +564,7 @@
             class="text-capitalize mx-3"
             @click="reportDialog = false"
           >
-            Cancel
+            {{ $t('codeOfConduct.employeesList.reportCancel') }}
           </v-btn>
           <v-spacer></v-spacer>
           <v-btn
@@ -496,7 +574,7 @@
             :loading="generating"
             @click="generateReport"
           >
-            Generate
+            {{ $t('codeOfConduct.employeesList.reportGenerate') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -513,6 +591,7 @@ export default {
       overlay: false,
       syncLoading: false,
       searchTerm: '',
+      statusIcon: undefined,
       pdfDialog: false,
       acceptDialog: false,
       sendingEmails: false,
@@ -521,6 +600,7 @@ export default {
       selectedPdfUrl: null,
       sendEmailsDialog: false,
       rejecting: false,
+      emailDialog: false,
       approving: false,
       employeesData: [],
       reportDialog: false,
@@ -543,6 +623,9 @@ export default {
             .toLowerCase()
             .match(this.searchTerm.toLowerCase()) ||
           employee.employee_id
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase()) ||
+          employee.branch_code
             .toLowerCase()
             .match(this.searchTerm.toLowerCase())
         )
@@ -582,8 +665,21 @@ export default {
 
     // syncEmployees
     async syncEmployees() {
-      const employees = await this.$store.dispatch('coc/fetchEmployeesData')
-      this.employeesData = employees
+      try {
+        this.overlay = true
+        const employees = await this.$store.dispatch('coc/fetchEmployeesData')
+        this.overlay = false
+        this.employeesData = employees
+      } catch (error) {
+        this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: error.response?.data?.message || 'Employees Sync Failed!',
+        })
+      }
+    },
+
+    showApproved() {
+      //
     },
 
     async sendEmails() {
@@ -592,11 +688,16 @@ export default {
 
     async sendEmail(email, name) {
       try {
+        this.emailDialog = false
+        this.sendingEmail = true
         this.overlay = true
-        const response = await this.$axios.post('/coc-api/send-single-email', {
-          email,
-          name,
-        })
+        const response = await this.$axios.post(
+          `${this.$config.baseURL}/coc-api/send-single-email`,
+          {
+            email,
+            name,
+          }
+        )
         if (response.status === 200) {
           this.$store.dispatch('appNotifications/addNotification', {
             type: 'success',
@@ -609,6 +710,7 @@ export default {
           message: error.response?.data?.message || 'Email sending failed',
         })
       } finally {
+        this.sendingEmail = false
         this.overlay = false
       }
     },
@@ -624,10 +726,13 @@ export default {
         this.approving = true
         const adminId = localStorage.getItem('employeeCode')
 
-        const response = await this.$axios.post('/coc-api/approve-signature', {
-          signatureId,
-          adminId,
-        })
+        const response = await this.$axios.post(
+          `${this.$config.baseURL}/coc-api/approve-signature`,
+          {
+            signatureId,
+            adminId,
+          }
+        )
         if (response.status === 200) {
           this.$store.dispatch('appNotifications/addNotification', {
             type: 'success',
@@ -649,9 +754,12 @@ export default {
     async rejectSignature(signatureId) {
       try {
         this.rejecting = true
-        const response = await this.$axios.post('/coc-api/reject-signature', {
-          signatureId,
-        })
+        const response = await this.$axios.post(
+          `${this.$config.baseURL}/coc-api/reject-signature`,
+          {
+            signatureId,
+          }
+        )
         if (response.status === 200) {
           this.$store.dispatch('appNotifications/addNotification', {
             type: 'success',
@@ -669,48 +777,6 @@ export default {
       }
     },
 
-    // async generateReport() {
-    //   this.overlay = true // Show loading state
-    //   this.generating = true // Show loading state
-    //   try {
-    //     // Make API request to get the CSV file
-    //     const response = await this.$axios.get(
-    //       `/coc-api/export-report?type=${this.reportType}`,
-    //       {
-    //         responseType: 'blob', // Expect a binary file response
-    //       }
-    //     )
-
-    //     // Create a temporary URL for the downloaded file
-    //     const url = window.URL.createObjectURL(new Blob([response.data]))
-    //     const link = document.createElement('a')
-    //     link.href = url
-    //     link.setAttribute('download', `${this.reportType}_employees.csv`) // Set filename
-    //     document.body.appendChild(link)
-    //     link.click() // Trigger download
-    //     document.body.removeChild(link) // Clean up
-    //     window.URL.revokeObjectURL(url) // Free memory
-
-    //     // Show success notification
-    //     this.$store.dispatch('appNotifications/addNotification', {
-    //       type: 'success',
-    //       message: `Report (${this.reportType}) generated successfully`,
-    //     })
-
-    //     // Close the dialog
-    //     this.reportDialog = false
-    //   } catch (error) {
-    //     // Handle errors and show notification
-    //     this.$store.dispatch('appNotifications/addNotification', {
-    //       type: 'error',
-    //       message: 'Failed to generate report',
-    //     })
-    //   } finally {
-    //     this.overlay = false // Hide loading state
-    //     this.generating = false // Reset loading state
-    //   }
-    // },
-
     async generateReport() {
       this.generating = true
       this.overlay = true
@@ -718,7 +784,7 @@ export default {
         const format = this.exportFormat
         const type = this.reportType
         const response = await this.$axios.get(
-          `/coc-api/export-report?type=${type}&format=${format}`,
+          `${this.$config.baseURL}/coc-api/export-report?type=${type}&format=${format}`,
           {
             responseType: 'blob',
           }

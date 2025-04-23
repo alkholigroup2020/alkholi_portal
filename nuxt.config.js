@@ -32,6 +32,7 @@ export default {
       '~/components',
       '~/components/portal',
       '~/components/businessCards',
+      '~/components/coc',
       '~/components/portal/shortcuts',
       '~/components/appNotifications',
       '~/components/administration/authControlledApps',

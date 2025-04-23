@@ -7,9 +7,25 @@
     </v-overlay>
     <!-- Page title with flexbox layout -->
     <div class="d-flex justify-space-between align-center mb-3">
-      <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
-        {{ $t('codeOfConduct.submissionsHistory.pageTitle') }}
-      </h3>
+      <div>
+        <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
+          {{ $t('codeOfConduct.submissionsHistory.pageTitle') }}
+        </h3>
+      </div>
+
+      <!-- search bar -->
+      <div>
+        <v-text-field
+          v-model="searchTerm"
+          :color="$vuetify.theme.dark ? 'white' : 'primary'"
+          append-icon="mdi-magnify"
+          label="Search"
+          single-line
+          hide-details
+          outlined
+          dense
+        ></v-text-field>
+      </div>
     </div>
     <hr class="mt-3 mb-1" />
     <!-- Table to display submissions history -->
@@ -32,7 +48,10 @@
         </thead>
         <tbody>
           <!-- Loop through submissions to populate table rows -->
-          <tr v-for="submission in submissions" :key="submission.id">
+          <tr
+            v-for="submission in filteredSubmissionsData"
+            :key="submission.id"
+          >
             <td>
               <v-avatar size="40">
                 <v-img
@@ -51,7 +70,7 @@
                 :color="submission.status === 'approved' ? 'success' : 'error'"
                 small
               >
-                {{ submission.status }}
+                {{ submission.status === 'approved' ? 'Approved' : 'Rejected' }}
               </v-chip>
             </td>
             <!-- <td>{{ formattedDate(submission.signed_at) }}</td> -->
@@ -104,6 +123,7 @@ export default {
       submissions: [], // Array to store fetched submissions
       pdfDialog: false, // Controls PDF dialog visibility
       selectedPdfUrl: '', // URL of the selected PDF to display
+      searchTerm: '',
     }
   },
   computed: {
@@ -111,6 +131,19 @@ export default {
     ...mapState({
       isCOCAdmin: (state) => state.portal.isCOCAdmin,
     }),
+
+    filteredSubmissionsData() {
+      return this.submissions.filter((employee) => {
+        return (
+          employee.name_eng
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase()) ||
+          employee.employee_id
+            .toLowerCase()
+            .match(this.searchTerm.toLowerCase())
+        )
+      })
+    },
   },
   async mounted() {
     // Redirect non-admins to the CoC form page
@@ -125,7 +158,7 @@ export default {
       this.overlay = true // Show loading spinner
       try {
         const response = await this.$axios.get(
-          '/coc-api/get-submissions-history'
+          `${this.$config.baseURL}/coc-api/get-submissions-history`
         )
         this.submissions = response.data // Store fetched data
       } catch (error) {

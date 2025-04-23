@@ -29,7 +29,7 @@
               color="success"
               class="text-capitalize"
               large
-              :disabled="formApproved || formPending"
+              :disabled="formApproved || formPending || noDocument"
               @click="showForm = true"
             >
               {{ $t('codeOfConduct.cocForm.acknowledgmentForm') }}
@@ -160,29 +160,33 @@
                   >
                     <v-stepper-header>
                       <v-stepper-step :complete="signatureStepper > 1" step="1">
-                        {{ $t('codeOfConduct.cocForm.formStepper.print') }}
+                        <span class="px-2">{{
+                          $t('codeOfConduct.cocForm.formStepper.print')
+                        }}</span>
                       </v-stepper-step>
 
                       <v-divider></v-divider>
 
                       <v-stepper-step :complete="signatureStepper > 2" step="2">
-                        {{
+                        <span class="px-2">{{
                           $t(
                             'codeOfConduct.cocForm.formStepper.uploadAndSubmit'
                           )
-                        }}
+                        }}</span>
                       </v-stepper-step>
 
                       <v-divider></v-divider>
 
                       <v-stepper-step step="3">
-                        {{ $t('codeOfConduct.cocForm.formStepper.result') }}
+                        <span class="px-2">{{
+                          $t('codeOfConduct.cocForm.formStepper.result')
+                        }}</span>
                       </v-stepper-step>
                     </v-stepper-header>
 
                     <v-stepper-items>
                       <!-- step #1 -->
-                      <v-stepper-content step="1">
+                      <v-stepper-content step="1" dir="auto">
                         <div>
                           <p class="text-subtitle-1 py-5">
                             {{
@@ -198,7 +202,7 @@
                               :loading="generatingForm"
                               @click="generateAndPrint"
                             >
-                              <v-icon left>mdi-printer</v-icon>
+                              <v-icon class="mx-2" left>mdi-printer</v-icon>
                               {{
                                 $t(
                                   'codeOfConduct.cocForm.formStepper.step1print'
@@ -213,7 +217,7 @@
                               :loading="downloadingForm"
                               @click="generateAndDownload"
                             >
-                              <v-icon left>mdi-download</v-icon>
+                              <v-icon class="mx-2" left>mdi-download</v-icon>
                               {{
                                 $t(
                                   'codeOfConduct.cocForm.formStepper.step1download'
@@ -247,7 +251,7 @@
                       </v-stepper-content>
 
                       <!-- step #2 -->
-                      <v-stepper-content step="2">
+                      <v-stepper-content step="2" dir="auto">
                         <div>
                           <p class="text-subtitle-1 mb-2">
                             {{
@@ -320,7 +324,7 @@
                       </v-stepper-content>
 
                       <!-- step #3 -->
-                      <v-stepper-content step="3">
+                      <v-stepper-content step="3" dir="auto">
                         <div>
                           <p
                             v-if="showSuccessMessage"
@@ -421,6 +425,7 @@ export default {
       formApproved: false,
       formPending: false,
       showSuccessMessage: false,
+      noDocument: false,
     }
   },
   computed: {
@@ -440,6 +445,9 @@ export default {
         this.currentCoC = versions.find((v) => v.active_flag)
         if (!this.currentCoC) throw new Error('No active CoC found!')
       } catch (error) {
+        // to disable the acknowledgement button if there are no documents loaded
+        this.noDocument = true
+        // show the error notification
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
           message: 'No active Code of Conduct document found!',
@@ -497,7 +505,7 @@ export default {
       try {
         // Call server to generate PDF
         const response = await this.$axios.post(
-          '/coc-api/generate-print-form',
+          `${this.$config.baseURL}/coc-api/generate-print-form`,
           {
             employeeID: this.formData.employee_id,
             position: this.formData.title_e,
@@ -538,7 +546,7 @@ export default {
       try {
         // Call server to generate PDF
         const response = await this.$axios.post(
-          '/coc-api/generate-print-form',
+          `${this.$config.baseURL}/coc-api/generate-print-form`,
           {
             employeeID: this.formData.employee_id,
             position: this.formData.title_e,
