@@ -185,6 +185,7 @@
       "title": "مدونة قواعد السلوك",
       "formTitle": "Acknowledgment Form",
       "formIntro": "يرجى قراءة وثيقة مدونة قواعد السلوك بعناية، ثم الإقرار بأنك قد قرأتها وفهمتها.",
+      "formWarning": "يرجى ملاحظة أن هذه الوثيقة سرية، ولا يجوز لك طباعتها أو التقاط لقطة شاشة لها أو مشاركتها مع أي شخص.",
       "noPermission": "ليس لديك صلاحية الوصول إلى هذه الصفحة!",
       "employeeInfo": "معلومات الموظف:",
       "acknowledgementDetailsTitle": "Acknowledgment Details:",

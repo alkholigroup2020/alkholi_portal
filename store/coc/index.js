@@ -128,7 +128,14 @@ export const actions = {
     try {
       const serverCall = await this.$axios.post(
         `${this.$config.baseURL}/coc-api/get-single-employee-data`,
-        { employeeID: payload.employeeID.toUpperCase() }
+        {
+          employeeID: payload.employeeID.toUpperCase(),
+          userFullName: payload.userFullName,
+          userMailAddress: payload.userMailAddress,
+          branchCode: payload.branchCode,
+          titleEnglish: payload.titleEnglish,
+          titleArabic: payload.titleArabic,
+        }
       )
 
       if (serverCall.status === 200) {

@@ -40,56 +40,7 @@ async function syncEmployees() {
   }
 }
 
-// Fetch employees' data from HR database
-// async function fetchEmployeesFromHR(hrDBConnection) {
-//   // Get company groups
-//   const groupsResult = await hrDBConnection.request().query(`
-//     SELECT [company_code], [company_desc_a], [company_desc_e], comp_logo
-//     FROM [dbo].[adm_company]
-//   `)
-//   const groups = groupsResult.recordset
-
-//   // Get branches for each group
-//   const branchesPromises = groups.map(async (group) => {
-//     const branchRequest = hrDBConnection
-//       .request()
-//       .input('companyCode', sql.VarChar, group.company_code)
-//     const branchesResult = await branchRequest.query(`
-//       SELECT branch_code
-//       FROM [dbo].[adm_branch]
-//       WHERE company_code = @companyCode
-//     `)
-//     return branchesResult.recordset
-//   })
-
-//   const branchesResults = await Promise.all(branchesPromises)
-//   const allBranches = branchesResults.flat()
-
-//   // Get employees for each branch
-//   const employeesPromises = allBranches.map(async (branch) => {
-//     const employeeRequest = hrDBConnection
-//       .request()
-//       .input('branchCode', sql.VarChar, branch.branch_code)
-//     const employeesResult = await employeeRequest.query(`
-//       SELECT
-//         A.employee_code, A.branch_code, A.employee_name_a, A.Email,
-//         A.employee_name_eng, A.employee_picture, A.position
-//       FROM
-//         [MenaITech].[dbo].[Pay_employees] AS A
-//         INNER JOIN [MenaITech].[dbo].[pay_emp_finance] AS B
-//           ON A.employee_code = B.employee_code
-//       WHERE
-//         A.branch_code = @branchCode
-//         AND A.FDimension = '1'
-//         AND B.stop_val_flag = '0'
-//     `)
-//     return employeesResult.recordset
-//   })
-
-//   const employeesResults = await Promise.all(employeesPromises)
-//   return employeesResults.flat()
-// }
-
+// API endpoint to trigger sync
 async function fetchEmployeesFromHR(hrDBConnection) {
   // Get company groups
   const groupsResult = await hrDBConnection.request().query(`

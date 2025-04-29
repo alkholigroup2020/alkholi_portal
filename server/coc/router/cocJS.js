@@ -347,13 +347,23 @@ router.get('/get-coc-versions', authorize, async (req, res) => {
 router.post('/get-single-employee-data', authorize, async (req, res) => {
   const portalDBConnection = await portalDB()
   try {
-    const employeeId = req.body.employeeID
-    if (!employeeId) {
+    const {
+      employeeID,
+      userFullName,
+      userMailAddress,
+      branchCode,
+      titleEnglish,
+      titleArabic,
+    } = req.body
+
+    if (!employeeID) {
       return res.status(400).json({ message: 'Missing employee ID!' })
     }
-    const result = await portalDBConnection
+
+    // Check if the employee exists
+    let result = await portalDBConnection
       .request()
-      .input('employee_id', sql.NVarChar(20), employeeId).query(`
+      .input('employee_id', sql.NVarChar(20), employeeID).query(`
         SELECT
           e.*,
           es.status AS signature_status,
@@ -369,9 +379,40 @@ router.post('/get-single-employee-data', authorize, async (req, res) => {
           )
         WHERE e.employee_id = @employee_id
       `)
+
     if (result.recordset.length === 0) {
-      return res.status(404).json({ message: 'Employee not found!' })
+      // Employee not found, insert a new record
+      await portalDBConnection
+        .request()
+        .input('employee_id', sql.NVarChar(20), employeeID)
+        .input('name_eng', sql.NVarChar(255), userFullName || 'Unknown')
+        .input(
+          'email',
+          sql.NVarChar(255),
+          userMailAddress || `${employeeID}@example.com`
+        )
+        .input('branch_code', sql.NVarChar(50), branchCode || 'Unknown')
+        .input('title_e', sql.NVarChar(100), titleEnglish || 'Unknown')
+        .input('title_a', sql.NVarChar(100), titleArabic || 'Unknown').query(`
+          INSERT INTO coc.employees (employee_id, name_eng, email, branch_code, title_e, title_a)
+          VALUES (@employee_id, @name_eng, @email, @branch_code, @title_e, @title_a)
+        `)
+
+      // Fetch the newly created record
+      result = await portalDBConnection
+        .request()
+        .input('employee_id', sql.NVarChar(20), employeeID).query(`
+          SELECT
+            e.*,
+            NULL AS signature_status,
+            NULL AS signed_at,
+            NULL AS file_path
+          FROM coc.employees e
+          WHERE e.employee_id = @employee_id
+        `)
     }
+
+    // Return the employee data
     res.status(200).json(result.recordset[0])
   } catch (e) {
     const error = e.toString().replace('Error: ', '')

@@ -45,9 +45,14 @@
       <!-- subtitle -->
       <v-row>
         <v-col cols="12">
-          <div class="text-subtitle1 primaryText--text px-3">
+          <!-- <div class="text-subtitle1 primaryText--text px-3">
             <p class="mb-0 py-3">
               {{ $t('codeOfConduct.cocForm.formIntro') }}
+            </p>
+          </div> -->
+          <div class="text-subtitle-1 error--text font-weight-medium px-3">
+            <p class="mb-0 py-3">
+              {{ $t('codeOfConduct.cocForm.formWarning') }}
             </p>
           </div>
         </v-col>
@@ -57,13 +62,19 @@
       <v-row>
         <v-col cols="12">
           <div class="w-full d-flex">
-            <div class="pdf-container px-3">
+            <div class="pdf-container px-3" @contextmenu.prevent>
               <embed
                 v-if="currentCoC"
                 :src="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
                 type="application/pdf"
                 class="pdf-viewer"
               />
+              <!-- Watermark overlay -->
+              <div class="watermark">
+                <span>Confidential - Your ID is: {{ employeeId }}</span>
+              </div>
+              <!-- Transparent overlay to block interactions -->
+              <div class="pdf-overlay"></div>
             </div>
           </div>
         </v-col>
@@ -415,6 +426,7 @@ export default {
     return {
       overlay: false,
       showContent: undefined,
+      employeeId: undefined,
       currentCoC: null,
       generatingForm: false,
       downloadingForm: false,
@@ -460,11 +472,23 @@ export default {
         this.overlay = true
 
         const employeeID = localStorage.getItem('employeeCode')
+        const userFullName = localStorage.getItem('userFullName')
+        const userMailAddress = localStorage.getItem('userMailAddress')
+        const branchCode = localStorage.getItem('branchCode')
+        const titleEnglish = localStorage.getItem('titleEnglish')
+        const titleArabic = localStorage.getItem('titleArabic')
+
+        this.employeeId = employeeID
 
         const employeeData = await this.$store.dispatch(
           'coc/fetchEmployeeData',
           {
             employeeID,
+            userFullName,
+            userMailAddress,
+            branchCode,
+            titleEnglish,
+            titleArabic,
           }
         )
 
@@ -477,7 +501,7 @@ export default {
           }),
         }
 
-        if (employeeData.position) {
+        if (employeeData.employee_id) {
           await this.loadDocument()
           this.showContent = true
           if (employeeData.signature_status === 'approved') {
@@ -610,15 +634,54 @@ export default {
 </script>
 
 <style scoped>
+.pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 12%;
+  background: transparent;
+  z-index: 10; /* Ensure it’s above the embed element */
+}
+
+/* PDF container */
 .pdf-container {
+  position: relative;
   height: 75vh;
   width: 100%;
   max-width: 1050px;
+  overflow: hidden;
 }
 
+/* PDF viewer */
 .pdf-viewer {
   width: 100%;
   height: 100%;
   border-radius: 10px;
+  user-select: none; /* Disable text selection */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Watermark overlay */
+.watermark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none; /* Allow clicks to pass through */
+  background: transparent;
+}
+
+.watermark span {
+  font-size: 2rem;
+  color: rgba(255, 0, 0, 0.5); /* Semi-transparent red */
+  transform: rotate(-45deg);
+  text-align: center;
 }
 </style>

@@ -185,6 +185,7 @@
       "title": "Code of Conduct",
       "formTitle": "Acknowledgment Form",
       "formIntro": "Kindly read through the Code of Conduct document carefully, then acknowledge that you have read and understood it.",
+      "formWarning": "This document is confidential! You are not allowed to print it, take a screenshot, or share it with anyone.",
       "noPermission": "You don't have permission to access this page!",
       "employeeInfo": "Employee Information:",
       "acknowledgementDetailsTitle": "Acknowledgment Details:",

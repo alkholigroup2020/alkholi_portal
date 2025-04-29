@@ -1,4 +1,7 @@
 export const state = () => ({
+  branchCode: null,
+  titleEnglish: null,
+  titleArabic: null,
   userEmailAdd: null,
   userFullName: null,
   managerEmail: null,
@@ -14,6 +17,9 @@ export const state = () => ({
 
 export const mutations = {
   SAVE_USER_DATA(state, userData) {
+    state.branchCode = userData.moreInfo.branch_code
+    state.titleEnglish = userData.moreInfo.title
+    state.titleArabic = userData.moreInfo.title_a
     state.userEmailAdd = userData.user.mail
     state.userFullName = userData.user.cn
     state.managerEmail = userData.managerInfo.Email
@@ -26,6 +32,9 @@ export const mutations = {
     state.userAccount = userData.userAccount
     state.userIsLoggedIn = true
 
+    localStorage.setItem('branchCode', userData.moreInfo.branch_code)
+    localStorage.setItem('titleEnglish', userData.moreInfo.title)
+    localStorage.setItem('titleArabic', userData.moreInfo.title_a)
     localStorage.setItem('userToken', userData.token)
     localStorage.setItem('userAccount', userData.userAccount)
     localStorage.setItem('domainName', userData.domain)

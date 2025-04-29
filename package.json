@@ -34,6 +34,7 @@
     "nuxt": "^2.15.7",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.0",
+    "sharp": "^0.34.1",
     "short-uuid": "^4.2.0",
     "vcards-js": "^2.10.0",
     "vee-validate": "^3.4.14",
