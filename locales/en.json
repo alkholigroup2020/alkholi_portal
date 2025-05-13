@@ -179,7 +179,8 @@
       "cocForm": "Acknowledgment Form",
       "cocVersions": "CoC Versions",
       "submissionsHistory": "Submissions History",
-      "employeesList": "Employees List"
+      "employeesList": "Employees List",
+      "technicalDocumentation": "Technical Documentation"
     },
     "cocForm": {
       "title": "Code of Conduct",

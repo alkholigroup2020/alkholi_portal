@@ -164,4 +164,9 @@ export default {
   },
 
   loading: '@/components/spinners/RadarSpinner.vue',
+
+  server: {
+    port: 3000,
+    host: 'localhost',
+  },
 }

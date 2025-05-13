@@ -303,6 +303,23 @@
               </v-list-item-title>
             </v-list-item-content>
           </v-list-item>
+
+          <v-list-item
+            v-if="isCOCAdmin"
+            nuxt
+            :to="localePath('/code-of-conduct/technical-documentation')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-history</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">
+                {{ $t('codeOfConduct.appPageNames.technicalDocumentation') }}
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
         </v-list>
 
         <!-- footer -->
