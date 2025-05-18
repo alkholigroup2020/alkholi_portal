@@ -265,7 +265,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5242880 }, // 5mb file limit
+  limits: { fileSize: 26214400 }, // 25mb file limit
 })
 
 // Add endpoint to save CoC document
