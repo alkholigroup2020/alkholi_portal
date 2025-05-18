@@ -94,7 +94,7 @@
               <!-- portalApps -->
 
               <!-- Code of Conduct -->
-              <!-- <v-col
+              <v-col
                 v-if="true"
                 cols="6"
                 sm="4"
@@ -124,7 +124,7 @@
                     {{ $t('portalPage.shortcuts.CoC') }}
                   </h5>
                 </div>
-              </v-col> -->
+              </v-col>
 
               <!-- Online Business Cards -->
               <v-col

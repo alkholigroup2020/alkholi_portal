@@ -186,7 +186,7 @@
       "title": "مدونة قواعد السلوك",
       "formTitle": "Acknowledgment Form",
       "formIntro": "يرجى قراءة وثيقة مدونة قواعد السلوك بعناية، ثم الإقرار بأنك قد قرأتها وفهمتها.",
-      "formWarning": "يرجى ملاحظة أن هذه الوثيقة سرية، ولا يجوز لك طباعتها أو التقاط لقطة شاشة لها أو مشاركتها مع أي شخص.",
+      "formWarning": "يرجى ملاحظة أن هذه الوثيقة سرية، ولا يجوز طباعتها أو التقاط الشاشة أو مشاركتها مع أي شخص.",
       "noPermission": "ليس لديك صلاحية الوصول إلى هذه الصفحة!",
       "employeeInfo": "معلومات الموظف:",
       "acknowledgementDetailsTitle": "Acknowledgment Details:",
@@ -195,16 +195,16 @@
       "acknowledgementDetails3": "I understand that if I have any questions or require clarification regarding any part of the Code of Conduct, I am encouraged to reach out to Human Resources or my supervisor.",
       "acknowledgmentPreSignTitle": "Acknowledgement Steps:",
       "formStepper": {
-        "print": "طباعة",
+        "print": "طباعة / تحميل",
         "uploadAndSubmit": "رفع وتقديم",
         "result": "النتيجة",
-        "step1msg": "اضغط على زر الطباعة أدناه، وقم بطباعة المستند وتوقيعه يدويًا. أو اختر تنزيل المستند لحفظه وتوقيعه رقميًا، ثم اضغط على التالي.",
+        "step1msg": "اضغط على زر الطباعة أدناه، وقم بطباعة المستند وتوقيعه يدويًا، أو اختر تحميل المستند لحفظه وتوقيعه رقميًا، ثم اضغط على التالي.",
         "step1print": "طباعة",
         "step1download": "تحميل المستند",
         "step1next": "التالي",
         "step3close": "إغلاق",
         "step2back": "العودة",
-        "uploadLabel": "إذا قمت بتوقيع المستند يدويًا، يرجى مسحه ضوئيًا وحفظه على القرص الصلب ثم رفعه هنا. إذا قمت بالتوقيع رقميًا، يرجى رفع الملف هنا."
+        "uploadLabel": "إذا قمت بتوقيع المستند يدويًا، يرجى مسحه ضوئيًا وحفظه على جهازك ثم رفعه هنا. إذا قمت بالتوقيع رقميًا، يرجى رفع الملف هنا."
       },
       "alreadySigned": "لقد قمت بالتوقيع على هذا الإصدار مسبقًا!",
       "pendingApproval": "إقرارك قيد الانتظار للمراجعة!",

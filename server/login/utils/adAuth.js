@@ -3,10 +3,12 @@ const ldap = require('ldapjs')
 const adAuth = (userAccount, password, domain, dcIP) => {
   return new Promise((resolve, reject) => {
     const client = ldap.createClient({
-      url: [`ldap://${dcIP}:389`],
+      url: [`ldaps://${dcIP}:636`], // Changed to ldaps:// and port 636
       timeout: 2000,
-      // reconnect: true,
       connectTimeout: 5000,
+      tlsOptions: {
+        rejectUnauthorized: false,
+      },
     })
     client.bind(
       process.env.adminDN,

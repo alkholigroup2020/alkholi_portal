@@ -2,7 +2,7 @@
   <div class="d-flex flex-column align-center">
     <a :href="sp_data.url" target="_blank" class="text-decoration-none">
       <v-avatar
-        :size="$vuetify.breakpoint.mdAndUp ? '120' : '90'"
+        :size="$vuetify.breakpoint.mdAndUp ? '120' : '75'"
         class="mb-2 main-div"
         color="white"
       >
@@ -29,4 +29,3 @@ export default {
   },
 }
 </script>
-
