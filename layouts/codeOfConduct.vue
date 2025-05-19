@@ -14,6 +14,9 @@
       <Notification v-for="n in appNotifications" :key="n.id" :current="n" />
     </v-snackbar>
 
+    <!-- Global Go to Top Button -->
+    <GoToTopButton />
+
     <v-app-bar app color="primary" flat height="60">
       <v-container fluid class="py-0 fill-height px-xl-16">
         <!-- hamburger icon -->
@@ -349,8 +352,12 @@
 <script>
 import { mapState } from 'vuex'
 import { localize } from 'vee-validate' // to support arabic and english error messages for vee-validate
+import GoToTopButton from '~/components/common/GoToTopButton.vue'
 
 export default {
+  components: {
+    GoToTopButton,
+  },
   data() {
     return {
       showSnack: false,
