@@ -24,7 +24,7 @@ export default {
   data() {
     return {
       showButton: false,
-      scrollThreshold: 300, // Show button after scrolling this many pixels
+      scrollThreshold: 500, // Show button after scrolling this many pixels
     }
   },
   mounted() {

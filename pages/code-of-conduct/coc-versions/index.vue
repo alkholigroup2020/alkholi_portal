@@ -4,27 +4,35 @@
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
 
-    <div class="d-flex justify-space-between align-center mb-3">
+    <div class="d-flex justify-space-between align-center mb-3 flex-wrap">
       <div>
-        <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
+        <h3
+          class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold my-2"
+        >
           {{ $t('codeOfConduct.appPageNames.cocVersions') }}
         </h3>
       </div>
 
       <!-- new coc addition popup form -->
-      <div>
+      <div class="my-2">
         <div class="text-center">
           <v-dialog v-model="dialog" width="500">
             <template #activator="{ on, attrs }">
-              <v-btn small outlined v-bind="attrs" v-on="on">{{
-                $t('codeOfConduct.cocVersions.addNew')
-              }}</v-btn>
+              <v-btn
+                small
+                outlined
+                v-bind="attrs"
+                class="text-caption text-sm-body-2"
+                v-on="on"
+              >
+                {{ $t('codeOfConduct.cocVersions.addNew') }}
+              </v-btn>
             </template>
 
             <v-card color="secondaryBG">
-              <v-card-title class="text-h6">{{
-                $t('codeOfConduct.cocVersions.formTitle')
-              }}</v-card-title>
+              <v-card-title class="text-subtitle-2 text-sm-subtitle-1">
+                {{ $t('codeOfConduct.cocVersions.formTitle') }}
+              </v-card-title>
 
               <v-divider></v-divider>
 
@@ -49,8 +57,8 @@
                   </ValidationProvider>
 
                   <!-- version number -->
-                  <div class="d-flex align-center px-5 pb-8">
-                    <div>
+                  <div class="d-flex align-center px-5 pb-8 flex-wrap">
+                    <div class="text-body-2 text-sm-body-1">
                       <p>
                         {{ $t('codeOfConduct.cocVersions.formVersionNumber') }}
                       </p>
@@ -97,35 +105,34 @@
       <!-- Add version table -->
       <v-simple-table
         :class="$vuetify.theme.dark ? 'primary' : ''"
-        class="primaryText--text"
+        class="primaryText--text responsive-table"
       >
         <template #default>
           <thead>
             <tr>
-              <th class="text-subtitle-2 primaryText--text">
+              <th class="text-caption text-sm-body-2 primaryText--text">
                 {{ $t('codeOfConduct.cocVersions.versionNumber') }}
               </th>
-
-              <th class="text-subtitle-2 primaryText--text">
+              <th class="text-caption text-sm-body-2 primaryText--text">
                 {{ $t('codeOfConduct.cocVersions.uploadBy') }}
               </th>
-              <th class="text-subtitle-2 primaryText--text">
+              <th class="text-caption text-sm-body-2 primaryText--text">
                 {{ $t('codeOfConduct.cocVersions.status') }}
               </th>
-              <th class="text-subtitle-2 primaryText--text">
+              <th class="text-caption text-sm-body-2 primaryText--text">
                 {{ $t('codeOfConduct.cocVersions.documentLink') }}
               </th>
-              <th class="text-subtitle-2 primaryText--text">
+              <th class="text-caption text-sm-body-2 primaryText--text">
                 {{ $t('codeOfConduct.cocVersions.uploadAt') }}
               </th>
-              <!-- delete column -->
-              <!-- <th class="text-subtitle-2 primaryText--text">
-                {{ $t('codeOfConduct.cocVersions.deleteDocument') }}
-              </th> -->
             </tr>
           </thead>
           <tbody>
-            <tr v-for="version in versions" :key="version.id">
+            <tr
+              v-for="version in versions"
+              :key="version.id"
+              class="text-caption text-sm-body-2"
+            >
               <td>v.{{ formatVersionNumber(version.version_number) }}</td>
 
               <td>{{ version.admin_name }}</td>
@@ -148,16 +155,6 @@
                 </a>
               </td>
               <td>{{ formatDate(version.created_at) }}</td>
-              <!-- <td>
-                <v-btn
-                  icon
-                  color="error"
-                  @click="confirmDelete(version)"
-                  v-on="on"
-                >
-                  <v-icon>mdi-delete</v-icon>
-                </v-btn>
-              </td> -->
             </tr>
           </tbody>
         </template>
@@ -167,13 +164,13 @@
     <!-- Add confirmation dialog -->
     <v-dialog v-model="deleteDialog" max-width="500">
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
-        <v-card-title class="text-h6">
+        <v-card-title class="text-subtitle-2 text-sm-subtitle-1">
           {{ $t('codeOfConduct.cocVersions.confirmDelete') }}
         </v-card-title>
 
         <v-divider></v-divider>
 
-        <v-card-text class="py-5">
+        <v-card-text class="py-5 text-body-2 text-sm-body-1">
           {{ $t('codeOfConduct.cocVersions.deleteWarning') }}
         </v-card-text>
 
@@ -201,7 +198,9 @@
     <!-- PDF Viewer -->
     <v-dialog v-model="pdfDialog" max-width="850">
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
-        <v-card-title class="d-flex justify-space-between">
+        <v-card-title
+          class="d-flex justify-space-between text-body-2 text-sm-body-1"
+        >
           <span>PDF Viewer</span>
           <v-btn icon @click="pdfDialog = false">
             <v-icon>mdi-close</v-icon>
@@ -370,3 +369,27 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+/* Responsive table text */
+.responsive-table {
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .responsive-table {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .responsive-table {
+    font-size: 16px;
+  }
+}
+
+/* Add primary text color class */
+.primaryText--text {
+  color: #1976d2;
+}
+</style>

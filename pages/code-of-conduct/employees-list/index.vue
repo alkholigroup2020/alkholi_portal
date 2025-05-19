@@ -9,73 +9,15 @@
       <v-col>
         <div class="w-full d-flex justify-space-between">
           <!-- title -->
-          <h3 class="text-h5 primaryText--text">
+          <h3
+            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold"
+          >
             {{ $t('codeOfConduct.employeesList.pageTitle') }}
           </h3>
           <!-- utilities -->
-          <div class="w-full d-flex justify-end align-center">
-            <!-- bulk notifications emails -->
-            <!-- <div class="w-full d-flex justify-center align-center">
-              <div>
-                <v-dialog v-model="sendEmailsDialog" width="500" persistent>
-                  <template #activator="{ on, attrs }">
-                    <v-btn
-                      :color="$vuetify.theme.dark ? 'white' : 'primary'"
-                      outlined
-                      v-bind="attrs"
-                      class="mx-3 text-capitalize"
-                      v-on="on"
-                      @click="sendEmailsDialog = true"
-                      ><v-icon>mdi-email</v-icon>
-                      <span class="px-3">Send notification emails</span>
-                    </v-btn>
-                  </template>
-
-                  <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
-                    <v-card-title class="text-subtitle-1 primary_5">
-                      {{ $t('codeOfConduct.employeesList.sendingEmailsTitle') }}
-                    </v-card-title>
-                    <v-divider></v-divider>
-                    <v-card-text class="pb-0">
-                      <p
-                        class="text-subtitle-1 font-weight-medium py-8 mb-0 text-center"
-                      >
-                        {{
-                          $t('codeOfConduct.employeesList.sendingEmailsMessage')
-                        }}
-                      </p>
-                    </v-card-text>
-
-                    <v-card-actions class="pb-10">
-                      <v-spacer></v-spacer>
-
-                      <v-btn
-                        outlined
-                        class="px-8 mx-2 text-capitalize"
-                        color="success darken-1"
-                        :loading="sendingEmails"
-                        @click.prevent="sendEmails()"
-                      >
-                        {{ $t('generals.yes') }}
-                      </v-btn>
-                      <v-btn
-                        outlined
-                        :disabled="sendingEmails"
-                        class="px-8 text-capitalize"
-                        color="error darken-1"
-                        @click="sendEmailsDialog = false"
-                      >
-                        {{ $t('generals.no') }}
-                      </v-btn>
-                      <v-spacer></v-spacer>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-              </div>
-            </div> -->
-
+          <div class="w-full d-flex justify-end align-center flex-wrap">
             <!-- search bar -->
-            <div class="mx-4">
+            <div class="mx-4 my-2">
               <v-text-field
                 v-model="searchTerm"
                 height="38"
@@ -89,65 +31,7 @@
               ></v-text-field>
             </div>
 
-            <!-- toggle buttons -->
-            <!-- <div>
-              <v-btn-toggle v-model="statusIcon" class="mx-5">
-                <v-btn
-                  dense
-                  height="41"
-                  value="Approved"
-                  :color="$vuetify.theme.dark ? 'primary' : ''"
-                  @click.prevent="showApproved"
-                >
-                  <span class="hidden-sm-and-down text-capitalize"
-                    >Approved</span
-                  >
-
-                  <v-icon right>mdi-check-decagram-outline</v-icon>
-                </v-btn>
-
-                <v-btn
-                  dense
-                  height="41"
-                  value="Pending Approval"
-                  :color="$vuetify.theme.dark ? 'primary' : ''"
-                >
-                  <span class="hidden-sm-and-down text-capitalize"
-                    >Pending Approval</span
-                  >
-
-                  <v-icon right>mdi-receipt-text-clock</v-icon>
-                </v-btn>
-
-                <v-btn
-                  dense
-                  height="41"
-                  value="Rejected"
-                  :color="$vuetify.theme.dark ? 'primary' : ''"
-                >
-                  <span class="hidden-sm-and-down text-capitalize"
-                    >Rejected</span
-                  >
-
-                  <v-icon right>mdi-cancel</v-icon>
-                </v-btn>
-
-                <v-btn
-                  dense
-                  height="41"
-                  value="No Action"
-                  :color="$vuetify.theme.dark ? 'primary' : ''"
-                >
-                  <span class="hidden-sm-and-down text-capitalize"
-                    >No Action</span
-                  >
-
-                  <v-icon right>mdi-account-alert-outline</v-icon>
-                </v-btn>
-              </v-btn-toggle>
-            </div> -->
-
-            <div>
+            <div class="my-2">
               <!-- Export Report button -->
               <v-btn
                 outlined
@@ -157,7 +41,9 @@
                 @click="reportDialog = true"
               >
                 <v-icon left>mdi-file-export</v-icon>
-                {{ $t('codeOfConduct.employeesList.exportButton') }}
+                <span class="text-caption text-sm-body-2">{{
+                  $t('codeOfConduct.employeesList.exportButton')
+                }}</span>
               </v-btn>
             </div>
           </div>
@@ -173,48 +59,46 @@
           fixed-header
           height="80vh"
           :class="$vuetify.theme.dark ? 'primary' : ''"
-          class="pb-5 primaryText--text"
+          class="pb-5 primaryText--text responsive-table"
         >
           <template #default>
             <thead>
               <tr>
-                <th class="text-subtitle-2 primaryText--text"></th>
-                <th class="text-subtitle-2 primaryText--text"></th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text"></th>
+                <th class="text-caption text-sm-body-2 primaryText--text"></th>
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.employeeID') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.title') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.employeeName') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.email') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.company') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.status') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.notification') }}
                 </th>
-
-                <!-- <th class="text-subtitle-2 primaryText--text">Signed At</th> -->
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.documentLink') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.version') }}
                 </th>
-                <th class="text-subtitle-2 primaryText--text">
+                <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.approval') }}
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody class="text-caption text-sm-body-2">
               <tr
                 v-for="(employee, index) in filteredEmployeesData"
                 :key="index"
@@ -315,7 +199,7 @@
                           employee.email
                         )) ||
                       (employee.status === 'rejected' &&
-                        /^[A-Za-z]+\.[A-Za-z]+@[A-Za-z0-9-]+\.[A-Za-z0-9-]+$/.test(
+                        /^[A-Za-z]+\.[A-Za-z]+@[A-ZaZ0-9-]+\.[A-Za-z0-9-]+$/.test(
                           employee.email
                         ))
                     "
@@ -504,7 +388,9 @@
     <!-- employee's submitted form -->
     <v-dialog v-model="pdfDialog" max-width="900">
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
-        <v-card-title class="d-flex justify-space-between">
+        <v-card-title
+          class="d-flex justify-space-between text-body-2 text-sm-body-1"
+        >
           <span>{{ $t('codeOfConduct.employeesList.pdfViewer') }}</span>
           <v-btn icon @click="pdfDialog = false">
             <v-icon>mdi-close</v-icon>
@@ -525,11 +411,13 @@
     <!--  Report Export Dialog -->
     <v-dialog v-model="reportDialog" max-width="500" persistent>
       <v-card :class="$vuetify.theme.dark ? 'primary' : ''">
-        <v-card-title class="text-h6 primaryText--text">
+        <v-card-title
+          class="text-subtitle-2 text-sm-subtitle-1 primaryText--text"
+        >
           {{ $t('codeOfConduct.employeesList.exportMessage') }}
         </v-card-title>
         <v-divider></v-divider>
-        <v-card-text class="pb-0">
+        <v-card-text class="pb-0 text-body-2 text-sm-body-1">
           <!-- Report Type Selection -->
           <v-radio-group v-model="reportType">
             <v-radio
@@ -836,5 +724,29 @@ export default {
 <style>
 .v-list-item--highlighted {
   color: #f0f0f0 !important;
+}
+
+/* Responsive table text */
+.responsive-table {
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .responsive-table {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .responsive-table {
+    font-size: 16px;
+  }
+}
+
+/* Ensure buttons have readable text on mobile */
+.v-btn {
+  white-space: normal;
+  height: auto;
+  min-height: 36px;
 }
 </style>

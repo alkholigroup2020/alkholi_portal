@@ -3,7 +3,9 @@
     <v-row class="py-3">
       <div class="px-5 d-flex justify-space-between" style="width: 100%">
         <div>
-          <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
+          <h3
+            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold"
+          >
             Technical Documentation
           </h3>
         </div>
@@ -16,9 +18,11 @@
       <v-col cols="12">
         <v-card outlined>
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">System Overview</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              System Overview
+            </h4>
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="text-body-2 text-md-body-1">
             <p>
               The Code of Conduct application is a comprehensive system for
               managing employee acknowledgments of company policies. It
@@ -40,9 +44,11 @@
       <v-col cols="12">
         <v-card outlined class="mt-3">
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">Workflow Diagrams</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              Workflow Diagrams
+            </h4>
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="text-body-2 text-md-body-1">
             <p class="mb-4">Employee Acknowledgment Process:</p>
             <pre class="mermaid">
               graph TD
@@ -77,16 +83,18 @@
       <v-col cols="12">
         <v-card outlined class="mt-3">
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">API Endpoints</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              API Endpoints
+            </h4>
           </v-card-title>
           <v-card-text>
             <v-expansion-panels>
               <v-expansion-panel>
-                <v-expansion-panel-header
-                  >Document Management Endpoints</v-expansion-panel-header
-                >
+                <v-expansion-panel-header class="text-body-2 text-md-body-1">
+                  Document Management Endpoints
+                </v-expansion-panel-header>
                 <v-expansion-panel-content>
-                  <ul>
+                  <ul class="text-body-2 text-md-body-1">
                     <li>
                       <code>POST /coc-api/save-coc-document</code>
                       <p>
@@ -195,7 +203,9 @@
       <v-col cols="12">
         <v-card outlined class="mt-3">
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">Database Schema</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              Database Schema
+            </h4>
           </v-card-title>
         </v-card>
       </v-col>
@@ -205,9 +215,11 @@
       <v-col cols="12">
         <v-card outlined class="mt-3">
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">Error Handling</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              Error Handling
+            </h4>
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="text-body-2 text-md-body-1">
             <ul>
               <li>
                 <strong>Document Upload Errors:</strong>
@@ -243,9 +255,11 @@
       <v-col cols="12">
         <v-card outlined class="mt-3">
           <v-card-title>
-            <h4 class="text-h6 font-weight-bold">Security Measures</h4>
+            <h4 class="text-subtitle-1 text-md-h6 font-weight-bold">
+              Security Measures
+            </h4>
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="text-body-2 text-md-body-1">
             <ul>
               <li>
                 <strong>Authentication:</strong> Uses JWT tokens for API
@@ -351,6 +365,12 @@ export default {
   width: 100%;
   display: flex;
   justify-content: center;
+  font-size: 14px;
+}
+@media (min-width: 960px) {
+  .mermaid {
+    font-size: 16px;
+  }
 }
 ::v-deep svg {
   max-width: 100%;

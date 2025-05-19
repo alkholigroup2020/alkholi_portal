@@ -534,4 +534,16 @@ export default {
   user-select: none; /* Prevent selection */
   z-index: 100; /* Ensure it appears above page content */
 }
+
+@media screen and (max-width: 900px) {
+  .vue-pdf-embed__page::after {
+    font-size: 2.2rem; /* Adjust font size for smaller screens */
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .vue-pdf-embed__page::after {
+    font-size: 1.2rem; /* Adjust font size for smaller screens */
+  }
+}
 </style>

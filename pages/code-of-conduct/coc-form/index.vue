@@ -6,29 +6,35 @@
 
     <!-- toolbar -->
     <v-row class="py-3">
-      <div class="px-5 d-flex justify-space-between" style="width: 100%">
+      <div
+        class="px-5 d-flex justify-space-between flex-wrap"
+        style="width: 100%"
+      >
         <div>
-          <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
+          <h3
+            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold my-2"
+          >
             {{ $t('codeOfConduct.cocForm.title') }}
           </h3>
         </div>
 
-        <div v-if="showContent" class="d-flex align-center justify-center">
+        <div v-if="showContent" class="d-flex align-center justify-center my-2">
           <div v-if="formApproved">
-            <p class="text-subtitle1 success--text mx-3 mb-0">
+            <p class="text-caption text-sm-body-2 success--text mx-3 mb-0">
               {{ $t('codeOfConduct.cocForm.alreadySigned') }}
             </p>
           </div>
           <div v-if="formPending">
-            <p class="text-subtitle1 error--text mx-3 mb-0">
+            <p class="text-caption text-sm-body-2 error--text mx-3 mb-0">
               {{ $t('codeOfConduct.cocForm.pendingApproval') }}
             </p>
           </div>
           <div>
             <v-btn
               color="success"
-              class="text-capitalize"
-              large
+              class="text-capitalize text-caption text-sm-body-2"
+              :large="$vuetify.breakpoint.mdAndUp"
+              :small="$vuetify.breakpoint.smAndDown"
               :disabled="formApproved || formPending || noDocument"
               @click="showForm = true"
             >
@@ -45,12 +51,9 @@
       <!-- subtitle -->
       <v-row>
         <v-col cols="12">
-          <!-- <div class="text-subtitle1 primaryText--text px-3">
-            <p class="mb-0 py-3">
-              {{ $t('codeOfConduct.cocForm.formIntro') }}
-            </p>
-          </div> -->
-          <div class="text-subtitle-1 error--text font-weight-medium px-3">
+          <div
+            class="text-caption text-sm-subtitle-2 error--text font-weight-medium px-3"
+          >
             <p class="mb-0 pt-3 pb-1">
               {{ $t('codeOfConduct.cocForm.formWarning') }}
             </p>
@@ -71,8 +74,8 @@
                 <template v-if="isLoading">Loading...</template>
 
                 <template v-else>
-                  <div class="d-flex justify-space-between">
-                    <div>
+                  <div class="d-flex justify-space-between flex-wrap">
+                    <div class="text-caption text-sm-body-2 my-1">
                       <label>
                         <input v-model="showAllPages" type="checkbox" />
                         <span v-if="$vuetify.breakpoint.lgAndUp">
@@ -84,7 +87,7 @@
                       </label>
                     </div>
 
-                    <div>
+                    <div class="text-caption text-sm-body-2 my-1">
                       <span v-if="showAllPages"> {{ pageCount }} page(s) </span>
                       <span v-else>
                         <button :disabled="page <= 1" @click="page--">❮</button>
@@ -127,7 +130,7 @@
       >
         <v-card dir="ltr" rounded="0" class="white">
           <v-card-title
-            class="text-h6 text-md-h5 font-weight-bold text-center d-flex justify-center"
+            class="text-subtitle-2 text-sm-h6 font-weight-bold text-center d-flex justify-center"
           >
             <p class="mb-1 py-3 primary--text">
               {{ $t('codeOfConduct.cocForm.formTitle') }}
@@ -142,7 +145,7 @@
                 <v-col
                   cols="12"
                   md="6"
-                  class="py-0 primary--text text-subtitle-1"
+                  class="py-0 primary--text text-caption text-sm-body-2"
                 >
                   <div>
                     <p class="mb-1">
@@ -167,7 +170,10 @@
 
               <!-- Acknowledgement Details Section -->
               <v-row>
-                <v-col cols="12" class="text-subtitle-1 primary--text">
+                <v-col
+                  cols="12"
+                  class="text-caption text-sm-body-2 primary--text"
+                >
                   <div>
                     <p>
                       {{ $t('codeOfConduct.cocForm.acknowledgementDetails1') }}
@@ -191,7 +197,7 @@
                 <v-col cols="12">
                   <div>
                     <p
-                      class="text-subtitle-1 font-weight-bold mb-0 primary--text"
+                      class="text-caption text-sm-body-2 font-weight-bold mb-0 primary--text"
                     >
                       {{
                         $t('codeOfConduct.cocForm.acknowledgmentPreSignTitle')
@@ -200,15 +206,14 @@
                   </div>
                 </v-col>
                 <v-col cols="12" class="pb-8 pt-3">
-                  <!-- :class="$vuetify.theme.dark ? 'secondaryBG outlined' : ''" -->
                   <v-stepper
                     v-model="signatureStepper"
-                    class="primary--text"
+                    class="primary--text responsive-stepper"
                     light
                   >
-                    <v-stepper-header>
+                    <v-stepper-header class="flex-wrap">
                       <v-stepper-step :complete="signatureStepper > 1" step="1">
-                        <span class="px-2">{{
+                        <span class="px-2 text-caption text-sm-body-2">{{
                           $t('codeOfConduct.cocForm.formStepper.print')
                         }}</span>
                       </v-stepper-step>
@@ -216,7 +221,7 @@
                       <v-divider></v-divider>
 
                       <v-stepper-step :complete="signatureStepper > 2" step="2">
-                        <span class="px-2">{{
+                        <span class="px-2 text-caption text-sm-body-2">{{
                           $t(
                             'codeOfConduct.cocForm.formStepper.uploadAndSubmit'
                           )
@@ -226,7 +231,7 @@
                       <v-divider></v-divider>
 
                       <v-stepper-step step="3">
-                        <span class="px-2">{{
+                        <span class="px-2 text-caption text-sm-body-2">{{
                           $t('codeOfConduct.cocForm.formStepper.result')
                         }}</span>
                       </v-stepper-step>
@@ -236,16 +241,16 @@
                       <!-- step #1 -->
                       <v-stepper-content step="1" dir="auto">
                         <div>
-                          <p class="text-subtitle-1 py-5">
+                          <p class="text-caption text-sm-body-2 py-5">
                             {{
                               $t('codeOfConduct.cocForm.formStepper.step1msg')
                             }}
                           </p>
                         </div>
-                        <div class="d-flex align-center pb-2">
-                          <div>
+                        <div class="d-flex align-center pb-2 flex-wrap">
+                          <div class="my-1">
                             <v-btn
-                              class="text-capitalize px-5"
+                              class="text-capitalize px-5 text-caption text-sm-body-2"
                               color="primary"
                               :loading="generatingForm"
                               @click="generateAndPrint"
@@ -258,9 +263,9 @@
                               }}
                             </v-btn>
                           </div>
-                          <div class="mx-3">
+                          <div class="mx-3 my-1">
                             <v-btn
-                              class="text-capitalize"
+                              class="text-capitalize text-caption text-sm-body-2"
                               color="primary"
                               :loading="downloadingForm"
                               @click="generateAndDownload"
@@ -273,9 +278,9 @@
                               }}
                             </v-btn>
                           </div>
-                          <div>
+                          <div class="my-1">
                             <v-btn
-                              class="text-capitalize px-8"
+                              class="text-capitalize px-5 text-caption text-sm-body-2"
                               color="primary"
                               @click="signatureStepper = 2"
                             >
@@ -286,9 +291,9 @@
                               }}
                             </v-btn>
                           </div>
-                          <div>
+                          <div class="my-1">
                             <v-btn
-                              class="text-capitalize px-8 mx-3"
+                              class="text-capitalize px-5 mx-3 text-caption text-sm-body-2"
                               color="error"
                               @click="showForm = false"
                             >
@@ -301,7 +306,7 @@
                       <!-- step #2 -->
                       <v-stepper-content step="2" dir="auto">
                         <div>
-                          <p class="text-subtitle-1 mb-2">
+                          <p class="text-caption text-sm-body-2 mb-2">
                             {{
                               $t(
                                 'codeOfConduct.cocForm.formStepper.uploadLabel'
@@ -333,37 +338,43 @@
                                   @input="validate"
                                 ></v-file-input>
 
-                                <div class="d-flex align-center py-3">
+                                <div class="d-flex align-center py-3 flex-wrap">
                                   <!-- back btn -->
-                                  <v-btn
-                                    class="text-capitalize mx-3 px-8"
-                                    color="primary"
-                                    @click="signatureStepper = 1"
-                                  >
-                                    {{
-                                      $t(
-                                        'codeOfConduct.cocForm.formStepper.step2back'
-                                      )
-                                    }}
-                                  </v-btn>
+                                  <div class="my-1">
+                                    <v-btn
+                                      class="text-capitalize mx-3 px-8 text-caption text-sm-body-2"
+                                      color="primary"
+                                      @click="signatureStepper = 1"
+                                    >
+                                      {{
+                                        $t(
+                                          'codeOfConduct.cocForm.formStepper.step2back'
+                                        )
+                                      }}
+                                    </v-btn>
+                                  </div>
                                   <!-- submit btn -->
-                                  <v-btn
-                                    :disabled="valid.invalid"
-                                    color="success"
-                                    class="px-5 py-0 text-capitalize"
-                                    type="submit"
-                                    @click="signatureStepper = 3"
-                                    >{{
-                                      $t('codeOfConduct.cocForm.submitBTN')
-                                    }}</v-btn
-                                  >
-                                  <v-btn
-                                    class="text-capitalize px-8 mx-3"
-                                    color="error"
-                                    @click="showForm = false"
-                                  >
-                                    {{ $t('generals.cancel') }}
-                                  </v-btn>
+                                  <div class="my-1">
+                                    <v-btn
+                                      :disabled="valid.invalid"
+                                      color="success"
+                                      class="px-5 py-0 text-capitalize text-caption text-sm-body-2"
+                                      type="submit"
+                                      @click="signatureStepper = 3"
+                                      >{{
+                                        $t('codeOfConduct.cocForm.submitBTN')
+                                      }}</v-btn
+                                    >
+                                  </div>
+                                  <div class="my-1">
+                                    <v-btn
+                                      class="text-capitalize px-8 mx-3 text-caption text-sm-body-2"
+                                      color="error"
+                                      @click="showForm = false"
+                                    >
+                                      {{ $t('generals.cancel') }}
+                                    </v-btn>
+                                  </div>
                                 </div>
                               </ValidationProvider>
                             </v-form>
@@ -376,18 +387,21 @@
                         <div>
                           <p
                             v-if="showSuccessMessage"
-                            class="text-subtitle-1 success--text"
+                            class="text-caption text-sm-body-2 success--text"
                           >
                             {{ $t('codeOfConduct.cocForm.successMessage') }}
                           </p>
-                          <p v-else class="text-subtitle-1 primary--text">
+                          <p
+                            v-else
+                            class="text-caption text-sm-body-2 primary--text"
+                          >
                             {{ $t('codeOfConduct.cocForm.uploading') }}
                           </p>
                         </div>
                         <div class="d-flex align-center pb-2">
-                          <div>
+                          <div class="my-1">
                             <v-btn
-                              class="text-capitalize px-8 py-1"
+                              class="text-capitalize px-8 py-1 text-caption text-sm-body-2"
                               color="primary"
                               :disabled="!showSuccessMessage"
                               :loading="!showSuccessMessage"
@@ -416,7 +430,7 @@
       <v-row>
         <v-col cols="12">
           <div class="error--text px-3">
-            <p class="mb-0 py-3 text-subtitle-1">
+            <p class="mb-0 py-3 text-caption text-sm-body-2">
               {{ $t('codeOfConduct.cocForm.noPermission') }}
             </p>
           </div>
@@ -740,9 +754,45 @@ export default {
 
 .app-header {
   padding: 0px 12px 0px 0px;
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .app-header {
+    font-size: 14px;
+  }
 }
 
 .app-content {
   padding: 24px 0px;
+}
+
+/* Add primary text color class */
+.primaryText--text {
+  color: #1976d2;
+}
+
+/* Responsive stepper styles */
+.responsive-stepper ::v-deep .v-stepper__label {
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .responsive-stepper ::v-deep .v-stepper__label {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .responsive-stepper ::v-deep .v-stepper__label {
+    font-size: 16px;
+  }
+}
+
+/* Ensure buttons have readable text on mobile */
+.v-btn {
+  white-space: normal;
+  height: auto;
+  min-height: 36px;
 }
 </style>
