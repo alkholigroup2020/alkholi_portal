@@ -24,6 +24,7 @@ export default {
   plugins: [
     { src: '@/plugins/vee-validate.js' },
     { src: '@/plugins/chart.js', mode: 'client' },
+    { src: '@/plugins/vue-pdf-embed.client.js', mode: 'client' },
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -139,7 +140,7 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
-    transpile: ['vee-validate'],
+    transpile: ['vee-validate', 'vue-pdf-embed'],
   },
 
   serverMiddleware: [

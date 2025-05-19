@@ -357,6 +357,7 @@ export default {
       drawer: null,
       show: false,
       profilePicPath: '',
+      employeeID: '',
     }
   },
   computed: {
@@ -390,11 +391,16 @@ export default {
           this.$vuetify.theme.dark = true
         }
         const profilePicPath = localStorage.getItem('profilePicPath')
+
         this.profilePicPath = profilePicPath
         this.show = true
         this.$nuxt.$loading.finish()
       }, 100)
     })
+
+    const employeeCode = localStorage.getItem('employeeCode')
+    this.employeeID = employeeCode
+    this.updateWatermark()
   },
   created() {
     // watch the lang changes, then change the page direction
@@ -478,6 +484,47 @@ export default {
         localStorage.setItem('colorMode', 'light')
       }
     },
+
+    updateWatermark() {
+      // Set the CSS variable when employee ID is available
+      document.documentElement.style.setProperty(
+        '--employee-watermark',
+        `'Confidential Document  ${this.employeeID}'`
+      )
+    },
   },
 }
 </script>
+
+<style>
+:root {
+  --employee-watermark: 'Confidential Document '; /* Default value */
+}
+
+.vue-pdf-embed__page {
+  margin-bottom: 12px;
+  box-shadow: 0px 2px 8px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  position: relative; /* Required for absolute positioning of watermark */
+  overflow: hidden;
+}
+
+/* Watermark for each page */
+.vue-pdf-embed__page::after {
+  content: var(--employee-watermark);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 3rem;
+  color: rgba(255, 0, 0, 0.4); /* Semi-transparent red */
+  transform: rotate(-35deg);
+  pointer-events: none; /* Allow clicks to pass through */
+  user-select: none; /* Prevent selection */
+  z-index: 100; /* Ensure it appears above page content */
+}
+</style>

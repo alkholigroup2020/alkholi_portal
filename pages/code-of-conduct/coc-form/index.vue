@@ -51,7 +51,7 @@
             </p>
           </div> -->
           <div class="text-subtitle-1 error--text font-weight-medium px-3">
-            <p class="mb-0 py-3">
+            <p class="mb-0 pt-3 pb-1">
               {{ $t('codeOfConduct.cocForm.formWarning') }}
             </p>
           </div>
@@ -61,20 +61,57 @@
       <!-- the actual coc document -->
       <v-row>
         <v-col cols="12">
-          <div class="w-full d-flex">
-            <div class="pdf-container px-3" @contextmenu.prevent>
-              <embed
-                v-if="currentCoC"
-                :src="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
-                type="application/pdf"
-                class="pdf-viewer"
-              />
-              <!-- Watermark overlay -->
-              <div class="watermark">
-                <span>Confidential - Your ID is: {{ employeeId }}</span>
+          <div class="w-full d-flex justify-center">
+            <div
+              v-if="currentCoC"
+              class="px-3 pdf-container"
+              @contextmenu.prevent
+            >
+              <div class="app-header">
+                <template v-if="isLoading">Loading...</template>
+
+                <template v-else>
+                  <div class="d-flex justify-space-between">
+                    <div>
+                      <label>
+                        <input v-model="showAllPages" type="checkbox" />
+                        <span v-if="$vuetify.breakpoint.lgAndUp">
+                          {{ $t('codeOfConduct.cocForm.showAllPagesLG') }}
+                        </span>
+                        <span v-else>{{
+                          $t('codeOfConduct.cocForm.showAllPagesSM')
+                        }}</span>
+                      </label>
+                    </div>
+
+                    <div>
+                      <span v-if="showAllPages"> {{ pageCount }} page(s) </span>
+                      <span v-else>
+                        <button :disabled="page <= 1" @click="page--">❮</button>
+
+                        <span class="mx-2">{{ page }} / {{ pageCount }}</span>
+
+                        <button :disabled="page >= pageCount" @click="page++">
+                          ❯
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                </template>
               </div>
-              <!-- Transparent overlay to block interactions -->
-              <div class="pdf-overlay"></div>
+
+              <div class="app-content">
+                <client-only>
+                  <PdfEmbed
+                    ref="pdfRef"
+                    dir="ltr"
+                    :page="page"
+                    :source="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
+                    @rendered="handleDocumentRender"
+                  >
+                  </PdfEmbed>
+                </client-only>
+              </div>
             </div>
           </div>
         </v-col>
@@ -422,6 +459,7 @@ localize({
 })
 export default {
   layout: 'codeOfConduct',
+
   data() {
     return {
       overlay: false,
@@ -438,6 +476,12 @@ export default {
       formPending: false,
       showSuccessMessage: false,
       noDocument: false,
+      isLoading: true,
+      page: 1,
+      pageCount: 1,
+      showAllPages: false,
+      keyNavigationTimeout: null,
+      keyNavigationDelay: 200, // Rate limit in millisecond
     }
   },
   computed: {
@@ -446,11 +490,52 @@ export default {
       return this.formData.signature.trim() !== ''
     },
   },
+  watch: {
+    showAllPages() {
+      this.page = this.showAllPages ? null : 1
+    },
+  },
 
   async mounted() {
     await this.getEmployeeData()
+    // Add keyboard event listener for PDF navigation
+    document.addEventListener('keydown', this.handleKeyNavigation)
   },
+
+  beforeDestroy() {
+    // Clean up the event listener when component is destroyed
+    document.removeEventListener('keydown', this.handleKeyNavigation)
+  },
+
   methods: {
+    // Update the keyboard navigation method with throttling
+    handleKeyNavigation(event) {
+      // Only navigate when PDF is loaded and not viewing all pages
+      if (!this.isLoading && !this.showAllPages && this.currentCoC) {
+        // If there's already a pending navigation, ignore this keypress
+        if (this.keyNavigationTimeout) return
+
+        // Navigate with left arrow key (previous page)
+        if (event.key === 'ArrowLeft' && this.page > 1) {
+          this.page--
+          this.throttleKeyNavigation()
+        }
+        // Navigate with right arrow key (next page)
+        else if (event.key === 'ArrowRight' && this.page < this.pageCount) {
+          this.page++
+          this.throttleKeyNavigation()
+        }
+      }
+    },
+
+    // Add this new throttling method
+    throttleKeyNavigation() {
+      // Set a timeout to prevent rapid navigation
+      this.keyNavigationTimeout = setTimeout(() => {
+        this.keyNavigationTimeout = null
+      }, this.keyNavigationDelay)
+    },
+
     async loadDocument() {
       try {
         const versions = await this.$store.dispatch('coc/fetchCoCVersions')
@@ -465,6 +550,11 @@ export default {
           message: 'No active Code of Conduct document found!',
         })
       }
+    },
+
+    handleDocumentRender() {
+      this.isLoading = false
+      this.pageCount = this.$refs.pdfRef.pageCount
     },
 
     async getEmployeeData() {
@@ -634,54 +724,25 @@ export default {
 </script>
 
 <style scoped>
-.pdf-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 12%;
-  background: transparent;
-  z-index: 10; /* Ensure it’s above the embed element */
-}
-
 /* PDF container */
 .pdf-container {
   position: relative;
-  height: 75vh;
-  width: 100%;
-  max-width: 1050px;
-  overflow: hidden;
+  width: 900px;
+  max-width: 100%;
+  overflow: auto;
 }
 
-/* PDF viewer */
-.pdf-viewer {
-  width: 100%;
-  height: 100%;
-  border-radius: 10px;
-  user-select: none; /* Disable text selection */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+@media screen and (max-width: 900px) {
+  .pdf-container {
+    width: 100%;
+  }
 }
 
-/* Watermark overlay */
-.watermark {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  pointer-events: none; /* Allow clicks to pass through */
-  background: transparent;
+.app-header {
+  padding: 0px 12px 0px 0px;
 }
 
-.watermark span {
-  font-size: 2rem;
-  color: rgba(255, 0, 0, 0.5); /* Semi-transparent red */
-  transform: rotate(-45deg);
-  text-align: center;
+.app-content {
+  padding: 24px 0px;
 }
 </style>

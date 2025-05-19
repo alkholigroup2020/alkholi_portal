@@ -194,6 +194,8 @@
       "acknowledgementDetails2": "I further acknowledge that failure to adhere to the Code of Conduct may result in disciplinary action in accordance with the company’s policies.",
       "acknowledgementDetails3": "I understand that if I have any questions or require clarification regarding any part of the Code of Conduct, I am encouraged to reach out to Human Resources or my supervisor.",
       "acknowledgmentPreSignTitle": "Acknowledgement Steps:",
+      "showAllPagesLG": "Show all pages. You can use the left/right arrow keys to navigate.",
+      "showAllPagesSM": "Show all pages.",
       "formStepper": {
         "print": "Print / Download",
         "uploadAndSubmit": "Upload & Submit",
