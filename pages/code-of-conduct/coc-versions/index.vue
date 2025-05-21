@@ -40,7 +40,7 @@
                 <v-form @submit.prevent="saveCoCDocument">
                   <ValidationProvider
                     v-slot="{ errors, validate }"
-                    rules="ext:pdf|size:25600|required"
+                    rules="ext:pdf|size:5120|required"
                   >
                     <v-file-input
                       v-model="cocDocument"
@@ -242,7 +242,7 @@ localize({
   en: {
     messages: {
       ext: 'Should be a PDF file!',
-      size: "File size shouldn't exceed 25MB!",
+      size: "File size shouldn't exceed 5MB!",
       required: 'This field is required!',
       numeric: 'This field should be a whole number!',
     },
@@ -250,7 +250,7 @@ localize({
   ar: {
     messages: {
       ext: 'يجب أن يكون نوع الملف، PDF!',
-      size: 'حجم الملف يجب أن يكون أقل من 25 ميجا بايت!',
+      size: 'حجم الملف يجب أن يكون أقل من 5 ميجا بايت!',
       required: 'هــذا حــقل مطــلوب!',
       numeric: 'هذا الحقل يجب أن يحتوي على رقم صحيح!',
     },

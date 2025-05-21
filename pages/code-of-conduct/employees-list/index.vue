@@ -70,10 +70,10 @@
                   {{ $t('codeOfConduct.submissionsHistory.employeeID') }}
                 </th>
                 <th class="text-caption text-sm-body-2 primaryText--text">
-                  {{ $t('codeOfConduct.submissionsHistory.title') }}
+                  {{ $t('codeOfConduct.submissionsHistory.employeeName') }}
                 </th>
                 <th class="text-caption text-sm-body-2 primaryText--text">
-                  {{ $t('codeOfConduct.submissionsHistory.employeeName') }}
+                  {{ $t('codeOfConduct.submissionsHistory.title') }}
                 </th>
                 <th class="text-caption text-sm-body-2 primaryText--text">
                   {{ $t('codeOfConduct.submissionsHistory.email') }}
@@ -132,17 +132,17 @@
                 <!-- employee id -->
                 <td>{{ employee.employee_id }}</td>
 
-                <!-- employee id -->
-                <td>
-                  {{
-                    $i18n.locale === 'en' ? employee.title_e : employee.title_a
-                  }}
-                </td>
-
                 <!-- name -->
                 <td>
                   {{
                     $i18n.locale === 'en' ? employee.name_eng : employee.name_a
+                  }}
+                </td>
+
+                <!-- employee title -->
+                <td>
+                  {{
+                    $i18n.locale === 'en' ? employee.title_e : employee.title_a
                   }}
                 </td>
 

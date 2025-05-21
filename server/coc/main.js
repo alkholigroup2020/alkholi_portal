@@ -29,7 +29,7 @@ cron.schedule('*/10 * * * *', async () => {
     await dataSync.syncEmployees() // Call the exported sync function
     // console.log('Employee sync completed successfully.')
   } catch (error) {
-    console.error('Employee sync failed:', error)
+    // console.error('Employee sync failed:', error)
   }
 })
 

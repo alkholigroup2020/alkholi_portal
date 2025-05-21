@@ -307,7 +307,7 @@
             </v-list-item-content>
           </v-list-item>
 
-          <v-list-item
+          <!-- <v-list-item
             v-if="isCOCAdmin"
             nuxt
             :to="localePath('/code-of-conduct/technical-documentation')"
@@ -322,7 +322,7 @@
                 {{ $t('codeOfConduct.appPageNames.technicalDocumentation') }}
               </v-list-item-title>
             </v-list-item-content>
-          </v-list-item>
+          </v-list-item> -->
         </v-list>
 
         <!-- footer -->
@@ -527,9 +527,10 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 3rem;
-  color: rgba(255, 0, 0, 0.4); /* Semi-transparent red */
+  font-size: 3.2rem;
+  color: rgba(255, 0, 0, 0.3); /* Semi-transparent red */
   transform: rotate(-35deg);
+  /* text-shadow: 1px 1px 2px white;  */
   pointer-events: none; /* Allow clicks to pass through */
   user-select: none; /* Prevent selection */
   z-index: 100; /* Ensure it appears above page content */

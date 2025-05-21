@@ -25,7 +25,7 @@
             </p>
           </div>
           <div v-if="formPending">
-            <p class="text-caption text-sm-body-2 error--text mx-3 mb-0">
+            <p class="text-caption text-sm-body-2 warning--text mx-3 mb-0">
               {{ $t('codeOfConduct.cocForm.pendingApproval') }}
             </p>
           </div>
@@ -52,7 +52,7 @@
       <v-row>
         <v-col cols="12">
           <div
-            class="text-caption text-sm-subtitle-2 error--text font-weight-medium px-3"
+            class="text-caption text-sm-subtitle-2 text-lg-subtitle-1 error--text font-weight-medium px-3"
           >
             <p class="mb-0 pt-3 pb-1">
               {{ $t('codeOfConduct.cocForm.formWarning') }}
@@ -71,7 +71,13 @@
               @contextmenu.prevent
             >
               <div class="app-header">
-                <template v-if="isLoading">Loading...</template>
+                <template v-if="isLoading">
+                  <div class="d-flex justify-center align-center">
+                    <p class="text-caption text-sm-body-2 text-lg-subtitle-1">
+                      Loading...
+                    </p>
+                  </div>
+                </template>
 
                 <template v-else>
                   <div class="d-flex justify-space-between flex-wrap">
@@ -241,14 +247,14 @@
                       <!-- step #1 -->
                       <v-stepper-content step="1" dir="auto">
                         <div>
-                          <p class="text-caption text-sm-body-2 py-5">
+                          <p class="text-caption text-sm-body-2 py-5 mx-1">
                             {{
                               $t('codeOfConduct.cocForm.formStepper.step1msg')
                             }}
                           </p>
                         </div>
                         <div class="d-flex align-center pb-2 flex-wrap">
-                          <div class="my-1">
+                          <div class="my-1 mx-1">
                             <v-btn
                               class="text-capitalize px-5 text-caption text-sm-body-2"
                               color="primary"
@@ -263,7 +269,7 @@
                               }}
                             </v-btn>
                           </div>
-                          <div class="mx-3 my-1">
+                          <div class="my-1 mx-1">
                             <v-btn
                               class="text-capitalize text-caption text-sm-body-2"
                               color="primary"
@@ -278,7 +284,7 @@
                               }}
                             </v-btn>
                           </div>
-                          <div class="my-1">
+                          <div class="my-1 mx-1">
                             <v-btn
                               class="text-capitalize px-5 text-caption text-sm-body-2"
                               color="primary"
@@ -291,9 +297,9 @@
                               }}
                             </v-btn>
                           </div>
-                          <div class="my-1">
+                          <div class="my-1 mx-1">
                             <v-btn
-                              class="text-capitalize px-5 mx-3 text-caption text-sm-body-2"
+                              class="text-capitalize px-5 text-caption text-sm-body-2"
                               color="error"
                               @click="showForm = false"
                             >
@@ -306,7 +312,7 @@
                       <!-- step #2 -->
                       <v-stepper-content step="2" dir="auto">
                         <div>
-                          <p class="text-caption text-sm-body-2 mb-2">
+                          <p class="text-caption text-sm-body-2 mb-2 mx-1">
                             {{
                               $t(
                                 'codeOfConduct.cocForm.formStepper.uploadLabel'
@@ -325,7 +331,7 @@
                                   v-model="uploadedDocument"
                                   show-size
                                   type="file"
-                                  class="py-5"
+                                  class="py-5 mx-1"
                                   :color="
                                     $vuetify.theme.dark ? 'white' : 'primary'
                                   "
@@ -340,9 +346,9 @@
 
                                 <div class="d-flex align-center py-3 flex-wrap">
                                   <!-- back btn -->
-                                  <div class="my-1">
+                                  <div class="ma-1">
                                     <v-btn
-                                      class="text-capitalize mx-3 px-8 text-caption text-sm-body-2"
+                                      class="text-capitalize px-8 text-caption text-sm-body-2"
                                       color="primary"
                                       @click="signatureStepper = 1"
                                     >
@@ -354,7 +360,7 @@
                                     </v-btn>
                                   </div>
                                   <!-- submit btn -->
-                                  <div class="my-1">
+                                  <div class="ma-1">
                                     <v-btn
                                       :disabled="valid.invalid"
                                       color="success"
@@ -366,9 +372,9 @@
                                       }}</v-btn
                                     >
                                   </div>
-                                  <div class="my-1">
+                                  <div class="ma-1">
                                     <v-btn
-                                      class="text-capitalize px-8 mx-3 text-caption text-sm-body-2"
+                                      class="text-capitalize px-8 text-caption text-sm-body-2"
                                       color="error"
                                       @click="showForm = false"
                                     >
@@ -384,7 +390,7 @@
 
                       <!-- step #3 -->
                       <v-stepper-content step="3" dir="auto">
-                        <div>
+                        <div class="mx-1">
                           <p
                             v-if="showSuccessMessage"
                             class="text-caption text-sm-body-2 success--text"
