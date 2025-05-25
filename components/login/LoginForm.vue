@@ -115,11 +115,7 @@
                 type="submit"
                 color="#f1e9ec"
                 rounded
-                class="
-                  py-2 py-md-3
-                  primary--text
-                  text-subtitle-1 text-capitalize
-                "
+                class="py-2 py-md-3 primary--text text-subtitle-1 text-capitalize"
                 >{{ $t('loginForm.submitBTN') }}</v-btn
               >
             </v-col>
@@ -200,14 +196,21 @@ export default {
           domain: this.domain.toLowerCase(),
           dc_ip: this.srvName(),
         }
+
         await this.$store.dispatch('login/logInUser', userInfo)
+
+        // Check if the user was coming to the portal through the CoC form link sent to him by email
+        if (this.$nuxt.context.from) {
+          if (
+            this.$nuxt.context.from.path.includes('/code-of-conduct/coc-form')
+          ) {
+            this.$router.push('/code-of-conduct/coc-form')
+          }
+        }
+
         this.$nuxt.$loading.finish()
       })
     },
   },
 }
 </script>
-
-
-
-
