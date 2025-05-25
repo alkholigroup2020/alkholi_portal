@@ -12,7 +12,7 @@
       >
         <div>
           <h3
-            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold my-2"
+            class="text-h6 text-lg-h5 primaryText--text my-2 font-weight-bold"
           >
             {{ $t('codeOfConduct.cocForm.title') }}
           </h3>
@@ -20,15 +20,20 @@
 
         <div v-if="showContent" class="d-flex align-center justify-center my-2">
           <div v-if="formApproved">
-            <p class="text-caption text-sm-body-2 success--text mx-3 mb-0">
+            <p
+              class="text-caption text-sm-body-2 success--text mx-1 mx-sm-3 mb-0"
+            >
               {{ $t('codeOfConduct.cocForm.alreadySigned') }}
             </p>
           </div>
           <div v-if="formPending">
-            <p class="text-caption text-sm-body-2 warning--text mx-3 mb-0">
+            <p
+              class="text-caption text-sm-body-2 warning--text mx-1 mx-sm-3 mb-0"
+            >
               {{ $t('codeOfConduct.cocForm.pendingApproval') }}
             </p>
           </div>
+          <!-- acknowledgment button -->
           <div>
             <v-btn
               color="success"
@@ -70,7 +75,7 @@
               class="px-3 pdf-container"
               @contextmenu.prevent
             >
-              <div class="app-header">
+              <!-- <div class="app-header">
                 <template v-if="isLoading">
                   <div class="d-flex justify-center align-center">
                     <p class="text-caption text-sm-body-2 text-lg-subtitle-1">
@@ -81,7 +86,7 @@
 
                 <template v-else>
                   <div class="d-flex justify-space-between flex-wrap">
-                    <div class="text-caption text-sm-body-2 my-1">
+                    <div class="text-caption text-sm-body-2">
                       <label>
                         <input v-model="showAllPages" type="checkbox" />
                         <span v-if="$vuetify.breakpoint.lgAndUp">
@@ -93,7 +98,7 @@
                       </label>
                     </div>
 
-                    <div class="text-caption text-sm-body-2 my-1">
+                    <div class="text-caption text-sm-body-2">
                       <span v-if="showAllPages"> {{ pageCount }} page(s) </span>
                       <span v-else>
                         <button :disabled="page <= 1" @click="page--">❮</button>
@@ -107,16 +112,16 @@
                     </div>
                   </div>
                 </template>
-              </div>
+              </div> -->
 
-              <div class="app-content">
+              <div>
                 <client-only>
+                  <!-- :page="page" -->
+                  <!-- @rendered="handleDocumentRender" -->
                   <PdfEmbed
                     ref="pdfRef"
                     dir="ltr"
-                    :page="page"
                     :source="`${$config.baseURL}/coc-api/coc-versions/${currentCoC.file_path}`"
-                    @rendered="handleDocumentRender"
                   >
                   </PdfEmbed>
                 </client-only>
@@ -519,12 +524,12 @@ export default {
   async mounted() {
     await this.getEmployeeData()
     // Add keyboard event listener for PDF navigation
-    document.addEventListener('keydown', this.handleKeyNavigation)
+    // document.addEventListener('keydown', this.handleKeyNavigation)
   },
 
   beforeDestroy() {
     // Clean up the event listener when component is destroyed
-    document.removeEventListener('keydown', this.handleKeyNavigation)
+    // document.removeEventListener('keydown', this.handleKeyNavigation)
   },
 
   methods: {
@@ -767,10 +772,6 @@ export default {
   .app-header {
     font-size: 14px;
   }
-}
-
-.app-content {
-  padding: 24px 0px;
 }
 
 /* Add primary text color class */

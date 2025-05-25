@@ -307,6 +307,22 @@
             </v-list-item-content>
           </v-list-item>
 
+          <v-list-item
+            nuxt
+            :to="localePath('/code-of-conduct/user-guide')"
+            exact
+            class="py-3"
+          >
+            <v-list-item-action>
+              <v-icon>mdi-help-circle-outline</v-icon>
+            </v-list-item-action>
+            <v-list-item-content>
+              <v-list-item-title class="primaryText--text">
+                {{ $t('codeOfConduct.appPageNames.userGuide') }}
+              </v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+
           <!-- <v-list-item
             v-if="isCOCAdmin"
             nuxt

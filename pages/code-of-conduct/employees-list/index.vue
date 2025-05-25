@@ -7,17 +7,17 @@
     <!-- toolbar -->
     <v-row>
       <v-col>
-        <div class="w-full d-flex justify-space-between">
+        <div class="w-full d-md-flex justify-space-between">
           <!-- title -->
           <h3
-            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold"
+            class="text-h6 text-lg-h5 primaryText--text my-2 font-weight-bold"
           >
             {{ $t('codeOfConduct.employeesList.pageTitle') }}
           </h3>
           <!-- utilities -->
-          <div class="w-full d-flex justify-end align-center flex-wrap">
+          <div class="w-full d-flex justify-md-end align-center flex-wrap">
             <!-- search bar -->
-            <div class="mx-4 my-2">
+            <div class="mx-md-4 my-2">
               <v-text-field
                 v-model="searchTerm"
                 height="38"
@@ -30,8 +30,11 @@
                 dense
               ></v-text-field>
             </div>
-
-            <div class="my-2">
+            <!-- report generation -->
+            <div
+              class="my-2"
+              :class="$vuetify.$i18n === 'en' ? 'ml-3 ml-md-0' : 'mr-3 mr-md-0'"
+            >
               <!-- Export Report button -->
               <v-btn
                 outlined

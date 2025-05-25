@@ -4,7 +4,7 @@
       <div class="px-5 d-flex justify-space-between" style="width: 100%">
         <div>
           <h3
-            class="text-subtitle-1 text-md-h6 text-lg-h5 primaryText--text font-weight-bold"
+            class="text-h6 text-lg-h5 primaryText--text my-2 font-weight-bold"
           >
             Technical Documentation
           </h3>

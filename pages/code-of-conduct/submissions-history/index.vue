@@ -6,9 +6,9 @@
       <v-progress-circular indeterminate size="60"></v-progress-circular>
     </v-overlay>
     <!-- Page title with flexbox layout -->
-    <div class="d-flex justify-space-between align-center mb-3">
+    <div class="d-sm-flex justify-space-between align-center mb-3">
       <div>
-        <h3 class="text-h6 text-md-h5 primaryText--text font-weight-bold">
+        <h3 class="text-h6 text-lg-h5 primaryText--text my-2 font-weight-bold">
           {{ $t('codeOfConduct.submissionsHistory.pageTitle') }}
         </h3>
       </div>
