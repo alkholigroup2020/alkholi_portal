@@ -178,7 +178,7 @@
             ><div>
               <a
                 class="text-decoration-none primary--text"
-                href="https://www.linkedin.com/company/alkholi-group-of-companies"
+                href="https://www.linkedin.com/company/alkholi"
                 target="_blank"
               >
                 <v-icon :small="$vuetify.breakpoint.width < 500" color="primary"
