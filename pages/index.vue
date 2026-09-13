@@ -313,18 +313,28 @@ export default {
           title: this.$t('portalPage.shortcuts.menaMe'),
           url: 'https://hr.alkholi.com/MenaITech/application/hrms/mename/index.php',
         },
-
         {
-          imgURL: '/websiteImages/MenaTracks.png',
-          title: 'MenaTracks',
-          url: 'https://hr.alkholi.com/MENATRACKS/',
+          imgURL: '/websiteImages/akg.png',
+          title: 'Catering Feedback',
+          url: 'https://catering-survey-admin.alkholi.com/admin/login',
+        },
+        {
+          imgURL: '/websiteImages/sms.png',
+          title: 'Stock Management',
+          url: 'https://stock-management.alkholi.com/',
         },
 
-        {
-          imgURL: '/websiteImages/citrix.png',
-          title: this.$t('portalPage.shortcuts.citrix'),
-          url: 'https://citrix.alkholi.com',
-        },
+        // {
+        //   imgURL: '/websiteImages/MenaTracks.png',
+        //   title: 'MenaTracks',
+        //   url: 'https://hr.alkholi.com/MENATRACKS/',
+        // },
+
+        // {
+        //   imgURL: '/websiteImages/citrix.png',
+        //   title: this.$t('portalPage.shortcuts.citrix'),
+        //   url: 'https://citrix.alkholi.com',
+        // },
 
         // {
         //   imgURL: '/websiteImages/hrw-1.png',
@@ -343,6 +353,13 @@ export default {
           title: this.$t('portalPage.shortcuts.kap'),
           url: 'https://kap.alkholi.com/',
         },
+        {
+          imgURL: '/websiteImages/akg.png',
+          title: 'Prompts Builder',
+          url: 'https://ai.alkholi.com/',
+        },
+
+
       ],
       sharepoint: [
         {
