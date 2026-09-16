@@ -382,23 +382,19 @@ export default {
     async reAuthenticate() {
       try {
         if (process.client) {
-          const mail = localStorage.getItem('userMailAddress')
-          const userAccount = localStorage.getItem('userAccount')
-          const domainName = localStorage.getItem('domainName')
-          if (mail && userAccount && domainName) {
-            const payload = {
-              mail,
-              userAccount,
-              domainName,
-            }
-            await this.$store.dispatch('login/reAuthenticate', payload)
+          const token = localStorage.getItem('userToken')
+          if (token) {
+            const authenticated = await this.$store.dispatch(
+              'login/reAuthenticate'
+            )
+            if (!authenticated) return
 
             // check authorization
             if (!this.isHRSurveysUser) {
               this.$router.push(this.localePath('/'))
             }
           } else {
-            this.$router.push(this.localePath('/login'))
+            await this.$store.dispatch('login/logoff')
           }
         }
       } catch (e) {
@@ -419,11 +415,9 @@ export default {
         this.$nextTick(async () => {
           this.$nuxt.$loading.start()
           if (process.client) {
-            const userToken = localStorage.getItem('userToken')
-            if (userToken) {
-              await this.$store.dispatch('login/logoff', { token: userToken })
-              this.$nuxt.$loading.finish()
-            } else {
+            try {
+              await this.$store.dispatch('login/logoff')
+            } finally {
               this.$nuxt.$loading.finish()
             }
           }

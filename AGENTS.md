@@ -13,6 +13,7 @@ Features include the portal, administration, business cards, Code of Conduct, su
 - `npm run build`: create the production build.
 - `npm run start`: serve the production build; PM2 configuration is in `ecosystem.config.js`.
 - `npm run lint`: run ESLint on JavaScript and Vue files.
+- `npm run test:security`: run security tests with mocked services (Node 18.17+).
 - `npm run generate`: generate static output; backend-dependent features still require server APIs.
 
 ## Coding Style & Naming Conventions
@@ -23,7 +24,7 @@ Use `$t(...)` and `localePath(...)`; update both English and Arabic translations
 
 ## Testing Guidelines
 
-No automated test runner, test naming convention, or coverage threshold is configured. Run lint and build for code changes, then manually verify affected workflows, permissions, and English/Arabic layouts. Record results and any unavailable integrations in the PR.
+Security tests use Node's test runner in `tests/security/*.test.js`; run `npm run test:security` on Node 18.17+. SQL, LDAP, and frontend requests are mocked; never load `.env` or the application server entry point in these tests. No coverage threshold is configured. Run lint and build for code changes, then manually verify affected workflows, permissions, and English/Arabic layouts. Record results and unavailable integrations in the PR.
 
 ## Commit & Pull Request Guidelines
 

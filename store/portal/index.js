@@ -1,3 +1,5 @@
+import { authErrorMessage } from '~/utils/auth-client'
+
 export const state = () => ({
   profilePicPath: '',
   isPortalAdmin: undefined,
@@ -48,34 +50,29 @@ export const mutations = {
 
 export const actions = {
   async getUserProfile({ commit, dispatch }) {
+    const token = localStorage.getItem('userToken')
+    if (!token) return false
     try {
-      const userToken = localStorage.getItem('userToken')
       const employeeCode = localStorage.getItem('employeeCode')
-      this.$axios.defaults.headers.common.Authorization = `Bearer ${userToken}`
-      // get user profile data
-      const serverCall = await this.$axios.post(
+      const response = await this.$axios.post(
         `${this.$config.baseURL}/portal-api/get-user-profile`,
-        {
-          employeeID: employeeCode,
-        }
+        { employeeID: employeeCode }
       )
-      if (serverCall.status === 200) {
-        await commit('SET_USER_PROFILE_DATA', serverCall.data)
-      }
+      if (token !== localStorage.getItem('userToken')) return false
+      commit('SET_USER_PROFILE_DATA', response.data)
+      return true
     } catch (error) {
-      const notification = {
-        type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.portal.${error.response.data.message}`
-        ),
-      }
-      await dispatch('appNotifications/addNotification', notification, {
-        root: true,
-      })
-      // logoff user
-      const theToken = localStorage.getItem('userToken')
-      const tokenPayload = { token: theToken }
-      await dispatch('login/logoff', tokenPayload, { root: true })
+      if (token !== localStorage.getItem('userToken')) return false
+      await dispatch(
+        'appNotifications/addNotification',
+        {
+          type: 'error',
+          message: authErrorMessage(this, error, 'portal'),
+        },
+        { root: true }
+      )
+      await dispatch('login/logoff', undefined, { root: true })
+      return false
     }
   },
 
@@ -115,31 +112,32 @@ export const actions = {
   },
 
   async getUserAuthorizations({ commit, dispatch }) {
+    const token = localStorage.getItem('userToken')
+    if (!token) return false
     try {
       const employeeCode = localStorage.getItem('employeeCode')
-      const serverCall = await this.$axios.post(
+      const response = await this.$axios.post(
         `${this.$config.baseURL}/portal-api/get-user-authorizations`,
-        {
-          employeeID: employeeCode,
-        }
+        { employeeID: employeeCode }
       )
-      if (serverCall.status === 200) {
-        await commit('SET_USER_AUTHORIZATIONS_DATA', serverCall.data)
-      }
+      if (token !== localStorage.getItem('userToken')) return false
+      commit('SET_USER_AUTHORIZATIONS_DATA', response.data)
+      return true
     } catch (error) {
-      const notification = {
-        type: 'error',
-        message: error.response.data.message,
-      }
-      await dispatch('appNotifications/addNotification', notification, {
-        root: true,
-      })
-      // logoff user
-      const theToken = localStorage.getItem('userToken')
-      const tokenPayload = { token: theToken }
-      await dispatch('login/logoff', tokenPayload, { root: true })
+      if (token !== localStorage.getItem('userToken')) return false
+      await dispatch(
+        'appNotifications/addNotification',
+        {
+          type: 'error',
+          message: authErrorMessage(this, error, 'login'),
+        },
+        { root: true }
+      )
+      await dispatch('login/logoff', undefined, { root: true })
+      return false
     }
   },
+
   async setToolbarsWidth({ commit, dispatch }, payload) {
     try {
       await commit('SET_TOOLBAR_WIDTH', payload)

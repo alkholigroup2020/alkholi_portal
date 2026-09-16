@@ -1,4 +1,7 @@
+import { authErrorMessage } from '~/utils/auth-client'
+
 export const state = () => ({
+  sessionRevision: 0,
   branchCode: null,
   titleEnglish: null,
   titleArabic: null,
@@ -53,114 +56,156 @@ export const mutations = {
   },
   SAVE_REAUTHENTICATE_USER_DATA(state, data) {
     state.userIsLoggedIn = true
-    localStorage.setItem('userMailAddress', data.message.toLocaleLowerCase())
+    state.employeeCode = data.employeeCode
+    state.userAccount = data.userAccount
+    state.domainName = data.domain
+    state.userEmailAdd = data.message.toLowerCase()
+    localStorage.setItem('employeeCode', data.employeeCode)
+    localStorage.setItem('userAccount', data.userAccount)
+    localStorage.setItem('domainName', data.domain)
+    localStorage.setItem('userMailAddress', data.message.toLowerCase())
     // set the authorization header
     const userToken = localStorage.getItem('userToken')
     this.$axios.defaults.headers.common.Authorization = `Bearer ${userToken}`
   },
-  DELETE_USER_DATA(state) {
-    state.userEmailAdd = null
-    state.userFullName = null
-    state.managerEmail = null
-    state.branch = null
-    state.employeeCode = null
-    state.managerCode = null
-    state.arName = null
-    state.employeePicture = null
-    state.domainName = null
-    state.userAccount = null
-    state.userIsLoggedIn = false
-    localStorage.removeItem('userMailAddress')
-    localStorage.removeItem('userToken')
-    localStorage.removeItem('domainName')
-    // localStorage.removeItem('colorMode')
-    localStorage.removeItem('userAccount')
-    localStorage.removeItem('userFullName')
-    localStorage.removeItem('employeeCode')
-    localStorage.removeItem('managerCode')
-    localStorage.removeItem('firstNameAr')
-    localStorage.removeItem('secondNameAr')
-    localStorage.removeItem('profilePicPath')
-    localStorage.removeItem('managerEmail')
-    // remove authorization header
+  DELETE_USER_DATA(currentState) {
+    const sessionRevision = currentState.sessionRevision + 1
+    Object.assign(currentState, state(), { sessionRevision })
     this.$axios.defaults.headers.common.Authorization = ''
+    for (const key of [
+      'userMailAddress',
+      'userToken',
+      'domainName',
+      'userAccount',
+      'userFullName',
+      'employeeCode',
+      'managerCode',
+      'firstNameAr',
+      'secondNameAr',
+      'profilePicPath',
+      'managerEmail',
+      'branchCode',
+      'titleEnglish',
+      'titleArabic',
+    ])
+      localStorage.removeItem(key)
   },
 }
 
 export const actions = {
-  async logInUser({ commit, dispatch }, payload) {
+  clearSession({ commit }) {
+    commit('DELETE_USER_DATA')
+    commit('RESET_SESSION_DATA', undefined, { root: true })
+  },
+
+  async logInUser({ commit, dispatch, state }, payload) {
+    await dispatch('clearSession')
+    const revision = state.sessionRevision
     try {
-      // make the server call with the user credentials
       const login = await this.$axios.post(
         `${this.$config.baseURL}/login-api/login`,
         payload
       )
-      if (login.status === 200) {
-        // set the user states with the received data
-        await commit('SAVE_USER_DATA', login.data)
-
-        await dispatch('portal/getUserAuthorizations', undefined, {
+      if (revision !== state.sessionRevision) return false
+      commit('SAVE_USER_DATA', login.data)
+      if (
+        !(await dispatch('portal/getUserAuthorizations', undefined, {
           root: true,
-        })
-        await dispatch('portal/getUserProfile', undefined, { root: true })
-
-        this.$router.push(this.localePath('/'))
-      }
+        }))
+      )
+        return false
+      if (!(await dispatch('portal/getUserProfile', undefined, { root: true })))
+        return false
+      return revision === state.sessionRevision && state.userIsLoggedIn
     } catch (error) {
-      const notification = {
-        type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.login.${error.response.data.message}`
-        ),
-      }
-      dispatch('appNotifications/addNotification', notification, { root: true })
+      if (revision !== state.sessionRevision) return false
+      await dispatch('clearSession')
+      await dispatch(
+        'appNotifications/addNotification',
+        {
+          type: 'error',
+          message: authErrorMessage(this, error),
+        },
+        { root: true }
+      )
+      return false
     }
   },
 
-  async reAuthenticate({ commit, dispatch }, payload) {
+  async reAuthenticate({ commit, dispatch, state }) {
+    const token = localStorage.getItem('userToken')
+    const revision = state.sessionRevision
+    if (!token) {
+      await dispatch('logoff')
+      return false
+    }
+    this.$axios.defaults.headers.common.Authorization = `Bearer ${token}`
     try {
       const authenticate = await this.$axios.post(
         `${this.$config.baseURL}/login-api/reauthenticate`,
-        payload
+        {}
       )
-      if (authenticate.status === 200) {
-        // set the user state with the received token
-        await commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
-        await dispatch('portal/getUserAuthorizations', undefined, {
+      if (
+        revision !== state.sessionRevision ||
+        token !== localStorage.getItem('userToken')
+      )
+        return false
+      commit('SAVE_REAUTHENTICATE_USER_DATA', authenticate.data)
+      if (
+        !(await dispatch('portal/getUserAuthorizations', undefined, {
           root: true,
-        })
-        await dispatch('portal/getUserProfile', undefined, { root: true })
-      }
+        }))
+      )
+        return false
+      if (!(await dispatch('portal/getUserProfile', undefined, { root: true })))
+        return false
+      return revision === state.sessionRevision && state.userIsLoggedIn
     } catch (error) {
-      const notification = {
-        type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.login.${error.response.data.message}`
-        ),
-      }
-      dispatch('appNotifications/addNotification', notification, { root: true })
-      // logoff user
-      const theToken = localStorage.getItem('userToken')
-      const tokenPayload = { token: theToken }
-      await dispatch('login/logoff', tokenPayload, { root: true })
+      if (
+        revision !== state.sessionRevision ||
+        token !== localStorage.getItem('userToken')
+      )
+        return false
+      await dispatch(
+        'appNotifications/addNotification',
+        {
+          type: 'error',
+          message: authErrorMessage(this, error),
+        },
+        { root: true }
+      )
+      await dispatch('logoff')
+      return false
     }
   },
 
-  async logoff({ commit }, payload) {
+  async logoff({ dispatch, state }) {
+    const token = localStorage.getItem('userToken')
+    // Clear immediately, including while the revocation request is offline.
+    await dispatch('clearSession')
+    const revision = state.sessionRevision
     try {
-      // make the server call with the user token to be deleted
-      const logoff = await this.$axios.post(
-        `${this.$config.baseURL}/login-api/logoff`,
-        payload
-      )
-      if (logoff.status === 200) {
-        // delete local storage data
-        await commit('DELETE_USER_DATA')
-        this.$router.push(this.localePath('/login'))
-      }
+      if (token)
+        await this.$axios.post(
+          `${this.$config.baseURL}/login-api/logoff`,
+          {},
+          { timeout: 15000, headers: { Authorization: `Bearer ${token}` } }
+        )
     } catch (error) {
-      await commit('DELETE_USER_DATA')
-      this.$router.push(this.localePath('/login'))
+      const status = error && error.response && error.response.status
+      if (status !== 401 && revision === state.sessionRevision) {
+        await dispatch(
+          'appNotifications/addNotification',
+          {
+            type: 'error',
+            message: this.app.i18n.t('errorMessages.login.logoutUnavailable'),
+          },
+          { root: true }
+        )
+      }
+    } finally {
+      if (revision === state.sessionRevision)
+        await this.$router.push(this.localePath('/login'))
     }
   },
 }

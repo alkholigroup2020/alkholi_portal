@@ -394,7 +394,11 @@
       "adConnectionError": "Couldn't connect to Active Directory!",
       "authFailed": "Authentication Failed!",
       "wrongUser": "Wrong Username!",
-      "wrongPassword": "Wrong Password!"
+      "wrongPassword": "Wrong Password!",
+      "invalidInput": "Please enter a valid account, domain, and password.",
+      "serviceUnavailable": "The service is unavailable. Please try again later.",
+      "accountDataInvalid": "Your account data exceeds the portal limits. Please contact IT.",
+      "logoutUnavailable": "Signed out on this browser, but server session revocation could not be confirmed. Please contact IT."
     },
     "portal": {
       "authFailed": "Authorization Failed!",

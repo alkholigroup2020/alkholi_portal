@@ -21,7 +21,7 @@
               >
                 <v-btn
                   color="white"
-                  class="pt-1"
+                  class="pt-1 cursor-pointer"
                   depressed
                   text
                   tile
@@ -113,9 +113,11 @@
                 v-if="!invalid"
                 width="85%"
                 type="submit"
+                :loading="submitting"
+                :disabled="submitting"
                 color="#f1e9ec"
                 rounded
-                class="py-2 py-md-3 primary--text text-subtitle-1 text-capitalize"
+                class="cursor-pointer py-2 py-md-3 primary--text text-subtitle-1 text-capitalize"
                 >{{ $t('loginForm.submitBTN') }}</v-btn
               >
             </v-col>
@@ -129,6 +131,7 @@
 <script>
 import { extend, localize } from 'vee-validate'
 import { required } from 'vee-validate/dist/rules'
+import { loginDestination } from '~/utils/auth-client'
 
 extend('required', {
   ...required,
@@ -152,6 +155,7 @@ localize({
 export default {
   data() {
     return {
+      submitting: false,
       userAccount: '',
       userPassword: '',
       showError: false,
@@ -176,40 +180,25 @@ export default {
   },
 
   methods: {
-    srvName() {
-      if (this.domain === 'Alkholi') {
-        return '10.10.10.11'
-      } else if (this.domain === 'Buildingtek') {
-        return '10.11.10.11'
-      } else if (this.domain === 'Upmoc') {
-        return '10.12.10.11'
-      } else if (this.domain === 'Amos-sa') {
-        return '10.13.10.11'
-      }
-    },
-    loginUser() {
-      this.$nextTick(async () => {
-        this.$nuxt.$loading.start()
-        const userInfo = {
-          userAccount: this.userAccount.toLowerCase(),
+    async loginUser() {
+      if (this.submitting) return
+      this.submitting = true
+      const from = this.$nuxt.context.from
+      const destination = loginDestination(from && from.path, (path) =>
+        this.localePath(path)
+      )
+      this.$nuxt.$loading.start()
+      try {
+        const success = await this.$store.dispatch('login/logInUser', {
+          userAccount: this.userAccount,
           password: this.userPassword,
-          domain: this.domain.toLowerCase(),
-          dc_ip: this.srvName(),
-        }
-
-        await this.$store.dispatch('login/logInUser', userInfo)
-
-        // Check if the user was coming to the portal through the CoC form link sent to him by email
-        if (this.$nuxt.context.from) {
-          if (
-            this.$nuxt.context.from.path.includes('/code-of-conduct/coc-form')
-          ) {
-            this.$router.push('/code-of-conduct/coc-form')
-          }
-        }
-
+          domain: this.domain,
+        })
+        if (success) await this.$router.push(destination)
+      } finally {
+        this.submitting = false
         this.$nuxt.$loading.finish()
-      })
+      }
     },
   },
 }
