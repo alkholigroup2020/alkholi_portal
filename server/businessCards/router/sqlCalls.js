@@ -49,30 +49,6 @@ router.post('/sql-call', auth, async (req, res) => {
   }
 })
 
-router.post('/open-sql-call', async (req, res) => {
-  const portalDBConnection = await portalDB()
-  try {
-    const theCall = await portalDBConnection
-      .request()
-      .query(`${req.body.query}`)
-    res.send(theCall.recordset)
-  } catch (e) {
-    if (!e.statusCode) {
-      const error = e.toString()
-      const newErrorString = error.replaceAll('Error: ', '')
-      res.status(500).json({
-        message: `${newErrorString}`,
-      })
-    } else {
-      res.status(e.statusCode).json({
-        message: `${e.message}`,
-      })
-    }
-  } finally {
-    await portalDBConnection.close()
-  }
-})
-
 router.get('/hr-sql-call', auth, async (req, res) => {
   const hrDBConnection = await hrDB()
   try {

@@ -121,6 +121,12 @@
     }
   },
   "businessCards": {
+    "publicCard": {
+      "loading": "Loading business card…",
+      "invalidEmployeeCode": "This business-card link is invalid.",
+      "cardNotFound": "This business card could not be found.",
+      "serviceUnavailable": "The business card is temporarily unavailable. Please try again later."
+    },
     "appPageNames": {
       "generator": "Issue a new card",
       "generated": "Generated cards",

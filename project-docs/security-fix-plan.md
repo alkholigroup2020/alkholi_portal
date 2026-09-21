@@ -157,10 +157,11 @@ Track phases as **Not started → Implemented → Deployed → Verified**, with 
 
 Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before this document. Baseline login used interpolated SQL, body-provided identity for reauthentication, body-provided tokens for logout, and duplicated token-existence middleware.
 
-| Phase | Status      | Production verification                |
-| ----- | ----------- | -------------------------------------- |
-| 1     | Implemented | Pending; deployment is user-controlled |
-| 2–9   | Not started | Pending; do not advance automatically  |
+| Phase | Status      | Production verification                          |
+| ----- | ----------- | ------------------------------------------------ |
+| 1     | Verified    | User confirmed deployed and working on 2026-09-16 |
+| 2     | Implemented | Pending; deployment is user-controlled            |
+| 3–9   | Not started | Pending; do not advance automatically             |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -223,3 +224,65 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Verified by/date
 - Prefer fixing forward. No database rollback is needed for a code-only Phase 1 failure; successful logins may have refreshed ordinary profile and token rows.
 - Restoring the baseline release also restores its known SQL/authentication weaknesses. Keep external access blocked while such a rollback is in place, and do not treat it as a secure release. Do not rotate keys or delete session/profile tables as a troubleshooting shortcut.
 - Preserve build/runtime diagnostics in a protected location; record only sanitized error codes and outcomes here, never credentials, tokens, encrypted passwords, or employee records.
+
+### Phase 1 acceptance record — 2026-09-16
+
+The user explicitly confirmed, “Yes, it is deployed and works fine,” in response to the Phase 1 readiness question. Phase 1 is accepted for progression to Phase 2. The original implementation/deployment checklist above is preserved as historical evidence; the deployment release, exact deployment date, and individual production-check results were not supplied and are not inferred.
+
+### Phase 2 implementation record — 2026-09-16
+
+**Status: Implemented — local checks passed.** Phase 2 has not been deployed or verified in production. Starting checkout: `a8af45bba8af8b5df5c69c415d8327c67909518e`, with a clean working tree. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 3 has not started.
+
+#### API and frontend changes
+
+- Added unauthenticated `GET /business-cards-api/public-cards/:employeeCode`. Success is one JSON object, not a SQL recordset array. No token, role flag, administrator membership, or client-supplied identity establishes access: this operation deliberately returns already-public card data for the requested identifier.
+- Identifiers must be strings of 1–20 ASCII letters, digits, underscores, or hyphens. No trimming, case normalization, numeric conversion, or truncation is performed. Leading zeros and generated `X…` identifiers are preserved. Invalid IDs return `400 { "message": "invalidEmployeeCode" }`; missing records return `404 { "message": "cardNotFound" }`; database failures or ambiguous duplicate records return `503 { "message": "serviceUnavailable" }`. Malformed percent-encoded parameters also produce the controlled `400` response.
+- The service executes one fixed `SELECT TOP (2)` from `businessCards.employeeData` with `request.input('employeeCode', sql.VarChar(20), employeeCode)`. Neither SQL text nor database identifiers can be selected by the request. Pools close after success, connection failure, query failure, and missing/ambiguous results; cleanup failures do not replace the primary outcome.
+- Explicit SQL and response projections contain only these 14 consumed fields: `employeeID`, `company`, `companyLogo`, `profilePic`, `fullName_a`, `fullName_e`, `arabicTitle`, `title`, `mobileNumber`, `landLines`, `faxLine`, `mailAddress`, `webSite`, and `mainColor`. `qrCodePath` and any unrelated/extra row properties are excluded. Existing null values and legacy string sentinels are retained for template compatibility.
+- The public page now performs that GET and consumes its single-object response. English/Arabic loading, invalid-link, not-found, and service-failure states replace raw exception notifications and empty-record dereferences. An absent optional Nuxt route parameter is handled without requesting the literal ID `undefined`. A 15-second client timeout handles unavailable services, and request sequencing prevents late responses from replacing a newer card or updating a destroyed page. Unknown company layouts produce a controlled service state rather than a blank page.
+- All nine layout selections remain: Alkholi Group, AKSTRA Consulting, AKTEK, Custom, AMOS & SBTMC Manager, BTECO, Alkholi Holding, UPMOC, and MX Reality. Templates, vCard URLs (including the custom address parameters), `/business-card/:id`, `/ar/business-card/:id`, and QR generation destinations are unchanged.
+- Removed `POST /business-cards-api/open-sql-call` entirely, with no SQL-executing alias. The shared API composition in `server/businessCards/createApi.js` lets isolated HTTP tests exercise the same public/legacy router ordering and terminal JSON `404` used by production. The existing Nuxt server-middleware mount still points to `server/businessCards/main.js`; no new Nuxt mount is needed.
+
+#### Read-only database evidence and limitations
+
+- A separate one-off metadata inspection used the configured connection without starting the application. Automated tests never load `.env` or application entry points. Only column metadata and aggregate identifier-shape/duplicate checks were returned; no employee records, credentials, tokens, or connection details are recorded here.
+- `sys.columns` / `sys.types` confirm `businessCards.employeeData.employeeID` is non-null `varchar(20)`, and all 14 selected fields exist. Aggregate checks found no IDs outside the chosen character set and no duplicate employee-ID groups. Custom `X…` IDs exist; leading-zero handling is covered by mocks even though none were observed in the aggregate snapshot.
+- The inspected object has no publication/status column. Existing generation writes to `businessCards.employeeData`, and existing public viewing reads from it; row existence remains the publication rule. No new publication policy or schema change is introduced.
+- Phase 2 uses no stored procedure. The Phase 1 finding that procedure definitions are unavailable remains unresolved for Phase 9; this change does not establish the safety of procedure internals or other SQL handlers.
+
+#### Local validation and second review
+
+- `npm run test:security`: **42 passed, 0 failed**, including all 30 Phase 1 tests and 12 new Phase 2 tests explicitly added to the package script. Mocked HTTP tests bind only to loopback. The actual remaining generic SQL router is loaded with injected SQL/auth dependencies, without importing runtime configuration; unchanged management/vCard handlers are stubbed in the isolated app.
+- New coverage includes the exact public projection and typed binding, 20-character and leading-zero IDs, custom IDs, rejected injection-like inputs before database allocation, malformed URI encoding, ignored query-text/table query parameters, all nine public company responses without auth, stale bearer tolerance, safe 400/404/503 outcomes, pool cleanup, and retired endpoint `404` with/without a bearer and with a trailing slash. Remaining generic routes still reject unauthenticated requests.
+- Frontend coverage executes the Vue page methods and watcher, including missing IDs, empty/unsupported responses, network failures, and out-of-order/destroyed-page responses. Real Vue/Vuetify templates render bilingual fields and original vCard links for all nine companies at 375/1280 breakpoint widths, with English/LTR and Arabic/RTL settings. These are render assertions, not browser screenshots or live vCard downloads.
+- First test run: 39 passed, 2 failed because the test renderer enabled SSR before a client watcher test and the fixture did not use Nuxt's PascalCase registration for CustomLayout. Corrected both fixture issues; the next run passed 41/41. The second review added the missing-URL-ID case and exact SQL projection assertion; the full suite then passed 42/42.
+- `npm run lint`: **passed (exit 0)**, including the final rerun after the optional-ID review fix.
+- `npm run build`: **passed (exit 0)**, client and server compiled successfully. The completed bundle includes the optional-ID review fix and the new endpoint, with no retired-endpoint reference in the public-page bundle. Output includes the existing outdated Browserslist warning and Babel's large `vue-pdf-embed` deoptimization notice; no dependency upgrades were made. Validated on Node 24.21.0.
+- The second review read the complete tracked diff and every new service/router/composition/test file, traced public requests through validation, parameter binding, response projection and error handling, and checked shared authentication remained unchanged. It also inspected generated Nuxt routes/components, template field consumers, QR generation, vCard links, cleanup, and client request races. The optional-ID behavior was found and fixed during this review.
+- Independent `rg` searches across `pages`, `components`, `store`, and `server` find no remaining application call or route registration for `open-sql-call`. Retirement is additionally verified through isolated HTTP requests, not text search alone. `git diff --check` passed.
+- No live AD/SQL workflow, browser visual inspection, production failure injection, card mutation, or live vCard download was performed. Production smoke checks below remain necessary.
+
+#### Explicit residual exposure for later phases
+
+- **Phase 9:** `GET /business-cards-api/vcard` remains public and interpolates `req.query.employeeID` into `SELECT *`. All nine public templates call it; Custom also supplies its existing address parameters. Its SQL, error handling, connection/file behavior, and output require the scheduled audit. Removing `open-sql-call` does **not** secure all public-card APIs.
+- **Phases 3, 5, 6:** authenticated `POST /business-cards-api/sql-call` still executes browser SQL. Callers are `components/portal/userProfile.vue` (availability/QR), `components/administration/dtrSetup/drtAdminPopup.vue` (assignment lookup/create), and the generated-cards, card-generator, and activity-logs pages under `pages/business-cards/`. `GET /business-cards-api/hr-sql-call` also remains; no frontend caller was found. Session authentication is not administrator membership/scope enforcement.
+- **Phase 6:** existing card generation, employee lookup, deletion, and logging SQL in `router/business-cards.js` remains outside this change. Existing static uploads and session/background-job behavior are unchanged. The broader SQL/access-control problem remains open.
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record release identifier, maintenance window, and aliases for existing cards covering every available company/custom layout. Deploy frontend/backend together, including the new service/router/API-composition files and translations, during planned maintenance. Stop/restart workers only as part of the user's deployment procedure; avoid mixed versions. No schema migration is needed.
+2. Run the normal `npm ci` / `npm run build` release procedure. Refresh cached/PWA clients so old code no longer calls the retired endpoint. Keep existing `/business-card/:id` links and printed QR codes unchanged.
+3. In a signed-out/private browser, open existing English and Arabic public URLs and scan an existing QR. Check all nine company layouts where records exist, including a custom `X…` card; verify names/titles, image/logo, telephone/fax/email/web links, and mobile/desktop rendering. Use an existing leading-zero ID if available; do not create a production record solely for this check.
+4. Download the vCard from existing ordinary and custom cards and confirm expected contact/address details. Do not send adversarial inputs to the legacy vCard endpoint.
+5. Inspect `GET /business-cards-api/public-cards/<existing-id>` without a token: expect `200`, one object, the 14 listed fields, and no `qrCodePath`/unrelated data. Use an agreed nonexistent valid ID: expect `404 cardNotFound` and the translated page state. A benign invalid ID such as 21 ASCII digits must return `400 invalidEmployeeCode`; `/business-card` without an ID must display the translated invalid-link state.
+6. Send `POST /business-cards-api/open-sql-call` with the harmless JSON body `{}` and no bearer: expect `404`, never a SQL result. Do not send SQL/injection payloads to production. For the service-failure UI, use browser request blocking/offline mode; do not disconnect production SQL or simulate database failures there. Server-side 503 handling is covered by mocks.
+7. Confirm normal login, refresh and logout with a designated account, and public viewing while signed out and signed in as an ordinary user. No card administrator membership should be required for public viewing. Check protected production logs for unexpected failures without copying sensitive contents into this document.
+8. Card verification is read-only: do not generate/edit/delete cards, assignments, or memberships. Any additional production write test requires separate authorization and designated test records; record prior values before writing and restore them afterward. Record actual results below and mark Phase 2 **Deployed**, then **Verified**, only after those events occur. Stop before Phase 3.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Card/account aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- If verification fails, keep affected business-card functionality under maintenance and preserve sanitized diagnostics. Fix forward where possible. This phase has no schema/data migration to undo.
+- Never restore an accessible release that reintroduces `open-sql-call`, including an unmodified Phase 1 release. A rollback candidate must retain the retirement boundary and compatible public frontend/backend lookup, or remain inaccessible under maintenance until corrected.
+- Replace frontend/backend atomically and refresh browser/PWA caches. Do not restore only the old public page: it requires the retired endpoint. Preserve existing card rows, uploaded assets, URLs, and QR images; no data deletion or regeneration is required for rollback.

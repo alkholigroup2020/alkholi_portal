@@ -121,6 +121,12 @@
     }
   },
   "businessCards": {
+    "publicCard": {
+      "loading": "جارٍ تحميل بطاقة العمل…",
+      "invalidEmployeeCode": "رابط بطاقة العمل غير صالح.",
+      "cardNotFound": "لم يتم العثور على بطاقة العمل هذه.",
+      "serviceUnavailable": "بطاقة العمل غير متاحة مؤقتًا. يرجى المحاولة لاحقًا."
+    },
     "appPageNames": {
       "generator": "كارت جديد",
       "generated": "كروت تم إصدارها",
