@@ -53,10 +53,9 @@ export const actions = {
     const token = localStorage.getItem('userToken')
     if (!token) return false
     try {
-      const employeeCode = localStorage.getItem('employeeCode')
       const response = await this.$axios.post(
         `${this.$config.baseURL}/portal-api/get-user-profile`,
-        { employeeID: employeeCode }
+        {}
       )
       if (token !== localStorage.getItem('userToken')) return false
       commit('SET_USER_PROFILE_DATA', response.data)
@@ -76,19 +75,19 @@ export const actions = {
     }
   },
 
-  async saveUserProfile({ dispatch }, payload) {
+  async saveUserProfile({ dispatch }, image) {
+    const token = localStorage.getItem('userToken')
+    if (!token) return false
     try {
-      const FormData = require('form-data')
       const profileData = new FormData()
-      profileData.append('attachment', payload.img)
-      profileData.append('employeeCode', payload.eCode)
+      profileData.append('attachment', image)
 
       const serverCall = await this.$axios({
         method: 'post',
         url: `${this.$config.baseURL}/portal-api/save-user-profile`,
         data: profileData,
-        headers: { 'Content-Type': 'multipart/form-data' },
       })
+      if (token !== localStorage.getItem('userToken')) return false
       if (serverCall.status === 201) {
         const notification = {
           type: 'success',
@@ -99,15 +98,21 @@ export const actions = {
         await dispatch('appNotifications/addNotification', notification, {
           root: true,
         })
+        return true
       }
+      return false
     } catch (error) {
+      if (token !== localStorage.getItem('userToken')) return false
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: authErrorMessage(this, error, 'portal'),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
       })
+      if (error && error.response && error.response.status === 401)
+        await dispatch('login/logoff', undefined, { root: true })
+      return false
     }
   },
 
@@ -115,10 +120,9 @@ export const actions = {
     const token = localStorage.getItem('userToken')
     if (!token) return false
     try {
-      const employeeCode = localStorage.getItem('employeeCode')
       const response = await this.$axios.post(
         `${this.$config.baseURL}/portal-api/get-user-authorizations`,
-        { employeeID: employeeCode }
+        {}
       )
       if (token !== localStorage.getItem('userToken')) return false
       commit('SET_USER_AUTHORIZATIONS_DATA', response.data)

@@ -157,11 +157,12 @@ Track phases as **Not started → Implemented → Deployed → Verified**, with 
 
 Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before this document. Baseline login used interpolated SQL, body-provided identity for reauthentication, body-provided tokens for logout, and duplicated token-existence middleware.
 
-| Phase | Status      | Production verification                          |
-| ----- | ----------- | ------------------------------------------------ |
-| 1     | Verified    | User confirmed deployed and working on 2026-09-16 |
-| 2     | Implemented | Pending; deployment is user-controlled            |
-| 3–9   | Not started | Pending; do not advance automatically             |
+| Phase | Status      | Production verification                                      |
+| ----- | ----------- | ------------------------------------------------------------ |
+| 1     | Verified    | User confirmed deployed and working on 2026-09-16             |
+| 2     | Verified    | User confirmed deployed, verified, and accepted on 2026-09-22 |
+| 3     | Implemented | Local checks passed; deployment is user-controlled            |
+| 4–9   | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -286,3 +287,65 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Card/account ali
 - If verification fails, keep affected business-card functionality under maintenance and preserve sanitized diagnostics. Fix forward where possible. This phase has no schema/data migration to undo.
 - Never restore an accessible release that reintroduces `open-sql-call`, including an unmodified Phase 1 release. A rollback candidate must retain the retirement boundary and compatible public frontend/backend lookup, or remain inaccessible under maintenance until corrected.
 - Replace frontend/backend atomically and refresh browser/PWA caches. Do not restore only the old public page: it requires the retired endpoint. Preserve existing card rows, uploaded assets, URLs, and QR images; no data deletion or regeneration is required for rollback.
+
+### Phase 2 acceptance record — 2026-09-22
+
+The user explicitly confirmed that Phase 2 was deployed, verified, and accepted and authorized progression to Phase 3. The detailed production aliases, release identifier, and individual Phase 2 smoke-test results were not supplied and are not inferred. Phase 2 is recorded as **Verified** from that confirmation.
+
+### Phase 3 implementation record — 2026-09-22
+
+**Status: Implemented — local checks passed.** Phase 3 has not been deployed or verified in production. Starting checkout: `658e43f`, with a clean working tree. Phase 2 acceptance was confirmed before any Phase 3 edit. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 4 has not started.
+
+#### API, database, file, and frontend changes
+
+- Kept `POST /portal-api/get-user-profile`, `POST /portal-api/save-user-profile`, and `POST /portal-api/get-user-authorizations`. Shared Phase 1 authentication runs before each operation, and the only subject identity is `req.auth.employeeCode`. JSON, query-string, and multipart employee identifiers are ignored and cannot select a different employee.
+- Profile reads explicitly return only `profilePicPath` and `portalProfilePicPath`. Authorization reads return the existing six booleans: `isPortalAdmin`, `isBusinessCardsAdmin`, `isCOCAdmin`, `isElevatorsSurveysUser`, `isHRSurveysUser`, and `isDTRUser`. One fixed query evaluates membership in the six server-owned tables for the authenticated employee; request roles and client flags are not accepted.
+- Added authenticated `GET /portal-api/my-business-card`. It returns exactly `{ "hasCard": false, "qrCodePath": null }` when no row exists, or `{ "hasCard": true, "qrCodePath": <string-or-null> }` for the caller's card. Duplicate rows and database failures return a controlled `503`. Responses use `Cache-Control: no-store`.
+- Replaced all affected interpolated SQL and procedure calls with fixed server-owned statements and typed `mssql` inputs. Employee codes bind as `varchar(20)`, generated portal-photo filenames as `nvarchar(300)`, and photo-origin flags as `bit`. No SQL text, table, column, procedure, or employee identity is accepted from the browser.
+- Profile photo replacement uses one SQL transaction with locking for the authenticated `usersInfo` row. It updates `usersInfo` plus matching `admin_members`, `business_card_admins`, `coc_admins`, `elevators_users`, `hr_surveys_users`, and `dtr_users` rows together. A database failure rolls back these writes and attempts to remove only the new generated file.
+- Upload authentication runs before Multer. Files are limited to one PNG/JPEG of at most 5 MiB, receive server-generated UUID filenames, and must have a matching PNG/JPEG signature. Missing, invalid, wrong-type, and oversized uploads receive translated controlled errors. The old file is removed only after commit, only when its path resolves directly inside the profile-upload directory, and only when no other profile or membership row still references it. A missing old file is harmless; unsafe/shared paths remain untouched; a cleanup failure returns successful profile replacement with `cleanupPending: true` and leaves only the unremoved old file for controlled follow-up.
+- The portal store no longer sends cached employee IDs in profile, authorization, or multipart requests. The profile component uses only `/portal-api/my-business-card`; no portal/profile caller sends SQL to the generic business-card endpoint. Card and profile responses retain token/request-generation guards so delayed responses cannot restore or display signed-out state.
+- Preserved the existing HR-photo, default `profile.png`, and portal-photo URL fallbacks, success notification key, public-card URLs, English/Arabic UI, and localized card link. Added English/Arabic messages for invalid type/content, size, missing profile, and service failures.
+- The portal API now has a dependency-injected composition used by production and isolated HTTP tests. Unknown portal API paths return JSON `404`; `/portal-api/profile-data/...` remains available with its existing URL behavior.
+
+#### Read-only database evidence and limitations
+
+- A one-off read-only metadata inspection used the configured SQL connection without importing the application entry point or starting Nuxt. No credentials, connection details, tokens, or employee rows were printed or recorded.
+- `sys.parameters` confirmed the legacy profile/membership procedures use `varchar(20)` employee IDs, `nvarchar(300)` photo names, and `bit` flags. `sys.columns` confirmed `dbo.usersInfo`, all six membership tables, and `businessCards.employeeData` have the fixed columns used by this phase; `businessCards.employeeData.qrCodePath` is `varchar(25)`.
+- The implementation uses direct fixed statements rather than the legacy profile/membership procedures, so inaccessible procedure bodies are not relied on for Phase 3 query construction. The earlier finding that stored-procedure definitions are unavailable remains relevant to the Phase 9 audit and is not considered resolved globally.
+- No schema migration is required. Public profile-image serving remains unchanged and broader static-document hardening remains deferred. Live SQL failure injection, concurrent production uploads, filesystem-permission failures, and visual browser inspection were not performed locally.
+
+#### Local validation and second review
+
+- `npm run test:security`: **53 passed, 0 failed**. The package script explicitly includes the new `tests/security/portal-profile.test.js`; 11 Phase 3 tests ran alongside all 42 prior tests. Tests use mocked SQL, test-only signed sessions, temporary upload directories, and loopback-only isolated Express servers. They do not load `.env` or import the application entry point.
+- Phase 3 coverage includes typed bindings and fixed projections; all six permission flags; card-present/no-card/duplicate/failure states; JSON/query/multipart identity spoofing; missing/revoked sessions; authentication-before-upload; valid, missing, wrong-type, signature-mismatched, oversized, and database-failed uploads; transaction/propagation statements; missing/unsafe/shared/locked old files; pool and new-file cleanup; fallback URLs; frontend removal of identity and SQL payloads; English/Arabic error keys; and delayed profile/permission/card responses after logout.
+- The first isolated Phase 3 run reported 8 passes and 2 failures caused by assertions in the new tests; the assertions were corrected without weakening behavior. The next isolated run passed. The first lint run found three unnecessary `async` modifiers in the new service; they were removed. Final `npm run lint`: **passed (exit 0)**.
+- Final `npm run build`: **passed (exit 0)**; client and server compiled successfully. Output retains the existing outdated Browserslist notice, large-bundle warnings, and Babel deoptimization notice for `vue-pdf-embed`; no dependency update was included.
+- The required second review traced each route through shared authentication, `req.auth`, validation, typed inputs, fixed queries, response/error handling, transaction boundaries, and filesystem cleanup. It found that a legacy filename might be shared by another row; the transaction was strengthened to check every affected profile/membership table before deletion, and a regression test was added. The final full suite, lint, build, and `git diff --check` passed after that fix.
+- Independent searches find no `business-cards-api/sql-call`, `business-cards-api/hr-sql-call`, request-derived employee identity, or interpolated SQL in `components/portal`, `store/portal`, or `server/portal`. Isolated HTTP tests prove spoofed fields cannot select another employee and missing/revoked sessions receive `401`. The prior Phase 2 HTTP suite still proves retired `open-sql-call` paths return `404`.
+
+#### Explicit residual exposure for later phases
+
+- The authenticated `/business-cards-api/sql-call` endpoint intentionally remains for Phases 5–6. Its remaining frontend callers are the generated-cards, card-generator, and activity-logs pages plus `components/administration/dtrSetup/drtAdminPopup.vue`. The profile component is no longer a caller. `/business-cards-api/hr-sql-call` also remains; no frontend caller was found.
+- Administration and DTR generic SQL endpoints, business-card management SQL, the public vCard interpolation described in Phase 2, and role enforcement outside this phase remain unresolved. Phase 3 secures portal identity/profile access only; it does not complete the broader SQL/access-control plan.
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record the maintenance window, release identifier, and aliases for a normal account with a card, a normal account without a card, an account covering each permission flag, and—only if separately authorized—a designated photo-write test account. Record the photo test account's current `portalProfilePicPath`, existing file, and matching `profilePicPath` / `hrPicture` / `portalPicture` values in every membership table where it has a row. Protect these records outside this document.
+2. Stop all workers during deployment and deploy frontend/backend together, including the portal service/router/composition files, store/component bundle, translations, and tests. Use the existing release procedure (`npm ci`, `npm run build`, then the configured PM2 restart). No SQL migration is needed. Refresh cached/PWA clients and avoid mixed old/new workers.
+3. Read-only checks first: sign in with each designated account; refresh; confirm the correct profile image fallback and all six expected shortcuts in English and Arabic. In browser developer tools, verify profile and authorization POST bodies are empty and `GET /portal-api/my-business-card` returns only `hasCard` and `qrCodePath` for the signed-in account.
+4. For card-present and no-card accounts, confirm the QR shortcut respectively appears or stays absent, opens the same employee's localized public-card URL, and survives refresh. Confirm an existing signed-out Phase 2 public card still renders in English and Arabic and `POST /business-cards-api/open-sql-call` with harmless `{}` still returns `404`.
+5. With a disposable test session, call each protected portal endpoint without a bearer and after logout/revocation; expect `401 authFailed`. Use browser throttling to delay profile, permission, and card responses, log out before they complete, and confirm the cleared profile/shortcuts do not return.
+6. In a non-production staging environment, add a mismatched benign employee ID to the profile/authorization JSON or query string and confirm the response still belongs to the signed-in account. Do not probe other employees or send SQL/injection payloads to production.
+7. Perform a production photo replacement only with separate authorization for the designated record. Upload a valid PNG/JPEG under 5 MiB, verify the profile and any applicable membership lists show the new image, and confirm other employees are unchanged. Exercise invalid/missing/oversized uploads in staging or browser-side validation, not by placing arbitrary files on production.
+8. Immediately restore the authorized photo test: restore the recorded database values and original file through the approved operational procedure, verify every affected profile/membership row and UI, and remove only the newly generated unreferenced test file. Never recursively delete the upload directory or delete a file still referenced by any row.
+9. Check sanitized production logs for unexpected `401`, `404`, `503`, transaction, upload, or cleanup failures without copying sensitive data here. Record actual outcomes below and mark Phase 3 **Deployed**, then **Verified**, only after deployment and all applicable checks succeed. Stop before Phase 4.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-record aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- Keep portal profile, permission, and card-shortcut functionality under maintenance if verification fails. Prefer fixing forward. This phase has no schema migration to reverse; failed SQL photo writes roll back as a unit, although a failed filesystem cleanup can leave an unreferenced generated file that must be reviewed individually.
+- Do not restore an accessible older release that lets browser employee IDs select profile/permission targets or makes the profile component send SQL. A rollback candidate must preserve the Phase 1–3 identity boundary and Phase 2 `open-sql-call` retirement. If no such release exists, keep the affected endpoints/UI unavailable until corrected.
+- Replace frontend/backend atomically and refresh browser/PWA caches. Do not restore only the old profile component or only the old portal routers. Preserve existing profile rows, membership flags, card rows, and uploaded images.
+- For an authorized photo-write recovery, compare the designated record with the pre-test values, restore those exact values and original file through the approved operational process, and verify no other row references a candidate cleanup file before deleting that single file. Do not rotate keys, clear sessions/tables, or delete the upload directory as a troubleshooting shortcut.

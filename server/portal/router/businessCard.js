@@ -1,18 +1,19 @@
 const express = require('express')
 const { PortalError } = require('../services/portalIdentity')
 
-module.exports = function createAuthorizationsRouter({
+module.exports = function createBusinessCardRouter({
   authorize,
   portalIdentity,
 }) {
   const router = express.Router()
 
-  router.post('/get-user-authorizations', authorize, async (req, res) => {
+  router.get('/my-business-card', authorize, async (req, res) => {
+    res.set('Cache-Control', 'no-store')
     try {
-      const authorizations = await portalIdentity.getAuthorizations(
+      const card = await portalIdentity.getMyBusinessCard(
         req.auth.employeeCode
       )
-      return res.status(200).json(authorizations)
+      return res.status(200).json(card)
     } catch (error) {
       const known = error instanceof PortalError
       return res.status(known ? error.statusCode : 503).json({

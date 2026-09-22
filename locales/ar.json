@@ -408,7 +408,11 @@
     },
     "portal": {
       "authFailed": "حـدث خـطأ في المصـادقـة!",
-      "fileTypeError": "حـدث خـطأ في المصـادقـة!"
+      "fileTypeError": "يرجى رفع صورة بصيغة PNG أو JPEG أو JPG فقط!",
+      "fileTooLarge": "يجب ألا يتجاوز حجم صورة الملف الشخصي 5 ميجابايت.",
+      "invalidUpload": "يرجى اختيار صورة صالحة بصيغة PNG أو JPEG.",
+      "profileNotFound": "تعذر العثور على ملفك الشخصي.",
+      "serviceUnavailable": "خدمة الملف الشخصي غير متاحة مؤقتًا."
     },
     "administration": {
       "bCards": {

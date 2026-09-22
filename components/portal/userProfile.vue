@@ -45,11 +45,12 @@
     </div>
     <div v-if="qrFileName" class="d-flex justify-center mt-3 mb-5">
       <a
-        :href="`${$config.baseURL}/business-card/${employeeCode}`"
+        :href="localePath(`/business-card/${employeeCode}`)"
         target="_blank"
       >
         <v-img
           :src="`${$config.baseURL}/business-cards-api/business-cards/${qrFileName}`"
+          class="cursor-pointer"
           max-width="110"
           contain
           style="border: 2px #000046 solid"
@@ -111,6 +112,7 @@
 import { mapState } from 'vuex'
 import { extend, localize } from 'vee-validate'
 import { image, size, required } from 'vee-validate/dist/rules'
+import { authErrorMessage } from '~/utils/auth-client'
 
 // Override the default message.
 extend('image', {
@@ -146,6 +148,7 @@ export default {
       profileDialog: false,
       profilePic: null,
       qrFileName: null,
+      cardRequestId: 0,
     }
   },
   computed: {
@@ -172,52 +175,54 @@ export default {
     this.checkQR()
   },
 
+  beforeDestroy() {
+    this.cardRequestId++
+  },
+
   methods: {
     async saveUserProfile() {
-      const employeeCode = localStorage.getItem('employeeCode')
-
-      const profileData = {
-        img: this.profilePic,
-        eCode: employeeCode,
-      }
-
-      await this.$store.dispatch('portal/saveUserProfile', profileData)
-      await this.$store.dispatch('portal/getUserProfile')
+      const saved = await this.$store.dispatch(
+        'portal/saveUserProfile',
+        this.profilePic
+      )
+      if (saved) await this.$store.dispatch('portal/getUserProfile')
 
       this.profilePic = null
       this.profileDialog = false
     },
 
     async checkQR() {
+      const token = localStorage.getItem('userToken')
+      if (!token) return
+      const requestId = ++this.cardRequestId
       try {
-        const checkIfQRIsGenerated = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `exec [businessCards].[employeeData_checkIfExist] ${this.employeeCode}`,
-          }
+        const response = await this.$axios.get(
+          `${this.$config.baseURL}/portal-api/my-business-card`
         )
-        if (checkIfQRIsGenerated.data[0].exist === 1) {
-          const getQRFileName = await this.$axios.post(
-            `${this.$config.baseURL}/business-cards-api/sql-call`,
-            {
-              query: `SELECT qrCodePath FROM businessCards.employeeData where employeeID = '${this.employeeCode}'`,
-            }
-          )
-          if (getQRFileName.data.length > 0) {
-            this.qrFileName = getQRFileName.data[0].qrCodePath
-          }
-        }
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
+        if (
+          requestId !== this.cardRequestId ||
+          token !== localStorage.getItem('userToken')
+        )
+          return
+        this.qrFileName = response.data.hasCard
+          ? response.data.qrCodePath
+          : null
+      } catch (error) {
+        if (
+          requestId !== this.cardRequestId ||
+          token !== localStorage.getItem('userToken')
+        )
+          return
         const notification = {
           type: 'error',
-          message: newErrorString,
+          message: authErrorMessage(this.$store, error, 'portal'),
         }
         await this.$store.dispatch(
           'appNotifications/addNotification',
           notification
         )
+        if (error && error.response && error.response.status === 401)
+          await this.$store.dispatch('login/logoff')
       }
     },
   },

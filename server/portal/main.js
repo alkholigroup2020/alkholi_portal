@@ -1,23 +1,26 @@
 const path = require('path')
-const express = require('express')
-const api = express()
-const profilesData = require('./router/profileData')
-const userAuthorizations = require('./router/authorizations')
+const fs = require('fs')
+const sql = require('mssql')
+const portalConfig = require('./configs/sql')
+const authorize = require('./middleware/authorization')
+const createApi = require('./createApi')
+const { createPortalIdentity } = require('./services/portalIdentity')
 
-api.use(express.json())
-api.use(express.urlencoded({ extended: true }))
-api.use(profilesData)
-api.use(userAuthorizations)
-
-// set up a static file serving
-api.use(
-  '/profile-data',
-  express.static(
-    path.join(__dirname, '../../uploads/portal/usersProfileImages')
-  )
+const uploadDirectory = path.join(
+  __dirname,
+  '../../uploads/portal/usersProfileImages'
 )
 
 module.exports = {
   path: '/portal-api',
-  handler: api,
+  handler: createApi({
+    authorize,
+    uploadDirectory,
+    portalIdentity: createPortalIdentity({
+      sql,
+      portalConfig,
+      fileSystem: fs.promises,
+      uploadDirectory,
+    }),
+  }),
 }

@@ -408,7 +408,11 @@
     },
     "portal": {
       "authFailed": "Authorization Failed!",
-      "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!"
+      "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!",
+      "fileTooLarge": "The profile image must not exceed 5 MB.",
+      "invalidUpload": "Please select a valid PNG or JPEG image.",
+      "profileNotFound": "Your profile could not be found.",
+      "serviceUnavailable": "The profile service is temporarily unavailable."
     },
     "administration": {
       "bCards": {

@@ -1,189 +1,86 @@
-const path = require('path')
-const fs = require('fs')
+const { randomUUID } = require('crypto')
 const express = require('express')
-const router = express.Router()
 const multer = require('multer')
-const sql = require('mssql')
-const sqlConfigs = require('../configs/sql')
-const authorize = require('../middleware/authorization.js')
+const { PortalError } = require('../services/portalIdentity')
 
-async function portalDB() {
-  const pool = new sql.ConnectionPool(sqlConfigs)
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
-  }
-}
-
-// attachments storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../../uploads/portal/usersProfileImages'))
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}_${file.originalname}`)
-  },
+const MIME_EXTENSIONS = Object.freeze({
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
 })
 
-// attachments filter
-const fileFilter = (req, file, cb) => {
-  if (
-    file.mimetype === 'image/png' ||
-    file.mimetype === 'image/jpeg' ||
-    file.mimetype === 'image/jpg'
-  ) {
-    cb(null, true)
-  } else {
-    return cb(new Error('fileTypeError'), false)
-  }
-}
-
-// attachments upload
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5242880 }, // 5mb file limit
-})
-
-router.post(
-  '/save-user-profile',
+module.exports = function createProfileDataRouter({
   authorize,
-  upload.single('attachment'),
-  async (req, res) => {
-    const portalDBConnection = await portalDB()
-    try {
-      // delete the profile image from HDD if any
-      const profilePic = await portalDBConnection.request().query(`
-      SELECT [portalProfilePicPath] from [dbo].[usersInfo]
-      WHERE [employeeID] = '${req.body.employeeCode}'
-      `)
+  portalIdentity,
+  uploadDirectory,
+}) {
+  const router = express.Router()
+  const storage = multer.diskStorage({
+    destination: uploadDirectory,
+    filename(req, file, callback) {
+      callback(
+        null,
+        `${Date.now()}-${randomUUID()}${MIME_EXTENSIONS[file.mimetype]}`
+      )
+    },
+  })
+  const upload = multer({
+    storage,
+    fileFilter(req, file, callback) {
+      if (MIME_EXTENSIONS[file.mimetype]) return callback(null, true)
+      return callback(new PortalError('fileTypeError', 400))
+    },
+    limits: {
+      fileSize: 5242880,
+      fieldSize: 1024,
+      fields: 4,
+      files: 1,
+      parts: 5,
+    },
+  })
 
-      if (profilePic.rowsAffected[0] === 1) {
-        if (profilePic.recordset[0].portalProfilePicPath !== null) {
-          const filePath = path.join(
-            __dirname,
-            `../../../uploads/portal/usersProfileImages/${profilePic.recordset[0].portalProfilePicPath}`
-          )
-          fs.unlinkSync(filePath)
-        }
-      }
-
-      // save the new profile picture path to db
-      await portalDBConnection.request()
-        .query(`exec dbo.usersInfo_updateProfilePicPath
-        '${req.body.employeeCode}', N'${req.file.filename}'
-      `)
-
-      // update authorization tables
-      const checkIfPortalAdmin = await portalDBConnection
-        .request()
-        .query(`exec dbo.admin_members_checkIfExist '${req.body.employeeCode}'`)
-      if (checkIfPortalAdmin.recordset[0].exist === 1) {
-        await portalDBConnection
-          .request()
-          .query(
-            `exec dbo.admin_members_updateData '${req.body.employeeCode}', N'${
-              req.file.filename
-            }', ${false}, ${true}`
-          )
-      }
-
-      const checkIfBusinessCardsAdmin = await portalDBConnection
-        .request()
-        .query(
-          `exec dbo.business_card_admins_checkIfExist '${req.body.employeeCode}'`
-        )
-      if (checkIfBusinessCardsAdmin.recordset[0].exist === 1) {
-        await portalDBConnection
-          .request()
-          .query(
-            `exec dbo.business_card_admins_updateData '${
-              req.body.employeeCode
-            }', N'${req.file.filename}', ${false}, ${true}`
-          )
-      }
-
-      const checkIfElevatorsAdmin = await portalDBConnection
-        .request()
-        .query(
-          `exec dbo.elevators_users_checkIfExist '${req.body.employeeCode}'`
-        )
-      if (checkIfElevatorsAdmin.recordset[0].exist === 1) {
-        await portalDBConnection
-          .request()
-          .query(
-            `exec dbo.elevators_users_updateData '${
-              req.body.employeeCode
-            }', N'${req.file.filename}', ${false}, ${true}`
-          )
-      }
-
-      const checkIfHRSurveysUser = await portalDBConnection
-        .request()
-        .query(
-          `exec dbo.hr_surveys_users_checkIfExist '${req.body.employeeCode}'`
-        )
-      if (checkIfHRSurveysUser.recordset[0].exist === 1) {
-        await portalDBConnection
-          .request()
-          .query(
-            `exec dbo.hr_surveys_users_updateData '${
-              req.body.employeeCode
-            }', N'${req.file.filename}', ${false}, ${true}`
-          )
-      }
-
-      const checkIfDRTUser = await portalDBConnection
-        .request()
-        .query(`exec dbo.dtr_users_checkIfExist '${req.body.employeeCode}'`)
-      if (checkIfDRTUser.recordset[0].exist === 1) {
-        await portalDBConnection
-          .request()
-          .query(
-            `exec dbo.dtr_users_updateData '${req.body.employeeCode}', N'${
-              req.file.filename
-            }', ${false}, ${true}`
-          )
-      }
-
-      // send the reply
-      return res.status(201).json({
-        message: 'imgSuccess',
+  router.post(
+    '/save-user-profile',
+    authorize,
+    (req, res, next) => {
+      upload.single('attachment')(req, res, (error) => {
+        if (!error) return next()
+        if (error.code === 'LIMIT_FILE_SIZE')
+          return res.status(400).json({ message: 'fileTooLarge' })
+        const status = error instanceof PortalError ? error.statusCode : 400
+        return res.status(status).json({
+          message:
+            error instanceof PortalError ? error.message : 'invalidUpload',
+        })
       })
-    } catch (e) {
-      const error = e.toString()
-      const newErrorString = error.replaceAll('Error: ', '')
-      res.status(500).json({
-        message: `${newErrorString}`,
-      })
-    } finally {
-      await portalDBConnection.close()
+    },
+    async (req, res) => {
+      try {
+        const result = await portalIdentity.saveProfilePhoto(
+          req.auth.employeeCode,
+          req.file
+        )
+        return res.status(201).json({ message: 'imgSuccess', ...result })
+      } catch (error) {
+        const known = error instanceof PortalError
+        return res.status(known ? error.statusCode : 503).json({
+          message: known ? error.message : 'serviceUnavailable',
+        })
+      }
     }
-  }
-)
+  )
 
-router.post('/get-user-profile', authorize, async (req, res) => {
-  const portalDBConnection = await portalDB()
-  try {
-    // get the data
-    const userInfo = await portalDBConnection
-      .request()
-      .query(`exec dbo.usersInfo_getProfileData '${req.body.employeeID}'`)
+  router.post('/get-user-profile', authorize, async (req, res) => {
+    try {
+      const profile = await portalIdentity.getProfile(req.auth.employeeCode)
+      return res.status(200).json(profile)
+    } catch (error) {
+      const known = error instanceof PortalError
+      return res.status(known ? error.statusCode : 503).json({
+        message: known ? error.message : 'serviceUnavailable',
+      })
+    }
+  })
 
-    const result = userInfo.recordset[0]
-
-    res.send(result)
-  } catch (e) {
-    const error = e.toString()
-    const newErrorString = error.replaceAll('Error: ', '')
-    res.status(500).json({
-      message: `${newErrorString}`,
-    })
-  } finally {
-    await portalDBConnection.close()
-  }
-})
-
-module.exports = router
+  return router
+}

@@ -190,7 +190,8 @@ test('refresh attaches bearer before reauthentication and replaces untrusted cac
   assert.equal(f.calls[0].authorization, 'Bearer existing-test-token')
   assert.deepEqual(Object.keys(f.calls[0].body), [])
   assert.equal(f.localStorage.getItem('employeeCode'), '123')
-  assert.equal(f.calls[1].body.employeeID, '123')
+  assert.deepEqual(Object.keys(f.calls[1].body), [])
+  assert.deepEqual(Object.keys(f.calls[2].body), [])
 })
 
 test('logout immediately clears identity, profile, permissions and module caches even offline', async () => {
