@@ -418,25 +418,56 @@
       "bCards": {
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
-        "notFound": "Can't find the admin record!"
+        "notFound": "Can't find the admin record!",
+        "invalidEmployeeCode": "Please enter a valid employee code.",
+        "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
       },
       "elevators": {
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
-        "notFound": "Can't find the admin record!"
+        "notFound": "Can't find the admin record!",
+        "invalidEmployeeCode": "Please enter a valid employee code.",
+        "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
       },
       "portalAdmins": {
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
-        "notFound": "Can't find the admin record!"
+        "notFound": "Can't find the admin record!",
+        "invalidEmployeeCode": "Please enter a valid employee code.",
+        "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
       },
       "dtrApp": {
         "memberExist": "This member already exist!",
         "employeeInfoMessing": "Admin Information is missing on the HR system!",
-        "notFound": "Can't find the admin record!"
+        "notFound": "Can't find the admin record!",
+        "invalidEmployeeCode": "Please enter a valid employee code.",
+        "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
       },
       "dtrSetup": {
-        "employeeInfoMessing": "Employee Information is missing on the HR system!"
+        "employeeInfoMessing": "Employee Information is missing on the HR system!",
+        "invalidEmployeeCode": "Please enter a valid employee code.",
+        "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
+      },
+      "members": {
+        "forbidden": "You are not authorized to manage portal administration.",
+        "authFailed": "Authorization Failed!",
+        "invalidModule": "Unknown membership list.",
+        "serviceUnavailable": "The service is unavailable. Please try again later."
       }
     }
   },

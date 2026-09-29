@@ -1,3 +1,5 @@
+import { authErrorMessage } from '~/utils/auth-client'
+
 export const state = () => ({
   employeeInfo: {},
 })
@@ -22,9 +24,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.administration.dtrSetup.${error.response.data.message}`
-        ),
+        message: authErrorMessage(this, error, 'administration.dtrSetup'),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,

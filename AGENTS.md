@@ -2,7 +2,9 @@
 
 ## Project Structure & Module Organization
 
-This is a Nuxt 2 application using Vue 2, Vuetify 2, Vuex, and Express server middleware. `pages/` defines routes; `layouts/` provides feature shells; `components/` contains UI components; `store/` holds feature-specific state and API actions. `server/<module>/` groups Express entry points (`main.js`), routers, authorization middleware, and SQL configurations.
+This is a Nuxt 2 application using Vue 2, Vuetify 2, Vuex, and Express server middleware. `pages/` defines routes; `layouts/` provides feature shells; `components/` contains UI components; `store/` holds feature-specific state and API actions. `server/<module>/` groups Express entry points (`main.js`), routers, authorization middleware, and SQL configurations. Login and session logic lives in `server/login/services/`; every module's `middleware/authorization.js` re-exports `server/shared/authorization.js`, which verifies the bearer token and sets `req.auth`.
+
+Security tests live in `tests/security/`; the phased security plan and per-phase prompts are in `project-docs/`. `utils/auth-client.js` holds shared frontend auth helpers, and `scripts/` holds tooling such as the predev port check.
 
 Features include the portal, administration, business cards, Code of Conduct, surveys, and daily time reports (DTR). Register new APIs and component directories in `nuxt.config.js`. Keep styles and fonts in `assets/`, public files in `static/`, translations in `locales/`, and generated documents in ignored `uploads/`.
 
@@ -32,4 +34,6 @@ History uses short, descriptive messages without enforced prefixes, such as `fix
 
 ## Security & Configuration
 
-Keep `.env` credentials private and untracked. Development requires configured AD, SQL, and email integrations. Use parameterized SQL and enforce permissions server-side. The application schedules employee synchronization every ten minutes; use development services when running locally.
+Keep `.env` credentials private and untracked. Development requires configured AD, SQL, and email integrations. Use parameterized SQL and enforce permissions server-side. The application schedules employee synchronization every ten minutes (`server/coc/main.js`); use development services when running locally.
+
+Take caller identity from `req.auth`, never from request bodies or query strings. Enforce roles server-side with `requireRole` (`server/shared/roles.js`); frontend permission flags only gate UI. Use fixed server-written SQL with typed `.input(...)` parameters; procedure names and identifiers must never come from request data. Follow `project-docs/security-fix-plan.md`: implement one phase at a time, record results in its progress table, and do not start the next phase until the user marks the previous one **Verified**.

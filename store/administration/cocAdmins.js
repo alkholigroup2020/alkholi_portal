@@ -1,3 +1,5 @@
+import { authErrorMessage } from '~/utils/auth-client'
+
 export const state = () => ({
   cocAdmins: [],
 })
@@ -11,17 +13,18 @@ export const mutations = {
 export const actions = {
   async getCOCAdmins({ commit, dispatch }) {
     try {
-      const serverCall = await this.$axios.post(
-        `${this.$config.baseURL}/administration-api/sql-call`,
-        { query: 'SELECT * FROM dbo.coc_admins' }
+      const serverCall = await this.$axios.get(
+        `${this.$config.baseURL}/administration-api/members/coc`
       )
       if (serverCall.status === 200) {
         await commit('SET_COC_ADMINS', serverCall.data)
       }
     } catch (error) {
+      // Do not keep showing a list the caller may no longer be allowed to see.
+      await commit('SET_COC_ADMINS', [])
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: authErrorMessage(this, error, 'administration.members'),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -49,9 +52,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.administration.bCards.${error.response.data.message}`
-        ),
+        message: authErrorMessage(this, error, 'administration.bCards'),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -79,9 +80,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: this.app.i18n.t(
-          `errorMessages.administration.bCards.${error.response.data.message}`
-        ),
+        message: authErrorMessage(this, error, 'administration.bCards'),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,

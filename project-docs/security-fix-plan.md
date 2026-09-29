@@ -161,8 +161,9 @@ Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before 
 | ----- | ----------- | ------------------------------------------------------------ |
 | 1     | Verified    | User confirmed deployed and working on 2026-09-16             |
 | 2     | Verified    | User confirmed deployed, verified, and accepted on 2026-09-22 |
-| 3     | Implemented | Local checks passed; deployment is user-controlled            |
-| 4–9   | Not started | Pending; do not advance automatically                         |
+| 3     | Deployed    | Partial read-only smoke 2026-09-29; user accepted it for progression the same day (remaining checks not performed) |
+| 4     | Implemented | Local checks passed 2026-09-29; not deployed or verified      |
+| 5–9   | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -349,3 +350,126 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-rec
 - Do not restore an accessible older release that lets browser employee IDs select profile/permission targets or makes the profile component send SQL. A rollback candidate must preserve the Phase 1–3 identity boundary and Phase 2 `open-sql-call` retirement. If no such release exists, keep the affected endpoints/UI unavailable until corrected.
 - Replace frontend/backend atomically and refresh browser/PWA caches. Do not restore only the old profile component or only the old portal routers. Preserve existing profile rows, membership flags, card rows, and uploaded images.
 - For an authorized photo-write recovery, compare the designated record with the pre-test values, restore those exact values and original file through the approved operational process, and verify no other row references a candidate cleanup file before deleting that single file. Do not rotate keys, clear sessions/tables, or delete the upload directory as a troubleshooting shortcut.
+
+### Phase 3 deployment and production smoke record — 2026-09-29
+
+**Status: Deployed — read-only production smoke partially passed.** The user confirmed that Phase 3 was deployed and authorized live browser checks at `https://portal.alkholi.com/`. An earlier draft of this record incorrectly treated deployment as confirmation of complete verification; the progress table is corrected to **Deployed**. The release identifier, maintenance window, and designated account aliases were not supplied and are not inferred. Phase 4 has not started.
+
+Checks completed through the live browser with one authenticated account:
+
+- The English portal loaded the authenticated employee's profile with the existing no-photo fallback, a QR/card shortcut for that employee, and the expected permission-based shortcuts for the account. The HR-survey shortcut was not present for this account. A refresh retained the same authenticated identity and shortcuts.
+- The Arabic portal loaded in RTL with localized labels. After requests settled, it showed the same employee profile, QR/card shortcut, and expected shortcuts. The Arabic view also survived refresh.
+- The employee's existing public card opened successfully in both English and Arabic from the localized portal link, preserving the Phase 2 public URL behavior.
+- Direct unauthenticated navigation to `GET /portal-api/my-business-card` returned `{"message":"authFailed"}` rather than card data.
+- Logout reached `/login`. A subsequent fresh navigation to `/` remained on `/login`; the profile, QR, and permission shortcuts did not reappear.
+
+Production verification still pending:
+
+- No designated no-card account or accounts covering every permission flag were supplied, so the explicit no-card result and all six membership combinations were not exercised live.
+- No production photo replacement, invalid upload, database-failure, or filesystem-cleanup case was run. These require staging or separate authorization for a designated production record, with previous values recorded and restored afterward.
+- No live request-body inspection, mismatched-ID tampering, SQL/injection probe, or deterministic delayed-response race was performed. Identity-spoofing and delayed-response behavior remain covered by the isolated regression suite; production request-body inspection and throttled logout still require a designated test session.
+- The live `POST /business-cards-api/open-sql-call` `404` was not independently checked. The built-in browser rejected the local `data:` form needed to issue a bodyless POST because its navigation policy permits only HTTP(S); direct address-bar navigation can issue only GET. No workaround, SQL payload, or authenticated request was attempted. Sanitized production logs, the release identifier, and the maintenance window were also not independently checked.
+
+Do not mark Phase 3 **Verified** until the applicable pending checks are completed and recorded. Do not start Phase 4 automatically.
+
+### Phase 3 acceptance record — 2026-09-29
+
+Before any Phase 4 edit, the user was asked whether Phase 3 (recorded as **Deployed** with partial smoke checks) was accepted, and answered “Yes, Phase 3 accepted.” Phase 3 is accepted for progression to Phase 4. The pending Phase 3 checks listed above were **not** performed and remain open; the status stays **Deployed** rather than being upgraded to **Verified** by inference.
+
+### Phase 4 implementation record — 2026-09-29
+
+**Status: Implemented — local checks passed.** Phase 4 has not been deployed or verified in production. Starting checkout: `3381ea8`, with only the user's uncommitted edits to `AGENTS.md`, `CLAUDE.md`, and this document (preserved). No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 5 has not started.
+
+#### API, authorization, and frontend changes
+
+- Added `GET /administration-api/members/:module`. Exactly six resource names are accepted: `portal` → `dbo.admin_members`, `business-cards` → `dbo.business_card_admins`, `coc` → `dbo.coc_admins`, `elevators` → `dbo.elevators_users`, `hr-surveys` → `dbo.hr_surveys_users`, `dtr` → `dbo.dtr_users`. A `Map` selects one of six frozen, server-written statement sets; the route value is never placed in SQL. Anything else — case variants, table names, `__proto__`/`constructor`/`toString` (also percent-encoded), non-strings — returns `400 { "message": "invalidModule" }` before any database pool is opened. Rows are explicitly projected to the eight consumed fields (`_id`, `employeeID`, `fullName`, `title`, `mailAddress`, `profilePicPath`, `hrPicture`, `portalPicture`); `branch` is no longer sent. Responses use `Cache-Control: no-store`.
+- Added reusable server-side role checks in `server/shared/roles.js`: `createRoleChecks({ sql, portalConfig }).hasRole(role, employeeCode)` and `requireRole(roleChecks, role)` middleware for `portalAdmin`, `businessCardsAdmin`, `cocAdmin`, `elevatorsUser`, `hrSurveysUser`, and `dtrUser`. Each role runs one fixed parameterized `EXISTS` query against its own table only; no role implies another (portal administrators do not implicitly hold module roles). Membership is evaluated on every request, so revocation applies to the next request. Unknown role names throw at configuration time. The caller is taken only from `req.auth.employeeCode`; missing identity → `401 authFailed`, non-member → `403 forbidden`, role-check failure → `503 serviceUnavailable`.
+- Every administration route now runs the shared `authorize` middleware followed by `requireRole(..., 'portalAdmin')`: the new list endpoint; all twelve existing mutation URLs (`/add-` and `/delete-` for `portal-admin`, `business-card-admin`, `coc-admin`, `elevators-survey-admin`, `hr-survey-user`, `dtr-user`); `POST /get-employee-info`; and the legacy `POST /sql-call` and `POST /hr-sql-call`. Mutation URLs, request bodies (`{ code }`), and success response shapes are unchanged. Unknown administration paths return JSON `404 notFound`; malformed JSON or percent-encoding returns JSON `400 invalidRequest` rather than an HTML error page.
+- The target employee (`body.code`) is validated separately from the caller: a string of 1–20 ASCII letters, digits, `_` or `-`, with no trimming, case change, or numeric conversion (leading zeros preserved). Otherwise `400 invalidEmployeeCode`, before any SQL. Codes longer than the HR key (`varchar(15)`) are reported as missing HR data without querying, so they cannot be truncated into a different lookup.
+- The seven legacy routers (`portalAdmins`, `businessCardsAdmins`, `cocAdmins`, `elevatorsSurveyAdmins`, `hrSurveys`, `dtrUsers`, `dtrSetup`) were replaced by `router/memberships.js` and `services/memberships.js`. HR employee, HR title, and portal-picture lookups bind `employee_code varchar(15)`, `system_code varchar(15)`, `branch_code varchar(10)`, and `employeeID varchar(20)`. The existing numeric position comparison is preserved (`'0042'` still matches title code `42`).
+- **Add:** a pre-check keeps the existing precedence (`memberExist` before HR checks). One fixed batch then runs `SET XACT_ABORT ON`, opens a transaction, re-checks existence `WITH (UPDLOCK, HOLDLOCK)`, calls the existing `dbo.<table>_addData` procedure with named, typed parameters (`varchar(20/50/150/50/50)`, `nvarchar(300)`, `bit`), confirms the row exists, and commits. This closes the check-then-insert race even for `coc_admins` and `dtr_users`, which have no unique key on `employeeID`. A duplicate-key error (2627/2601) is also mapped to `memberExist`. The final status row is read from the last recordset, so procedure result sets cannot be mistaken for it.
+- **Delete:** one fixed batch locks and counts the target's rows, calls the existing `dbo.<table>_deleteMember @memberID`, recounts, and commits. It returns `404 notFound` when no row existed and `503` if the procedure removed nothing. It never claims success without an observed removal.
+- **HR data handling:** missing HR employee or title data returns `404 employeeInfoMessing` (existing code). Missing required `fullName`/`mailAddress` (NOT NULL columns) now also returns `employeeInfoMessing`; the old handlers stored the literal text `'null'`. Values exceeding the observed column sizes return `422 employeeInfoInvalid` instead of being silently truncated. Picture selection is portal photo, then non-empty HR photo, then `profile.png` (the old code could store an empty HR path).
+- Status codes for existing error messages changed from `500` to `409 memberExist`, `404 notFound`/`employeeInfoMessing`, and `503 serviceUnavailable`. The frontend reads only `message`, so notifications are unchanged. Database/exception text is no longer returned by any administration route, including the legacy SQL routes.
+- The six list stores now call `GET /members/<resource>` with no body. The add/delete/lookup stores use the shared `authErrorMessage` helper, so English/Arabic messages are translated and network errors without a response no longer throw. On a failed list request the list is cleared, so a revoked administrator does not keep seeing stale membership. English and Arabic messages were added for `invalidEmployeeCode`, `employeeInfoInvalid`, `forbidden`, `authFailed`, `serviceUnavailable`, and the new `administration.members` list namespace (including `invalidModule`). Components, layouts, and page URLs are unchanged.
+- `server/administration/createApi.js` composes the API from injected dependencies (the `server/portal/createApi.js` pattern). `main.js` remains the only runtime entry point and keeps the existing `/administration-api` mount in `nuxt.config.js`.
+
+#### Read-only database evidence and limitations
+
+- A one-off read-only metadata script used the configured connection without importing application entry points or starting Nuxt. It printed only schema metadata and aggregates; no employee rows, credentials, tokens, or connection details were output or recorded.
+- **Membership tables:** all six share the same columns: `_id int identity`, `employeeID varchar(20) NOT NULL`, `fullName varchar(50) NOT NULL`, `title varchar(150) NULL`, `profilePicPath nvarchar(300) NULL`, `mailAddress varchar(50) NOT NULL`, `branch varchar(50) NULL`, `hrPicture bit`, `portalPicture bit`. `admin_members`, `business_card_admins`, `elevators_users`, and `hr_surveys_users` have a primary key on `employeeID`. `coc_admins` is keyed only on `_id`, and `dtr_users` has no index. None of the six tables has triggers or default constraints.
+- **Procedures:** `sys.parameters` confirmed all 18 procedures (`_addData`, `_checkIfExist`, `_deleteMember` for each table). Their parameter names and types exactly match the bound inputs; the delete procedures take `@memberID varchar(20)`. `OBJECT_DEFINITION` still returns `NULL` for every procedure, so their internal SQL and any hidden side effects remain unverified (Phase 9). The existence checks now use fixed `EXISTS` queries instead of `_checkIfExist`.
+- **HR (`Menaitech`):** `Pay_employees.employee_code varchar(15)`, `branch_code varchar(10)`, `position varchar(15)`, `employee_name_eng varchar(512)`, `Email varchar(100) NULL`, `employee_picture varchar(900)`; `pay_code_tables.system_code varchar(15)`, `branch_code varchar(10)`, `system_desp_e varchar(550)`. Aggregates: employee codes are unique, all within the accepted character set, and at most 6 characters long. No duplicate type-21 title rows exist. Maximum observed lengths are Email 39, picture 69, branch 9, and English title 74. The maximum observed English name is **52 characters, above the 50-character `fullName` column**. At least one HR employee therefore cannot be added until the data or schema is corrected; previously such names were silently truncated.
+- **Compile-only check:** all 33 fixed statements (six modules × exists/list/add/delete, six role checks, portal-picture, and both HR lookups) were compiled against the live schemas inside `IF 1 = 0 BEGIN … END` with typed `DECLARE`s, so they were parsed and name-bound but never executed. **33/33 compiled.** A negative control confirmed the method rejects an unknown column (error 207) and a syntax error (156). Procedure parameter binding happens only at run time and is covered by the metadata comparison, not by this check.
+- No schema migration is required.
+
+#### Local validation and second review
+
+- `npm run test:security`: **70 passed, 0 failed** (exit 0) on Node 24.21.0. This is the 53 prior tests plus 17 in the new `tests/security/administration.test.js`, which was added explicitly to the package script; the test runner output lists all 17 by name. Tests use mocked `mssql`, test-only signed sessions, the real `createAuth`/`createRoleChecks`/membership service/legacy SQL router, and loopback-only isolated Express servers. They do not load `.env` or import `server/*/main.js`.
+- Coverage includes:
+  - the exact six-name allowlist and its frozen fixed statements, plus prototype-like, encoded, and non-string names;
+  - typed bindings and observed sizes for all inputs, with no values in SQL text, the exact projection, and pools closed on success and failure;
+  - list/add/remove through HTTP for all six resources, plus `get-employee-info` and admin use of the legacy routes;
+  - `403` with only the role query executed for an authenticated non-administrator who holds every other module role, on all 20 protected routes;
+  - spoofed body, query, and header identity or role flags;
+  - `401` for missing, tampered, and revoked sessions before any SQL;
+  - revoked portal-admin membership taking effect on the next request;
+  - invalid and injection-like target IDs; duplicates, including the concurrent-insert race and duplicate-key errors; missing HR, title, name, or email; oversized data; procedure result sets; unremoved deletes;
+  - SQL, connection, and role-check failures returning `503` without detail; malformed JSON and percent-encoding; unknown routes;
+  - the real Vuex stores (GET URL with no body, list clearing, translated 403, network failures, unchanged mutation URLs and payloads), English/Arabic key presence, and a source scan confirming that the only remaining administration generic-SQL callers are the six DTR setup pages using the `adminPage` layout.
+- **First runs:**
+  - The first new-test run was 15 passed and 2 failed. Service methods threw synchronously for invalid input instead of rejecting, which was fixed by making them `async` (same HTTP behavior). A test compared arrays created in a different VM realm by reference, which was fixed by comparing structurally.
+  - The first lint run flagged one `import/order` error in `server/administration/main.js`, which was fixed.
+  - Prettier formatting was applied to the new files.
+- **Second review:** the complete diff and every new file were read, and each request was traced from caller through `authorize`, `requirePortalAdmin` (`req.auth`), validation, typed binding, response, and error handling. The review found that malformed JSON bodies or malformed percent-encoded route parameters fell through to Express's default HTML error page. A JSON error handler (`400 invalidRequest`, otherwise `503`) and regression tests were added. No other finding. `rg` confirmed no remaining references to the deleted routers; the one `router/hrSurveys.js` hit is the separate `server/hrSurveys` module.
+- **Final checks after all changes:**
+  - `npm run test:security`: 70/70 passed (exit 0).
+  - `npm run lint`: passed (exit 0).
+  - `git diff --check`: passed.
+  - `npm run build`: passed (exit 0); client and server compiled successfully. Output retains the existing outdated-Browserslist, large-bundle, and Babel `vue-pdf-embed` deoptimization notices; no dependency was changed. The client bundle contains `administration-api/members/` and no `SELECT * FROM dbo.<membership table>` text.
+- **Independent searches:** no membership store or administration component sends SQL. The only request-derived values in administration server code are `body.code` (validated target), `params.module` (Map key only), and `body.query` in the legacy SQL router. All `${…}` interpolations in the new SQL builders are server constants evaluated once at load time.
+- No live AD/SQL workflow, browser visual inspection, production mutation, or failure injection was performed locally.
+
+#### Explicit residual exposure for later phases
+
+- **Phase 5 — administration generic SQL:** `POST /administration-api/sql-call` (portal DB) and `POST /administration-api/hr-sql-call` (HR DB) still execute SQL text from the browser. Callers: `pages/administration/dtr-setup/index.vue`, `divisions/_divisions.vue`, `departments/_departments.vue`, `projects/_projects.vue`, `sub-projects/_subProjects.vue`, and `sub-project/_subProject.vue`. They now require current portal-administrator membership and return sanitized errors. **Role gating does not remove arbitrary-SQL execution for portal administrators or anyone holding an administrator's token.** Remove these routes in Phase 5.
+- **Phases 5–6 — business-card generic SQL (unchanged here, as required):** `POST /business-cards-api/sql-call` is still reachable by **any authenticated user**, not just administrators. `components/administration/dtrSetup/drtAdminPopup.vue` still uses it for the assignment duplicate check and `dtr.adminAssignment_addData`, interpolating the values returned by `get-employee-info`. The generated-cards, card-generator, and activity-logs pages also use it. `GET /business-cards-api/hr-sql-call` also remains. This is the most significant open SQL exposure.
+- **Carried from Phase 2:** the public vCard interpolation remains.
+- **Phase 9:** procedure bodies are unreadable. Any logic inside `_addData`/`_deleteMember` is trusted but unaudited.
+- **Behavior notes:**
+  - An administrator can still remove themselves or the last portal administrator (unchanged; no business policy supplied).
+  - `coc_admins` and `dtr_users` may already contain duplicate rows. A delete that removes only some rows is reported as success, and the remaining row stays visible.
+  - HR records with names over 50 characters or no email can no longer be added; correct the HR data or assess a schema change.
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record the maintenance window, release identifier, and aliases for: a portal-administrator account; an ordinary authenticated account with **no** portal-admin membership, ideally one holding another module role; and, only if separately authorized, one designated test employee code for membership writes. No SQL migration or key change is needed.
+2. Stop all workers and deploy frontend and backend together. This includes `server/shared/roles.js`, `server/administration/{createApi.js,main.js,router/,services/}` with the seven old router files removed, the administration stores, the locales, and the tests. Run the existing `npm ci` / `npm run build` / PM2 restart procedure, refresh cached/PWA clients, and avoid mixed old/new workers.
+3. **Read-only checks first, as the portal administrator:**
+   - Open each of the six membership screens in English and Arabic.
+   - Confirm names, IDs, emails, titles, and photos match the pre-deployment view.
+   - In developer tools, confirm each list is a bodyless `GET /administration-api/members/<resource>` returning `200` without `branch`, and that no `administration-api/sql-call` request is made by these screens.
+   - Open DTR setup and navigate company → branch → division → department → project → sub-project; confirm the lists still load.
+   - Open the assignment popup and look up an existing employee code without saving.
+4. **As the ordinary account:**
+   - Direct navigation to `/administration` must redirect to the portal.
+   - `GET /administration-api/members/portal` with that session must return `403 {"message":"forbidden"}`.
+   - Without a session it must return `401`.
+   - As the administrator, `GET /administration-api/members/unknown` must return `400 invalidModule`.
+   - Do not send SQL, injection payloads, or other employees' IDs to production.
+5. **Only with separate authorization:**
+   - First record whether the designated test employee is present in the chosen membership table(s), with their full row values.
+   - Add them on one screen: expect success, then an immediate re-add showing the translated duplicate message.
+   - Remove them: expect success, then a repeat removal showing the not-found message.
+   - Restore the recorded pre-test state exactly: re-add if originally present and compare the row; leave absent if originally absent.
+   - Never test by removing a real administrator. For the revocation check, temporarily add a designated test account as portal admin, confirm access, remove it, then confirm the same signed-in session now receives `403` without logging out. Restore the original state afterwards.
+6. Check sanitized production logs for unexpected `401`, `403`, `404`, or `503` responses on administration, portal, business-card, DTR, CoC, and survey routes, confirming no cross-module caller was blocked. Record outcomes below and mark Phase 4 **Deployed**, then **Verified**, only after those events occur. Do not start Phase 5 automatically.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-record aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- If verification fails, keep the administration screens under maintenance and preserve sanitized diagnostics. Prefer fixing forward. This phase has no schema migration to reverse.
+- Any membership write made during testing must be restored from the values recorded in step 5. Mutations are transactional, so a failed add or delete leaves no partial membership change.
+- Do not restore an accessible release that lets the six stores post SQL or lets non-administrators reach administration mutations and generic SQL routes; every pre-Phase-4 release does both. A rollback candidate must also preserve the Phase 1–3 identity boundary and the Phase 2 `open-sql-call` retirement. If none exists, keep `/administration` and `/administration-api` unavailable (for example at the reverse proxy) until fixed.
+- Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old stores (they require the retained legacy SQL route and would bypass the new endpoint) or only the old routers.
