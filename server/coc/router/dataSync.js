@@ -6,37 +6,37 @@ const router = express.Router()
 
 async function portalDB() {
   const pool = new sql.ConnectionPool(sqlConfigs)
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
-  }
+  await pool.connect()
+  return pool
 }
 
 async function hrDB() {
   const pool = new sql.ConnectionPool(hrSQLConfigs)
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
-  }
+  await pool.connect()
+  return pool
 }
 
 // Main sync function
 async function syncEmployees() {
-  const hrDBConnection = await hrDB()
-  const portalDBConnection = await portalDB()
+  let hrDBConnection
+  let portalDBConnection
   try {
+    hrDBConnection = await hrDB()
     // Fetch employee data from HR database
     const employees = await fetchEmployeesFromHR(hrDBConnection)
+    if (employees.length === 0) {
+      throw new Error('HR returned no active employees')
+    }
 
     // Sync to portal database
+    portalDBConnection = await portalDB()
     await syncToPortalDB(portalDBConnection, employees)
   } finally {
-    if (hrDBConnection) await hrDBConnection.close()
-    if (portalDBConnection) await portalDBConnection.close()
+    await Promise.all(
+      [hrDBConnection, portalDBConnection]
+        .filter(Boolean)
+        .map((connection) => connection.close())
+    )
   }
 }
 
@@ -81,7 +81,7 @@ async function fetchEmployeesFromHR(hrDBConnection) {
       WHERE 
         A.branch_code = @branchCode
         AND A.FDimension = '1'
-        AND B.stop_val_flag = '0'
+        AND B.stop_val_flag = 0
     `)
     return employeesResult.recordset
   })
@@ -136,6 +136,10 @@ async function fetchEmployeesFromHR(hrDBConnection) {
 
 // Sync employees to portal database
 async function syncToPortalDB(portalDBConnection, employees) {
+  if (!Array.isArray(employees) || employees.length === 0) {
+    throw new Error('HR returned no active employees')
+  }
+
   for (const emp of employees) {
     const employeeId = emp.employee_code
     const nameEng = emp.employee_name_eng
@@ -200,10 +204,29 @@ async function syncToPortalDB(portalDBConnection, employees) {
         `)
     }
   }
+
+  // Reconcile the complete HR snapshot only after every employee upsert succeeds.
+  // A failed or partial fetch must never retire employees from the last good sync.
+  await portalDBConnection
+    .request()
+    .input(
+      'activeEmployeeIds',
+      sql.NVarChar(sql.MAX),
+      JSON.stringify(employees.map((emp) => emp.employee_code))
+    ).query(`
+      UPDATE e
+      SET is_active = CASE WHEN active.employee_id IS NULL THEN 0 ELSE 1 END
+      FROM coc.employees e
+      LEFT JOIN OPENJSON(@activeEmployeeIds)
+        WITH (employee_id nvarchar(20) '$') active
+        ON active.employee_id = e.employee_id
+    `)
 }
 
 // Export both the router and syncEmployees function
 module.exports = {
   router,
   syncEmployees,
+  fetchEmployeesFromHR,
+  syncToPortalDB,
 }

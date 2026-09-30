@@ -46,9 +46,6 @@ export const actions = {
       const FormData = require('form-data')
       const dataToSend = new FormData()
 
-      dataToSend.append('employeeID', payload.employeeID.toUpperCase())
-      dataToSend.append('employeeName', payload.employeeName)
-      dataToSend.append('versionNumber', payload.versionNumber)
       dataToSend.append('signedForm', payload.uploadedDocument)
 
       const serverCall = await this.$axios({
@@ -74,7 +71,10 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message:
+          error.response?.data?.message === 'inactiveEmployee'
+            ? this.app.i18n.t('codeOfConduct.cocForm.inactiveEmployee')
+            : error.response?.data?.message,
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -124,18 +124,11 @@ export const actions = {
     }
   },
 
-  async fetchEmployeeData({ dispatch }, payload) {
+  async fetchEmployeeData({ dispatch }) {
     try {
       const serverCall = await this.$axios.post(
         `${this.$config.baseURL}/coc-api/get-single-employee-data`,
-        {
-          employeeID: payload.employeeID.toUpperCase(),
-          userFullName: payload.userFullName,
-          userMailAddress: payload.userMailAddress,
-          branchCode: payload.branchCode,
-          titleEnglish: payload.titleEnglish,
-          titleArabic: payload.titleArabic,
-        }
+        {}
       )
 
       if (serverCall.status === 200) {
@@ -144,7 +137,10 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message:
+          error.response?.data?.message === 'inactiveEmployee'
+            ? this.app.i18n.t('codeOfConduct.cocForm.inactiveEmployee')
+            : error.response?.data?.message,
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,

@@ -10,7 +10,7 @@
     "generate": "nuxt generate",
     "lint:js": "eslint --ext \".js,.vue\" --ignore-path .gitignore .",
     "lint": "npm run lint:js",
-    "test:security": "node --test tests/security/auth.test.js tests/security/ldap.test.js tests/security/repository.test.js tests/security/client.test.js tests/security/public-cards.test.js tests/security/portal-profile.test.js tests/security/administration.test.js"
+    "test:security": "node --test tests/security/auth.test.js tests/security/ldap.test.js tests/security/repository.test.js tests/security/client.test.js tests/security/public-cards.test.js tests/security/portal-profile.test.js tests/security/administration.test.js tests/security/coc-sync.test.js"
   },
   "dependencies": {
     "@nuxtjs/axios": "^5.13.6",

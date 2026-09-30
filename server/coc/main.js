@@ -22,16 +22,26 @@ api.use(
   express.static(path.join(__dirname, '../../uploads/coc/combinedDocuments'))
 )
 
-// Schedule employee sync every 10 minutes
-cron.schedule('*/10 * * * *', async () => {
-  // console.log('Starting employee sync at', new Date().toISOString())
-  try {
-    await dataSync.syncEmployees() // Call the exported sync function
-    // console.log('Employee sync completed successfully.')
-  } catch (error) {
-    // console.error('Employee sync failed:', error)
+// PM2 runs multiple workers; only one should reconcile the employee snapshot.
+if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0') {
+  let syncRunning = false
+  const runEmployeeSync = async () => {
+    if (syncRunning) return
+    syncRunning = true
+    try {
+      await dataSync.syncEmployees()
+    } catch (error) {
+      process.stderr.write(
+        `CoC employee sync failed: ${error.code || error.name}\n`
+      )
+    } finally {
+      syncRunning = false
+    }
   }
-})
+
+  runEmployeeSync()
+  cron.schedule('*/10 * * * *', runEmployeeSync)
+}
 
 module.exports = {
   path: '/coc-api',

@@ -263,6 +263,7 @@
       "formIntro": "يرجى قراءة وثيقة مدونة السلوك بعناية، ثم الإقرار بأنك قد قرأتها وفهمتها.",
       "formWarning": "هذه الوثيقة سرية! لا يُسمح لك بطباعتها أو التقاط لقطة شاشة أو مشاركتها مع أي شخص.",
       "noPermission": "ليس لديك إذن للوصول إلى هذه الصفحة!",
+      "inactiveEmployee": "هذا النموذج متاح للموظفين النشطين فقط.",
       "employeeInfo": "معلومات الموظف:",
       "acknowledgementDetailsTitle": "تفاصيل الإقرار:",
       "acknowledgementDetails1": "I, the undersigned, hereby acknowledge that I have received and reviewed the Alkholi Group’s Code of Conduct. I understand that it is my responsibility to read, understand, and comply with the guidelines set forth in the Code of Conduct while performing my duties at Alkholi Group.",

@@ -347,23 +347,9 @@ router.get('/get-coc-versions', authorize, async (req, res) => {
 router.post('/get-single-employee-data', authorize, async (req, res) => {
   const portalDBConnection = await portalDB()
   try {
-    const {
-      employeeID,
-      userFullName,
-      userMailAddress,
-      branchCode,
-      titleEnglish,
-      titleArabic,
-    } = req.body
-
-    if (!employeeID) {
-      return res.status(400).json({ message: 'Missing employee ID!' })
-    }
-
-    // Check if the employee exists
-    let result = await portalDBConnection
+    const result = await portalDBConnection
       .request()
-      .input('employee_id', sql.NVarChar(20), employeeID).query(`
+      .input('employee_id', sql.NVarChar(20), req.auth.employeeCode).query(`
         SELECT
           e.*,
           es.status AS signature_status,
@@ -377,39 +363,11 @@ router.post('/get-single-employee-data', authorize, async (req, res) => {
             WHERE active_flag = 1
             ORDER BY created_at DESC
           )
-        WHERE e.employee_id = @employee_id
+        WHERE e.employee_id = @employee_id AND e.is_active = 1
       `)
 
     if (result.recordset.length === 0) {
-      // Employee not found, insert a new record
-      await portalDBConnection
-        .request()
-        .input('employee_id', sql.NVarChar(20), employeeID)
-        .input('name_eng', sql.NVarChar(255), userFullName || 'Unknown')
-        .input(
-          'email',
-          sql.NVarChar(255),
-          userMailAddress || `${employeeID}@example.com`
-        )
-        .input('branch_code', sql.NVarChar(50), branchCode || 'Unknown')
-        .input('title_e', sql.NVarChar(100), titleEnglish || 'Unknown')
-        .input('title_a', sql.NVarChar(100), titleArabic || 'Unknown').query(`
-          INSERT INTO coc.employees (employee_id, name_eng, email, branch_code, title_e, title_a)
-          VALUES (@employee_id, @name_eng, @email, @branch_code, @title_e, @title_a)
-        `)
-
-      // Fetch the newly created record
-      result = await portalDBConnection
-        .request()
-        .input('employee_id', sql.NVarChar(20), employeeID).query(`
-          SELECT
-            e.*,
-            NULL AS signature_status,
-            NULL AS signed_at,
-            NULL AS file_path
-          FROM coc.employees e
-          WHERE e.employee_id = @employee_id
-        `)
+      return res.status(403).json({ message: 'inactiveEmployee' })
     }
 
     // Return the employee data
@@ -430,7 +388,7 @@ const uploadSignedForm = multer({
       cb(null, path.join(__dirname, '../../../uploads/coc/signedForms'))
     },
     filename: (req, file, cb) => {
-      const employeeId = req.body.employeeID
+      const employeeId = req.auth.employeeCode
       // Create a unique filename using employeeId and timestamp
       cb(null, `SIGNED_${employeeId}_${Date.now()}.pdf`)
     },
@@ -453,17 +411,30 @@ router.post(
   uploadSignedForm.single('signedForm'),
   async (req, res) => {
     let portalDBConnection
+    const signedFormPath = req.file?.path
     try {
+      if (!signedFormPath) {
+        return res.status(400).json({ message: 'Missing signed form file' })
+      }
+
       // Establish connection to the database
       portalDBConnection = await portalDB()
 
-      // Extract required data from the request
-      const employeeId = req.body.employeeID
-      const signedFormPath = req.file.path
-      const employeeFullName = req.body.employeeName
-      if (!employeeId || !signedFormPath) {
-        throw new Error('Missing employeeId or signed form file')
+      const employeeId = req.auth.employeeCode
+      const activeEmployee = await portalDBConnection
+        .request()
+        .input('employee_id', sql.NVarChar(20), employeeId)
+        .query(`
+          SELECT name_eng FROM coc.employees
+          WHERE employee_id = @employee_id AND is_active = 1
+        `)
+      if (activeEmployee.recordset.length === 0) {
+        await portalDBConnection.close()
+        portalDBConnection = null
+        fs.unlinkSync(signedFormPath)
+        return res.status(403).json({ message: 'inactiveEmployee' })
       }
+      const employeeFullName = activeEmployee.recordset[0].name_eng
 
       // Process the signed form by appending it to the CoC and storing metadata
       const combinedPdfPath = await appendSignatureToCoC(
@@ -536,6 +507,10 @@ router.post(
       }
     } catch (error) {
       // Handle errors during main tasks
+      if (signedFormPath && fs.existsSync(signedFormPath)) {
+        fs.unlinkSync(signedFormPath)
+      }
+      if (portalDBConnection) await portalDBConnection.close()
       res.status(500).json({ message: error.message })
     }
   }
@@ -744,6 +719,7 @@ router.get('/get-employee-compliance', authorize, async (req, res) => {
       LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
         AND es.coc_version_id = (SELECT TOP 1 id FROM coc.coc_versions WHERE active_flag = 1 ORDER BY created_at DESC)
       LEFT JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
+      WHERE e.is_active = 1
       ORDER BY e.employee_id
     `)
     res.status(200).json(result.recordset)
@@ -1046,7 +1022,7 @@ router.get('/export-report', authorize, async (req, res) => {
         FROM coc.employees e
         INNER JOIN coc.employee_signatures es ON e.employee_id = es.employee_id
         INNER JOIN coc.coc_versions cv ON es.coc_version_id = cv.id
-        WHERE es.status = 'approved' AND es.coc_version_id = @versionId
+        WHERE e.is_active = 1 AND es.status = 'approved' AND es.coc_version_id = @versionId
       `
     } else {
       query = `
@@ -1057,7 +1033,7 @@ router.get('/export-report', authorize, async (req, res) => {
           e.branch_code
         FROM coc.employees e
         LEFT JOIN coc.employee_signatures es ON e.employee_id = es.employee_id AND es.coc_version_id = @versionId
-        WHERE es.id IS NULL OR es.status != 'approved'
+        WHERE e.is_active = 1 AND (es.id IS NULL OR es.status != 'approved')
       `
     }
 

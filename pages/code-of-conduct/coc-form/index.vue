@@ -489,7 +489,6 @@ export default {
     return {
       overlay: false,
       showContent: undefined,
-      employeeId: undefined,
       currentCoC: null,
       generatingForm: false,
       downloadingForm: false,
@@ -586,26 +585,7 @@ export default {
       try {
         this.overlay = true
 
-        const employeeID = localStorage.getItem('employeeCode')
-        const userFullName = localStorage.getItem('userFullName')
-        const userMailAddress = localStorage.getItem('userMailAddress')
-        const branchCode = localStorage.getItem('branchCode')
-        const titleEnglish = localStorage.getItem('titleEnglish')
-        const titleArabic = localStorage.getItem('titleArabic')
-
-        this.employeeId = employeeID
-
-        const employeeData = await this.$store.dispatch(
-          'coc/fetchEmployeeData',
-          {
-            employeeID,
-            userFullName,
-            userMailAddress,
-            branchCode,
-            titleEnglish,
-            titleArabic,
-          }
-        )
+        const employeeData = await this.$store.dispatch('coc/fetchEmployeeData')
 
         this.formData = {
           ...employeeData,
@@ -715,14 +695,8 @@ export default {
 
     async saveUploadedDocument() {
       try {
-        const employeeID = localStorage.getItem('employeeCode')
-        const employeeName = localStorage.getItem('userFullName')
-
         const uploadedDocData = {
-          employeeID,
-          employeeName,
           uploadedDocument: this.uploadedDocument,
-          versionNumber: this.currentCoC.version_number,
         }
 
         const submit = await this.$store.dispatch(
@@ -731,7 +705,7 @@ export default {
         )
 
         if (
-          submit.message === 'Signed form uploaded and processed successfully!'
+          submit?.message === 'Signed form uploaded and processed successfully!'
         ) {
           this.showSuccessMessage = true
           // to update the acknowledgment status right after the user submission
