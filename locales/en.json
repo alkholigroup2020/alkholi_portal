@@ -462,7 +462,13 @@
         "employeeInfoInvalid": "The employee's HR data exceeds the portal limits. Please contact IT.",
         "forbidden": "You are not authorized to manage portal administration.",
         "authFailed": "Authorization Failed!",
-        "serviceUnavailable": "The service is unavailable. Please try again later."
+        "serviceUnavailable": "The service is unavailable. Please try again later.",
+        "invalidLevel": "Unknown hierarchy level.",
+        "invalidPath": "The selected hierarchy path is invalid.",
+        "pathNotFound": "The selected hierarchy path does not exist on the HR system.",
+        "invalidRoles": "At least one role should be selected!",
+        "assignmentExists": "Admin Already Exist!",
+        "invalidRequest": "The request is invalid."
       },
       "members": {
         "forbidden": "You are not authorized to manage portal administration.",

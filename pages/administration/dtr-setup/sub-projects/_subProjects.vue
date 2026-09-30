@@ -24,7 +24,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text px-1"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 cursor-pointer"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -49,7 +49,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text px-1 mx-2"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 mx-2 cursor-pointer"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -164,7 +164,7 @@
                 max-width="100%"
                 style="direction: ltr"
                 :disabled="allSubProjects.length <= 0"
-                class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
+                class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2 cursor-pointer"
                 @click="listAllEmployees"
               >
                 <v-icon
@@ -191,7 +191,7 @@
                 outlined
                 depressed
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
-                class="text-capitalize px-2 text-body-2"
+                class="text-capitalize px-2 text-body-2 cursor-pointer"
                 :disabled="allSubProjects.length <= 0"
                 @click="showDTRAdminPopup = true"
               >
@@ -346,122 +346,44 @@ export default {
     await this.getDTRAdmins()
   },
   methods: {
+    hierarchyPath() {
+      return {
+        branch: this.branch,
+        division: this.divisionCode,
+        department: this.departmentCode,
+        project: this.projectCode,
+      }
+    },
+
     async getSubProjectsPerProject() {
       this.overlay = true
-      try {
-        const subProjects = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code, section_code, division_code
-                    FROM [dbo].[pay_code_tables] WHERE branch_code='${this.branch}' and system_code_type='72'  
-                    and major_code='${this.divisionCode}' and section_code='${this.departmentCode}' 
-                    and division_code ='${this.projectCode}'`,
-          }
-        )
-        if (subProjects.status === 200) {
-          this.allSubProjects = subProjects.data
-          for await (const element of this.allSubProjects) {
-            this.subProjectsCodes.push(element.system_code)
-          }
-
-          this.overlay = false
-        }
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.allSubProjects = await this.$store.dispatch(
+        'administration/dtrSetup/getOrganization',
+        { kind: 'sub-projects', path: this.hierarchyPath() }
+      )
+      this.subProjectsCodes = this.allSubProjects.map(
+        (element) => element.system_code
+      )
+      this.overlay = false
     },
 
     async listAllEmployees() {
       this.overlay = true
-      try {
-        const allEmployees = []
-        const getEmployeesData = await (async () => {
-          for await (const element of this.allSubProjects) {
-            const queryResult = await this.$axios.post(
-              `${this.$config.baseURL}/administration-api/hr-sql-call`,
-              {
-                query: `
-                SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-                FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-                WHERE A.employee_code=B.employee_code
-                AND A.branch_code='${this.branch}' AND A.department='${element.major_code}' 
-                AND A.Division='${element.division_code}' 
-                AND A.section='${element.section_code}' AND A.Unit='${element.system_code}'
-                AND B.stop_val_flag='0'
-                `,
-              }
-            )
-            if (queryResult.status === 200) {
-              queryResult.data.forEach((e) => {
-                allEmployees.push(e)
-              })
-            }
-          }
-        })
-        await getEmployeesData()
-        this.allEmployeesResult = allEmployees
-        this.showTable = true
-        this.overlay = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.allEmployeesResult = await this.$store.dispatch(
+        'administration/dtrSetup/getEmployees',
+        { level: 'project', path: this.hierarchyPath() }
+      )
+      this.showTable = true
+      this.overlay = false
     },
 
     async getDTRAdmins() {
-      try {
-        this.overlay = true
-
-        const queryResult = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/sql-call`,
-          {
-            query: `
-              SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-              WHERE branchName='${this.branch}' 
-              AND divisionCode='${this.divisionCode}' 
-              AND departmentCode='${this.departmentCode}'
-              AND projectCode ='${this.projectCode}'
-              AND subprojectCode='undefined'
-            `,
-          }
-        )
-        if (queryResult.status === 200) {
-          this.dtrAdmins = queryResult.data
-        }
-
-        this.overlay = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.overlay = true
+      this.dtrAdmins = await this.$store.dispatch(
+        'administration/dtrSetup/getAssignments',
+        { level: 'project', path: this.hierarchyPath() }
+      )
+      this.overlay = false
     },
 
     async popupClosed() {
@@ -487,5 +409,4 @@ export default {
 }
 </script>
 
-<style>
-</style>
+<style></style>

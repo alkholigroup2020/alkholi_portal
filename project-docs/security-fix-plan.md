@@ -162,8 +162,9 @@ Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before 
 | 1     | Verified    | User confirmed deployed and working on 2026-09-16             |
 | 2     | Verified    | User confirmed deployed, verified, and accepted on 2026-09-22 |
 | 3     | Deployed    | Partial read-only smoke 2026-09-29; user accepted it for progression the same day (remaining checks not performed) |
-| 4     | Implemented | Local checks passed 2026-09-29; not deployed or verified      |
-| 5–9   | Not started | Pending; do not advance automatically                         |
+| 4     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
+| 5     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
+| 6–9   | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -473,3 +474,108 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-rec
 - Any membership write made during testing must be restored from the values recorded in step 5. Mutations are transactional, so a failed add or delete leaves no partial membership change.
 - Do not restore an accessible release that lets the six stores post SQL or lets non-administrators reach administration mutations and generic SQL routes; every pre-Phase-4 release does both. A rollback candidate must also preserve the Phase 1–3 identity boundary and the Phase 2 `open-sql-call` retirement. If none exists, keep `/administration` and `/administration-api` unavailable (for example at the reverse proxy) until fixed.
 - Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old stores (they require the retained legacy SQL route and would bypass the new endpoint) or only the old routers.
+
+### Phase 4 acceptance record — 2026-09-30
+
+Before any Phase 5 edit, the user was asked whether Phase 4 (recorded as **Implemented** only) had been tested and accepted, and chose “Accepted, deployed”. Phase 4 is accepted for progression to Phase 5 and its status is recorded as **Deployed** from that confirmation. The release identifier, maintenance window, account aliases, and individual Phase 4 smoke-check results were not supplied and are not inferred, so the status is not upgraded to **Verified**.
+
+### Phase 5 implementation record — 2026-09-30
+
+**Status: Implemented — local checks passed.** Phase 5 has not been deployed or verified in production. Starting checkout: `fc7c560`, with a clean working tree. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 6 has not started.
+
+#### API contracts
+
+All routes are under `/administration-api`, run the shared `authorize` middleware followed by `requireRole(..., 'portalAdmin')` (the Phase 4 helper, evaluated on every request), and return JSON. Read routes send `Cache-Control: no-store`. Path values are strings of 1–10 ASCII letters, digits, `_` or `-`; the text `undefined` (any case) is rejected as a code. Each level requires **exactly** its own path fields: a missing, repeated, malformed, or extra path field returns `400 invalidPath` rather than being reinterpreted as another level. Unrelated fields are ignored.
+
+| Route | Input | Success |
+| ----- | ----- | ------- |
+| `GET /dtr-setup/organization/:kind` | `kind` ∈ `companies`, `branches` (no query); `divisions` (`branch`); `departments` (`branch`, `division`); `projects` (+ `department`); `sub-projects` (+ `project`) | `200` array. Companies: `company_code`, `company_desc_a`, `company_desc_e`, `comp_logo`. Branches: `branch_code`, `branch_name_a`, `branch_name_e`, `logo`. Others: `system_code`, `system_desp_a`, `system_desp_e` (sub-projects also `division_code`). |
+| `GET /dtr-setup/employees/:level` | `level` ∈ `division` (`branch`, `division`), `department` (+ `department`), `project` (+ `project`), `sub-project` (+ `subProject`), as query values | `200` array of `employee_code`, `employee_name_eng`, `employee_name_a`, `employee_picture`, `Email` |
+| `GET /dtr-setup/assignments/:level` | same levels and query values | `200` array of `id`, `employeeCode`, `adminName`, `picPath`, `isHrPic`, `isPortalPic`, `isDTRAdmin`, `isApprover`, `isManpowerAdmin`, `isMigrator`, `isReportAdmin` (integers, as stored) |
+| `POST /dtr-setup/assignments/:level` | JSON body: the level's path fields, `employeeCode`, and optional booleans `isDTRAdmin`, `isApprover`, `isManpowerAdmin`, `isMigrator`, `isReportAdmin` | `201 { "message": "assignmentAdded" }` |
+
+Errors: `400 invalidLevel`, `400 invalidPath`, `400 invalidRoles`, `400 invalidEmployeeCode`, `400 invalidRequest` (malformed JSON/encoding), `401 authFailed`, `403 forbidden`, `404 pathNotFound`, `404 employeeInfoMessing`, `409 assignmentExists`, `422 employeeInfoInvalid`, `503 serviceUnavailable`. No database or exception text is returned. Empty branches of the hierarchy return `200 []`.
+
+`POST /administration-api/get-employee-info` (Phase 4) is reused unchanged for the popup's employee lookup.
+
+**Removed:** `POST /administration-api/sql-call` and `POST /administration-api/hr-sql-call`, with `server/administration/router/sqlCalls.js` deleted. They now reach the API's terminal JSON `404 notFound` for every method and caller. No alias executes supplied SQL.
+
+#### Implementation and material decisions
+
+- `server/administration/services/dtrSetup.js` holds every statement as a module constant selected through `Map`s keyed by the allowlisted `kind`/`level`. Request values are bound as `varchar(10)` inputs (`branchName` as `varchar(100)`); no table name, column, or SQL fragment comes from the browser. `server/administration/router/dtrSetup.js` and `createApi.js` compose it; `main.js` injects `mssql`, both configs, and `memberships.getEmployeeInfo`.
+- **HR mappings preserved as traced from the old pages** (UI labels do not match HR names): `pay_code_tables.system_code_type` `41` = division, `42` = department (`major_code` = division), `71` = project (`major_code` = division, `section_code` = department), `72` = sub-project (additionally `division_code` = project). On `Pay_employees`, the UI division is `department`, the UI department is `section`, the UI project is `Division`, and the UI sub-project is `Unit`.
+- **Employee lists** keep the active filter (`pay_emp_finance.stop_val_flag = 0`) and are always scoped to `branch_code` and the division, so equal codes in other branches are not mixed. The existing rules are kept: division level lists the whole division; department level lists division employees whose project code is one of the department's projects; project level lists employees whose unit is one of the project's sub-projects; sub-project level matches the full path. The old per-child browser loops became one statement per level using `EXISTS`.
+- **Sentinel compatibility:** levels below an assignment are still stored and matched as the text `undefined`, only inside `storedPath()` in the service. The API and frontend omit those fields. No assignment data was migrated.
+- **Assignment creation** is one server operation. The employee is resolved through the trusted Phase 4 lookup (HR employee, HR title, portal picture); the requested path is resolved against HR, requiring the branch and every ancestor to exist, and the HR-stored codes are what is written. One fixed batch then sets `XACT_ABORT`, opens a transaction, checks for the same employee on the same path `WITH (UPDLOCK, HOLDLOCK)`, calls the existing `dtr.adminAssignment_addData` with named typed parameters, confirms the row exists, and commits; any error rolls back. Because the table has no unique key on those columns (see evidence), the held range lock is what prevents concurrent duplicates. No constraint or migration was added.
+- Browser-supplied names, emails, companies, picture paths, and picture flags are ignored. Stored values: `employeeCode` and `adminName` from HR, `adminCompany` = the employee's HR branch code (as before), `picPath`/`isHrPic`/`isPortalPic` from the portal-then-HR-then-default picture rule.
+- **Role flags** are stored exactly as selected. The server repeats the popup's rules (at least one flag; DTR admin and site manager not both) and returns `400 invalidRoles` otherwise. No flag is used as an access policy anywhere in this phase. No edit or delete endpoint was added; `PUT`/`PATCH`/`DELETE` return `404`.
+- **Employees without an HR email remain assignable.** `adminEmail` is `NOT NULL`; the old popup stored the literal text `null` for them. The server now stores an empty string. 268 of 2,191 active employees currently have no email, so rejecting them (as Phase 4 does for membership lists) would have blocked an existing workflow. No reader of `adminEmail` exists in the repository.
+- **Stricter than before:** an employee code longer than 10 characters, or a name over 100, returns `422 employeeInfoInvalid` instead of being truncated (observed maxima: code 6, name 47). A path that does not exist in HR returns `404 pathNotFound`; previously the browser could insert any text. Hierarchy codes longer than 10 characters are rejected because the assignment columns are `varchar(10)` (observed maxima: branch 9, other codes 3).
+- **Frontend:** `store/administration/dtrSetup.js` gained `getOrganization`, `getEmployees`, `getAssignments`, and `createAssignment`; the six DTR setup pages and `drtAdminPopup.vue` call only these. Errors are translated through `errorMessages.administration.dtrSetup` (new English/Arabic keys `invalidLevel`, `invalidPath`, `pathNotFound`, `invalidRoles`, `assignmentExists`, `invalidRequest`); raw exception text is no longer shown. A failed list now shows an empty list. A duplicate still closes the popup with a message; other failures keep it open. Page URLs, layouts, the disabled edit/delete buttons, and table columns are unchanged. `cursor-pointer` was added to the buttons in the edited files.
+- `CLAUDE.md` no longer lists an administration `sqlCalls.js` router.
+
+#### Read-only database evidence and limitations
+
+- One-off read-only scripts used the configured connections without importing an application entry point or starting Nuxt. They printed only schema metadata and aggregates; no employee or assignment rows, credentials, tokens, or connection details were output or recorded.
+- **`dtr.adminAssignment`:** `id int identity` (primary key, the only index), `employeeCode varchar(10)`, `adminName varchar(100)`, `adminEmail varchar(100)` (all `NOT NULL`), `adminCompany varchar(100) NULL`, `picPath nvarchar(300) NULL`, `isHrPic`/`isPortalPic int NULL`, five `int NOT NULL` flags, `branchName varchar(100)`, and four `varchar(10) NOT NULL` code columns. No unique constraint, trigger, default, check, or foreign key. It holds 3 rows, all division-level, with no duplicate employee/path groups and no gaps in the sentinel pattern. The database is not using read-committed snapshot isolation.
+- **`dtr.adminAssignment_addData`:** the 17 parameters match the bound names and types and the order the old popup used positionally. `OBJECT_DEFINITION` returns `NULL`, so its internal SQL and any side effects remain **unverified** (Phase 9).
+- **HR:** `adm_company`, `adm_branch`, `pay_code_tables`, `Pay_employees`, and `pay_emp_finance` are tables with the selected columns. `pay_code_tables` is keyed on `(system_code_type, system_code, major_code, company_code, branch_code)`; there are no duplicate rows per hierarchy key and no orphaned child rows. Codes of all four types are shared across branches (16, 17, 166, and 32 codes respectively), which is why every statement is branch-scoped. `stop_val_flag` is numeric; no employee has more than one finance row.
+- **Equivalence (aggregates only):** over every department and every project in HR, the old loop logic and the new statements return the same totals (department level 1,781 = 1,781; project level 1,324 = 1,324; active filter 2,191 = 2,191).
+- **Compile-only check:** all 16 new statements (six organization, four employee, four path, assignment list, assignment add) were compiled against the live schemas inside `IF 1 = 0 BEGIN … END` with typed `DECLARE`s, so they were parsed and name-bound but never executed. 16/16 compiled; negative controls were rejected (unknown column 207, syntax 156). Procedure parameter binding happens only at run time and rests on the metadata comparison.
+- **Not exercised locally:** real lock behavior under concurrent requests, a live insert, and browser rendering. The concurrency test uses a mock whose check-and-insert is atomic; it proves the service issues one statement with no separate pre-check, not SQL Server's locking.
+
+#### Local validation and second review
+
+- `npm run test:security`: **90 passed, 0 failed** (exit 0) on Node 24.21.0: the 74 existing tests plus 16 in the new `tests/security/dtr-setup.test.js`, added explicitly to the package script; the runner output lists all 16 by name. Tests use mocked `mssql`, test-only signed sessions, the real `createAuth`/`createRoleChecks`/membership and DTR setup services, and loopback-only isolated Express servers. They do not load `.env` or import `server/*/main.js`.
+- New coverage:
+  - the exact level/kind allowlists, statement text (branch scoping, active filter, HR column mapping, lock hints, transaction), and prototype-like or table-like names;
+  - children, employees, and assignments at every level through HTTP, including empty branches, same-code/different-branch fixtures, inactive employees, projections without private columns, and typed inputs;
+  - sentinel binding for division-, department-, project-, and sub-project-level lists and inserts, with flags stored as selected;
+  - creation at all four levels from trusted lookups with spoofed name/email/company/picture/path-column fields ignored; duplicates `409`; six concurrent identical requests producing one row;
+  - invalid levels, paths, flags, and employee codes rejected before any HR or assignment statement; unknown employees, oversized codes, unknown paths, wrong parents, and failed lookups/writes leaving no row and returning no database detail;
+  - `401` without a valid session and `403` for a non-administrator on all 18 new route/level combinations with only the role query executed; membership revocation on the next request;
+  - retired `/sql-call` and `/hr-sql-call` returning `404` for administrators, ordinary users, and anonymous callers, for `POST` and `GET`, with no statement executed, while a Phase 4 membership route still answers;
+  - the real store module, the six page scripts, and the popup script executed with mocks (URLs, omitted lower levels, no SQL, translated errors, popup close/keep-open behavior, role validation); source scans; English/Arabic keys.
+- `tests/security/administration.test.js` was updated for the new composition: the two legacy routes are now asserted as `404`, and the caller scan expects no remaining administration SQL caller.
+- The first full run passed 90/90. `npm run lint`: **passed (exit 0)**. `npm run build`: **passed (exit 0)**; client and server compiled. Output keeps the existing outdated-Browserslist, large-bundle, and Babel `vue-pdf-embed` notices; no dependency changed.
+- **Second review:** the complete diff and new files were read and each request traced from page to store to `authorize`, `requirePortalAdmin`, validation, typed binding, response, and error handling. Findings fixed: list actions now treat a non-array success body as empty (regression assertion added); Prettier had reformatted the two untouched administration config files, which were restored; the stale `CLAUDE.md` note was corrected. Tests (90/90), lint, `git diff --check`, and build were rerun and passed after these fixes.
+- **Independent searches:** no `sql-call` reference remains under `server/administration`, the administration pages, components, or stores. The built client bundle contains `dtr-setup/assignments` and no `administration-api/sql-call`, `hr-sql-call`, or `adminAssignment_addData` text. The only request-derived values in administration server code are `params.kind`/`params.level`/`params.module` (Map keys), `query`/`body` path values and flags (validated, typed inputs), and `body.code`/`body.employeeCode` (validated targets). Every `${…}` in the SQL builders is a module constant.
+
+#### Explicit residual exposure for later phases
+
+- **Phase 6 — business-card generic SQL (unchanged here):** `POST /business-cards-api/sql-call` still executes browser SQL for **any authenticated user**, and `GET /business-cards-api/hr-sql-call` remains. The DTR assignment popup is no longer a caller; the remaining callers are `pages/business-cards/generated-cards/index.vue`, `card-generator/index.vue`, and `activity-logs/index.vue`. Until Phase 6 removes the route, a signed-in user can still write `dtr.adminAssignment` through it, so the new authorization on assignment creation is not yet a complete boundary.
+- **Phases 7–8 — DTR generic SQL:** `/dtr-api/sql-call` and `/dtr-api/hr-sql-call` remain, called by `pages/dtr/dtr-table/index.vue` and `components/dtr/dtr-table/employeeCalendar.vue`. The DTR table still reads `dtr.adminAssignment` with the employee code from local storage.
+- **Phase 9:** `dtr.adminAssignment_addData` and the other procedure bodies are unreadable. The public vCard interpolation from Phase 2 remains.
+- **Behavior notes:** the static `Admins Table`, `Assign An Admin`, and `List all under …` labels are still untranslated English (unchanged). Assignments cannot be edited or removed through the portal (unchanged).
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record the maintenance window, release identifier, and aliases for a portal-administrator account and an ordinary account without portal-admin membership. Only if separately authorized, also choose one designated test employee code and one hierarchy path for a write test. No SQL migration or key change is needed.
+2. Stop all workers and deploy frontend and backend together, including `server/administration/{createApi.js,main.js,router/dtrSetup.js,services/dtrSetup.js}` with `router/sqlCalls.js` removed, the DTR setup pages, popup, store, locales, and tests. Run the existing `npm ci` / `npm run build` / PM2 restart procedure, refresh cached/PWA clients, and avoid mixed old/new workers: an old client calls the removed routes and a new client needs the new ones.
+3. **Read-only checks, as the portal administrator, in English and Arabic:**
+   - Open DTR setup: companies and branches load. Open a branch, then a division, department, project, and sub-project; each list matches the pre-deployment view.
+   - Use “List all under …” at division, department, and project level and open a sub-project; employee tables match the pre-deployment view. Check one division that has no departments and one code that also exists under another branch.
+   - The three existing division-level assignments appear in their division's Admins Table with the same names, pictures, and flags, and do not appear at lower levels.
+   - In developer tools, requests are `GET /administration-api/dtr-setup/...` with only hierarchy codes in the query string; no request goes to `administration-api/sql-call`, `hr-sql-call`, or `business-cards-api/sql-call` from these screens.
+   - Open the assignment popup, look up an existing employee code, and cancel without saving.
+   - The six Phase 4 membership screens and the portal home still load.
+4. **Boundary checks:**
+   - As the administrator, `POST /administration-api/sql-call` and `/administration-api/hr-sql-call` with the harmless body `{}` return `404 {"message":"notFound"}`.
+   - As the ordinary account, `GET /administration-api/dtr-setup/organization/branches` returns `403 {"message":"forbidden"}`; without a session it returns `401`.
+   - As the administrator, `GET /administration-api/dtr-setup/organization/unknown` returns `400 invalidLevel`.
+   - Do not send SQL, injection payloads, or write requests to production for these checks.
+5. **Only with separate authorization (production write):**
+   - First record whether the designated employee already has an assignment on the chosen path, and the full row if so.
+   - In the popup, look up the employee, select the agreed flags, and save: the row appears in that level's Admins Table with those flags and does not appear at the parent or child level.
+   - Save the same employee on the same path again: the translated “already exists” message appears and no second row is added.
+   - Restore the recorded pre-test state. The portal has no delete function for assignments, so removing the test row is a manual database operation through the approved operational procedure, targeting that single `id`; record it. If that cannot be authorized, do not run the write test.
+6. Check sanitized production logs for unexpected `400`, `401`, `403`, `404`, or `503` responses on administration routes and confirm the DTR table, business-card, portal, CoC, and survey modules still load. Record outcomes below and mark Phase 5 **Deployed**, then **Verified**, only after those events occur. Do not start Phase 6 automatically.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-record aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- If verification fails, keep the DTR setup screens under maintenance and preserve sanitized diagnostics. Prefer fixing forward. This phase has no schema or data migration to reverse.
+- Assignment creation is one transaction, so a failed save leaves no partial row. A row created by an authorized write test is removed only through the recorded manual procedure in step 5.
+- Do not restore an accessible release that serves `/administration-api/sql-call` or `/administration-api/hr-sql-call`, or whose popup posts SQL to the business-card route; every pre-Phase-5 release does both. A rollback candidate must also preserve the Phase 1–4 boundaries and the Phase 2 `open-sql-call` retirement. If none exists, keep `/administration/dtr-setup` and `/administration-api/dtr-setup` unavailable (for example at the reverse proxy) until fixed; the Phase 4 membership screens can stay available because they do not depend on this phase's routes.
+- Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed routes) or only the old routers.

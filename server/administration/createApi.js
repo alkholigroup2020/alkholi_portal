@@ -1,12 +1,13 @@
 const express = require('express')
 const createMembershipsRouter = require('./router/memberships')
+const createDtrSetupRouter = require('./router/dtrSetup')
 
 // Shared composition for production and isolated HTTP tests; no runtime imports.
 module.exports = function createApi({
   authorize,
   requirePortalAdmin,
   memberships,
-  createSqlCallsRouter,
+  dtrSetup,
 }) {
   // Every administration route requires a verified session and current
   // portal-administrator membership, checked on the server for each request.
@@ -16,7 +17,7 @@ module.exports = function createApi({
   api.use(express.json())
   api.use(express.urlencoded({ extended: true }))
   api.use(createMembershipsRouter({ adminOnly, memberships }))
-  api.use(createSqlCallsRouter({ adminOnly }))
+  api.use(createDtrSetupRouter({ adminOnly, dtrSetup }))
 
   // Unknown API routes must not fall through to Nuxt's page renderer.
   api.use((req, res) => res.status(404).json({ message: 'notFound' }))

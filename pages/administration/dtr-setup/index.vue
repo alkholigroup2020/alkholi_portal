@@ -32,7 +32,7 @@
             color="whiteColor"
             min-height="80"
             outlined
-            @click="getBranches(company.company_code)"
+            @click="getBranches"
           >
             <v-list-item three-line>
               <v-list-item-content>
@@ -134,61 +134,21 @@ export default {
   methods: {
     async getGroupBranches() {
       this.overlay = true
-      try {
-        const companies = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query:
-              'SELECT [company_code],[company_desc_a],[company_desc_e],comp_logo FROM [dbo].[adm_company]',
-          }
-        )
-        if (companies.status === 200) {
-          this.companies = companies.data
-          if (this.companies.length > 0) {
-            await this.getBranches(this.companies[0].company_code)
-          }
-          this.overlay = false
-        }
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
+      this.companies = await this.$store.dispatch(
+        'administration/dtrSetup/getOrganization',
+        { kind: 'companies' }
+      )
+      if (this.companies.length > 0) {
+        await this.getBranches()
       }
+      this.overlay = false
     },
-    async getBranches(company) {
-      try {
-        const branches = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query:
-              'SELECT branch_code, branch_name_a, branch_name_e, logo, logo_a, design_logo_a, design_logo_e FROM [dbo].[adm_branch]',
-          }
-        )
-        if (branches.status === 200) {
-          this.branches = branches.data
-        }
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+    async getBranches() {
+      this.branches = await this.$store.dispatch(
+        'administration/dtrSetup/getOrganization',
+        { kind: 'branches' }
+      )
     },
   },
 }
 </script>
-

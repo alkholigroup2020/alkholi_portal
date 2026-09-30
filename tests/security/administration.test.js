@@ -6,7 +6,6 @@ const vm = require('node:vm')
 const express = require('express')
 const babel = require('@babel/core')
 const createApi = require('../../server/administration/createApi')
-const createSqlCallsRouter = require('../../server/administration/router/sqlCalls')
 const {
   MUTATION_ROUTES,
 } = require('../../server/administration/router/memberships')
@@ -18,6 +17,9 @@ const {
   HR_TITLE_QUERY,
   PORTAL_PICTURE_QUERY,
 } = require('../../server/administration/services/memberships')
+const {
+  createDtrSetup,
+} = require('../../server/administration/services/dtrSetup')
 const {
   createRoleChecks,
   requireRole,
@@ -219,6 +221,7 @@ function databaseFixture() {
     VarChar: (length) => ({ name: 'varchar', length }),
     NVarChar: (length) => ({ name: 'nvarchar', length }),
     Bit: { name: 'bit' },
+    Int: { name: 'int' },
   }
   return {
     calls,
@@ -605,13 +608,12 @@ async function httpFixture(t) {
       authorize: auth.authorize,
       requirePortalAdmin: requireRole(f.roles, 'portalAdmin'),
       memberships: f.memberships,
-      createSqlCallsRouter: ({ adminOnly }) =>
-        createSqlCallsRouter({
-          sql: f.sql,
-          portalConfig: f.portalConfig,
-          hrConfig: f.hrConfig,
-          adminOnly,
-        }),
+      dtrSetup: createDtrSetup({
+        sql: f.sql,
+        portalConfig: f.portalConfig,
+        hrConfig: f.hrConfig,
+        getEmployeeInfo: f.memberships.getEmployeeInfo,
+      }),
     })
   )
   const server = await new Promise((resolve) => {
@@ -671,8 +673,6 @@ function allProtectedRequests() {
     requests.push([deletePath, { body: { code: TARGET } }])
   }
   requests.push(['/get-employee-info', { body: { code: TARGET } }])
-  requests.push(['/sql-call', { body: { query: 'SELECT 1' } }])
-  requests.push(['/hr-sql-call', { body: { query: 'SELECT 1' } }])
   return requests
 }
 
@@ -724,15 +724,16 @@ test('portal administrators can list every resource and add/remove memberships',
       cacheControl: null,
     }
   )
-  // Transitional legacy route still serves the DTR setup pages for admins.
-  const legacy = await f.request('/sql-call', { body: { query: 'SELECT 1' } })
-  assert.deepEqual(legacy.body, [{ legacy: true }])
-  assert.equal(f.calls.at(-1).config, 'portal')
-  const hrLegacy = await f.request('/hr-sql-call', {
-    body: { query: 'SELECT 1' },
-  })
-  assert.equal(hrLegacy.status, 200)
-  assert.equal(f.calls.at(-1).config, 'hr')
+  // The generic SQL routes were retired in Phase 5, even for administrators.
+  const callsBefore = f.calls.length
+  for (const suffix of ['/sql-call', '/hr-sql-call']) {
+    const legacy = await f.request(suffix, { body: { query: 'SELECT 1' } })
+    assert.deepEqual(
+      [legacy.status, legacy.body],
+      [404, { message: 'notFound' }]
+    )
+  }
+  assert.equal(f.calls.length, callsBefore)
 })
 
 test('authenticated non-administrators are refused on every administration route', async (t) => {
@@ -770,7 +771,6 @@ test('spoofed caller IDs and role flags cannot grant administration access', asy
     '/add-portal-admin',
     '/delete-portal-admin',
     '/get-employee-info',
-    '/sql-call',
   ]) {
     const response = await f.request(suffix, {
       as: 'user',
@@ -883,19 +883,7 @@ test('invalid resources, SQL failures and unknown routes return controlled JSON'
   assert.deepEqual((await f.request('/members/portal')).body, {
     message: 'serviceUnavailable',
   })
-  f.state.failAt = 'SELECT broken'
-  const legacy = await f.request('/sql-call', {
-    body: { query: 'SELECT broken' },
-  })
-  assert.deepEqual(
-    [legacy.status, legacy.body],
-    [503, { message: 'serviceUnavailable' }]
-  )
   f.state.failAt = null
-  assert.equal(
-    (await f.request('/sql-call', { body: { query: '' } })).status,
-    400
-  )
   assert.ok(f.pools.every((pool) => pool.closed))
 })
 
@@ -1161,7 +1149,7 @@ test('English and Arabic contain every administration error code', () => {
   }
 })
 
-test('generic administration SQL has only the known DTR setup callers', () => {
+test('no frontend caller of the retired administration SQL routes remains', () => {
   const found = []
   function walk(directory) {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
@@ -1176,18 +1164,5 @@ test('generic administration SQL has only the known DTR setup callers', () => {
   }
   for (const directory of ['pages', 'components', 'store', 'layouts', 'utils'])
     walk(path.join(root, directory))
-  assert.deepEqual(found.sort(), [
-    'pages/administration/dtr-setup/departments/_departments.vue',
-    'pages/administration/dtr-setup/divisions/_divisions.vue',
-    'pages/administration/dtr-setup/index.vue',
-    'pages/administration/dtr-setup/projects/_projects.vue',
-    'pages/administration/dtr-setup/sub-project/_subProject.vue',
-    'pages/administration/dtr-setup/sub-projects/_subProjects.vue',
-  ])
-  // Every remaining caller renders inside the portal-admin layout.
-  for (const file of found)
-    assert.match(
-      fs.readFileSync(path.join(root, file), 'utf8'),
-      /layout: 'adminPage'/
-    )
+  assert.deepEqual(found, [])
 })

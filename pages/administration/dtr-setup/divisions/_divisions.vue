@@ -24,7 +24,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text px-1"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 cursor-pointer"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -137,33 +137,12 @@ export default {
   methods: {
     async getBranchDivisions() {
       this.overlay = true
-      try {
-        const divisions = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
-            WHERE branch_code='${this.branch}' and system_code_type='41'`,
-          }
-        )
-        if (divisions.status === 200) {
-          this.divisions = divisions.data
-          this.overlay = false
-        }
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.divisions = await this.$store.dispatch(
+        'administration/dtrSetup/getOrganization',
+        { kind: 'divisions', path: { branch: this.branch } }
+      )
+      this.overlay = false
     },
   },
 }
 </script>
-

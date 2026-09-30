@@ -24,7 +24,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text px-1"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 cursor-pointer"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -45,7 +45,7 @@
             depressed
             height="100%"
             color="transparent"
-            class="text-subtitle-1 text-capitalize primaryText--text px-1 mx-2"
+            class="text-subtitle-1 text-capitalize primaryText--text px-1 mx-2 cursor-pointer"
           >
             <div
               :class="$i18n.locale === 'ar' ? 'd-flex flex-row-reverse' : ''"
@@ -137,7 +137,7 @@
                   :color="$vuetify.theme.dark ? 'white' : 'primary'"
                   depressed
                   :disabled="allDepartments.length <= 0"
-                  class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2"
+                  class="text-capitalize my-2 my-md-0 mx-md-2 px-2 text-body-2 cursor-pointer"
                   style="direction: ltr"
                   @click="listAllEmployees"
                 >
@@ -164,7 +164,7 @@
                   outlined
                   depressed
                   :disabled="allDepartments.length <= 0"
-                  class="text-capitalize px-2 text-body-2"
+                  class="text-capitalize px-2 text-body-2 cursor-pointer"
                   @click="showDTRAdminPopup = true"
                 >
                   <v-icon
@@ -309,108 +309,36 @@ export default {
     await this.getDTRAdmins()
   },
   methods: {
+    hierarchyPath() {
+      return { branch: this.branch, division: this.divisionCode }
+    },
+
     async getDepartmentsPerDivision() {
       this.overlay = true
-      try {
-        const departments = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query: `SELECT system_desp_a, system_desp_e, system_code, major_code FROM [dbo].[pay_code_tables] 
-                    WHERE branch_code='${this.branch}' and system_code_type='42' and major_code='${this.divisionCode}'`,
-          }
-        )
-        if (departments.status === 200) {
-          this.allDepartments = departments.data
-
-          this.overlay = false
-        }
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.allDepartments = await this.$store.dispatch(
+        'administration/dtrSetup/getOrganization',
+        { kind: 'departments', path: this.hierarchyPath() }
+      )
+      this.overlay = false
     },
 
     async listAllEmployees() {
       this.overlay = true
-      try {
-        const allEmployees = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/hr-sql-call`,
-          {
-            query: `
-              SELECT A.employee_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-              FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-              WHERE A.employee_code=B.employee_code
-              AND A.branch_code='${this.branch}' AND A.department='${this.divisionCode}' 
-              AND B.stop_val_flag='0'
-            `,
-          }
-        )
-
-        if (allEmployees.status === 200) {
-          if (allEmployees.data.length > 0) {
-            this.allEmployeesResult = allEmployees.data
-          }
-        }
-
-        this.showTable = true
-        this.overlay = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.allEmployeesResult = await this.$store.dispatch(
+        'administration/dtrSetup/getEmployees',
+        { level: 'division', path: this.hierarchyPath() }
+      )
+      this.showTable = true
+      this.overlay = false
     },
 
     async getDTRAdmins() {
-      try {
-        this.overlay = true
-        const queryResult = await this.$axios.post(
-          `${this.$config.baseURL}/administration-api/sql-call`,
-          {
-            query: `
-                SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-                WHERE branchName='${this.branch}' 
-                AND divisionCode='${this.divisionCode}' 
-                AND departmentCode='undefined'
-                AND projectCode ='undefined'
-                AND subProjectCode='undefined'
-                `,
-          }
-        )
-        if (queryResult.status === 200) {
-          this.dtrAdmins = queryResult.data
-        }
-        this.overlay = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
-      }
+      this.overlay = true
+      this.dtrAdmins = await this.$store.dispatch(
+        'administration/dtrSetup/getAssignments',
+        { level: 'division', path: this.hierarchyPath() }
+      )
+      this.overlay = false
     },
 
     async popupClosed() {

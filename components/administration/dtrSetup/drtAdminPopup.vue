@@ -51,7 +51,7 @@
                     fab
                     elevation="0"
                     color="primary"
-                    class="mx-3"
+                    class="mx-3 cursor-pointer"
                     @click="getEmployeeInfo"
                   >
                     <v-icon color="white">mdi-plus</v-icon>
@@ -148,7 +148,7 @@
           <v-card-actions class="px-7 px-md-16 py-3">
             <v-spacer></v-spacer>
             <v-btn
-              class="text-capitalize px-5 mx-3"
+              class="text-capitalize px-5 mx-3 cursor-pointer"
               outlined
               color="red darken-1"
               text
@@ -157,7 +157,7 @@
               {{ $t('generals.cancel') }}
             </v-btn>
             <v-btn
-              class="text-capitalize px-5"
+              class="text-capitalize px-5 cursor-pointer"
               outlined
               :disabled="optionsEnabled"
               color="green darken-1"
@@ -289,80 +289,61 @@ export default {
       }
     },
 
+    // The deepest hierarchy code passed to the popup decides the level.
+    assignmentLevel() {
+      if (this.subproject !== undefined) return 'sub-project'
+      if (this.project !== undefined) return 'project'
+      if (this.department !== undefined) return 'department'
+      return 'division'
+    },
+
     async saveDTRAdmin() {
-      try {
-        if (
-          !this.isAdmin &&
-          !this.isApprover &&
-          !this.isManpowerAdmin &&
-          !this.isMigrator &&
-          !this.isReportsAdmin
-        ) {
-          throw new Error('At least one role should be selected!')
+      if (
+        !this.isAdmin &&
+        !this.isApprover &&
+        !this.isManpowerAdmin &&
+        !this.isMigrator &&
+        !this.isReportsAdmin
+      ) {
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: this.$t(
+            'errorMessages.administration.dtrSetup.invalidRoles'
+          ),
+        })
+        return
+      }
+
+      this.overlay = true
+
+      // the server checks for an existing assignment on the same path and
+      // resolves the employee details itself
+      const result = await this.$store.dispatch(
+        'administration/dtrSetup/createAssignment',
+        {
+          level: this.assignmentLevel(),
+          path: {
+            branch: this.brach,
+            division: this.division,
+            department: this.department,
+            project: this.project,
+            subProject: this.subproject,
+          },
+          employeeCode: this.adminCode.trim(),
+          roles: {
+            isDTRAdmin: this.isAdmin,
+            isApprover: this.isApprover,
+            isManpowerAdmin: this.isManpowerAdmin,
+            isMigrator: this.isMigrator,
+            isReportAdmin: this.isReportsAdmin,
+          },
         }
+      )
 
-        this.overlay = true
-
-        // check if the admin is already exist in the same path
-        const check = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `
-              SELECT COUNT(employeeCode) as employee
-              FROM [alkholiPortal].[dtr].[adminAssignment]
-              WHERE employeeCode='${this.adminCode}'
-              AND branchName='${this.brach}' 
-              AND divisionCode='${this.division}' 
-              AND departmentCode='${this.department}'
-              AND projectCode ='${this.project}'
-              AND subProjectCode='${this.subproject}'
-            `,
-          }
-        )
-
-        if (check.data[0].employee) {
-          // error
-          this.overlay = false
-          this.$emit('resetPopupValue')
-          this.dialog = false
-          throw new Error('Admin Already Exist!')
-        }
-
-        await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `exec [dtr].[adminAssignment_addData] '${
-              this.adminCode
-            }', '${this.employeeName}', '${this.employeeEmail}', '${
-              this.branchCode
-            }', '${this.memberPicturePath}',
-                ${this.hrPicture ? 1 : 0},
-                ${this.portalPicture ? 1 : 0}, ${this.isAdmin ? 1 : 0},
-                ${this.isApprover ? 1 : 0}, ${this.isManpowerAdmin ? 1 : 0}, ${
-              this.isMigrator ? 1 : 0
-            }, ${this.isReportsAdmin ? 1 : 0},
-                '${this.brach}', '${this.division}', '${this.department}', '${
-              this.project
-            }', '${this.subproject}'
-                  `,
-          }
-        )
-
-        this.overlay = false
+      this.overlay = false
+      if (result !== 'failed') {
         this.$emit('resetPopupValue')
         this.dialog = false
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
       }
     },
   },
