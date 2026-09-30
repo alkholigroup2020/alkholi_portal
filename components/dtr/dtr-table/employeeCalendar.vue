@@ -24,7 +24,7 @@
 
           <v-btn
             outlined
-            class="px-8 mx-2 text-capitalize"
+            class="px-8 mx-2 text-capitalize cursor-pointer"
             color="success darken-1 "
             text
             @click="sendSingleForApproval"
@@ -33,7 +33,7 @@
           </v-btn>
           <v-btn
             outlined
-            class="px-8 text-capitalize"
+            class="px-8 text-capitalize cursor-pointer"
             color="error darken-1 "
             text
             @click="singleApprovalDialog = false"
@@ -56,7 +56,7 @@
             outlined
             small
             color="success"
-            class="text-capitalize"
+            class="text-capitalize cursor-pointer"
             :disabled="disabledStatus"
             @click="singleApprovalDialog = true"
             ><v-icon color="green" small class="mx-2"
@@ -72,7 +72,7 @@
             :class="declineFlag ? 'mx-2' : ''"
             small
             color="success"
-            class="text-capitalize"
+            class="text-capitalize cursor-pointer"
             :disabled="disabledStatus"
             @click="normalizeDataHO"
             ><v-icon small>mdi-cursor-default-click-outline</v-icon>
@@ -86,7 +86,7 @@
             :class="declineFlag ? '' : 'mx-2'"
             small
             color="success"
-            class="text-capitalize"
+            class="text-capitalize cursor-pointer"
             :disabled="disabledStatus"
             @click="normalizeDataSites"
             ><v-icon small>mdi-cursor-default-click-outline</v-icon>
@@ -103,7 +103,7 @@
             small
             color="success"
             :disabled="disabledStatus || !changeOccurs"
-            class="mx-3 text-capitalize"
+            class="mx-3 text-capitalize cursor-pointer"
             @click="saveData"
             ><v-icon small>mdi-content-save-all-outline</v-icon>
             <span class="mx-1">{{ $t('generals.save') }}</span></v-btn
@@ -114,7 +114,7 @@
             small
             color="warning"
             :disabled="disabledStatus"
-            class="text-capitalize"
+            class="text-capitalize cursor-pointer"
             @click="resetData"
           >
             <v-icon small>mdi-restart</v-icon>
@@ -355,36 +355,23 @@ export default {
     async getSavedData() {
       try {
         this.overlay = true
-        // prepare the start date
-        const sDate = new Date(this.startDate)
-        const sYear = sDate.getFullYear()
-        const sMonth = ('0' + (sDate.getMonth() + 1)).slice(-2)
-        const sDay = ('0' + sDate.getDate()).slice(-2)
-        const theStartDate = `${sYear}-${sMonth}-${sDay}`
+        // the server checks that this employee is assigned to the signed-in
+        // user and returns the saved days of the period only
+        const savedData = await this.$store.dispatch('dtr/getCalendar', {
+          employeeCode: this.employeeCode,
+          start: this.formatDate(new Date(this.startDate)),
+          end: this.formatDate(new Date(this.endDate)),
+        })
 
-        // prepare the end date
-        const eDate = new Date(this.endDate)
-        const eYear = eDate.getFullYear()
-        const eMonth = ('0' + (eDate.getMonth() + 1)).slice(-2)
-        const eDay = ('0' + eDate.getDate()).slice(-2)
-        const theEndDate = `${eYear}-${eMonth}-${eDay}`
+        const entry = savedData && savedData.entry
 
-        // make the sql call
-        const savedData = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-call`,
-          {
-            query: `SELECT DeclineMessage, [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20]
-            FROM [alkholiPortal].[dtr].[dtrEntries] WHERE EmployeeCode='${this.employeeCode}' AND StartDate='${theStartDate}' AND EndDate='${theEndDate}'`,
+        if (entry) {
+          if (entry.DeclineMessage) {
+            this.declineMessage = entry.DeclineMessage
           }
-        )
 
-        if (savedData.data[0]) {
-          if (savedData.data[0].DeclineMessage) {
-            this.declineMessage = savedData.data[0].DeclineMessage
-          }
-        }
-
-        /*
+          /*
+          `entry.days` holds the saved type of every day of the period, keyed by the day number.
           Use Object.keys(input) to get an array of the keys in the input object.
           Use .filter() to create a new array that only includes keys with non-null values.
           Use .map() to create a new array of objects based on the filtered keys.
@@ -393,8 +380,7 @@ export default {
           Convert the key to an integer using parseInt() before assigning it to the date property.
         */
 
-        if (savedData.data.length > 0) {
-          const input = savedData.data[0]
+          const input = entry.days || {}
           const output = Object.keys(input)
             .filter((key) => input[key] !== null)
             .map((key) => {
@@ -507,17 +493,16 @@ export default {
           const eYear = eDate.getFullYear().toString()
           const endingDate = `${eYear}-${eMonth}-${eDay}`
 
-          const managerCodeReq = await this.$axios.post(
-            `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-            {
-              query: `SELECT * FROM dbo.Pay_employees where employee_code='${employeeCode}'`,
-            }
+          // HR details of the assigned employee, resolved by the server
+          const employee = await this.$store.dispatch(
+            'dtr/getEmployee',
+            employeeCode
           )
 
-          if (managerCodeReq.status === 200) {
-            const managerCode = managerCodeReq.data[0].Manager_Code
-            const employeeName = managerCodeReq.data[0].employee_name_eng
-            const employeePicture = managerCodeReq.data[0].employee_picture
+          if (employee) {
+            const managerCode = employee.Manager_Code
+            const employeeName = employee.employee_name_eng
+            const employeePicture = employee.employee_picture
 
             const dtrAdmin = localStorage.getItem('userFullName')
 
@@ -550,6 +535,9 @@ export default {
                 notification
               )
             }
+          } else {
+            // the employee could not be loaded and the user was notified
+            this.overlay = false
           }
         } else {
           const notification = {

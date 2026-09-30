@@ -1,14 +1,22 @@
-const express = require('express')
-const api = express()
-const sqlCalls = require('./router/sqlCalls.js')
+const sql = require('mssql')
+const { createRoleChecks, requireRole } = require('../shared/roles')
+const portalConfig = require('./configs/sql')
+const hrConfig = require('./configs/hrSQL')
+const authorize = require('./middleware/authorization')
+const createApi = require('./createApi')
+const { createDtrReads } = require('./services/dtrReads')
 const dtrActions = require('./router/dtr-actions.js')
-
-api.use(express.json())
-api.use(express.urlencoded({ extended: true }))
-api.use(sqlCalls)
-api.use(dtrActions)
 
 module.exports = {
   path: '/dtr-api',
-  handler: api,
+  handler: createApi({
+    authorize,
+    requireDtrUser: requireRole(
+      createRoleChecks({ sql, portalConfig }),
+      'dtrUser'
+    ),
+    dtrReads: createDtrReads({ sql, portalConfig, hrConfig }),
+    legacySql: { sql, portalConfig },
+    legacyActions: dtrActions,
+  }),
 }

@@ -130,11 +130,12 @@ const EMPLOYEE_COLUMNS = [
   'Email',
 ]
 
+const EMPLOYEE_SELECT = `SELECT A.employee_code, A.employee_name_eng,
+    A.employee_name_a, A.employee_picture, A.Email`
+
 // Active employees only (pay_emp_finance.stop_val_flag = 0), always scoped to
 // the branch and division so equal codes in other branches are never mixed.
-const ACTIVE_EMPLOYEES = `SELECT A.employee_code, A.employee_name_eng,
-    A.employee_name_a, A.employee_picture, A.Email
-  FROM dbo.Pay_employees AS A
+const ACTIVE_EMPLOYEES = `FROM dbo.Pay_employees AS A
   INNER JOIN dbo.pay_emp_finance AS B ON A.employee_code = B.employee_code
   WHERE B.stop_val_flag = 0 AND A.branch_code = @branch
     AND A.department = @division`
@@ -143,8 +144,9 @@ const ACTIVE_EMPLOYEES = `SELECT A.employee_code, A.employee_name_eng,
 // the UI division, .section the UI department, .Division the UI project and
 // .Unit the UI sub-project. The department and project levels keep the
 // existing rule of listing employees through the child codes defined under
-// that path.
-const EMPLOYEE_QUERIES = new Map([
+// that path. Each entry is the FROM/WHERE part only, so the DTR read service
+// applies the same scope with its own column list.
+const EMPLOYEE_SCOPES = new Map([
   ['division', ACTIVE_EMPLOYEES],
   [
     'department',
@@ -170,6 +172,21 @@ const EMPLOYEE_QUERIES = new Map([
     AND A.Unit = @subProject`,
   ],
 ])
+
+// Lists over a scope must not reuse a cached plan: on the HR server a plan
+// built for one department or project path took up to 20 seconds for another
+// (pay_code_tables.section_code and .division_code are varchar(max)). A fresh
+// plan per call keeps every path within a fraction of a second.
+const EMPLOYEE_LIST_HINT = 'OPTION (RECOMPILE)'
+
+const EMPLOYEE_QUERIES = new Map(
+  [...EMPLOYEE_SCOPES].map(([level, scope]) => [
+    level,
+    `${EMPLOYEE_SELECT}
+  ${scope}
+  ${EMPLOYEE_LIST_HINT}`,
+  ])
+)
 
 // Resolves a requested path to the codes HR stores, requiring every ancestor
 // to exist under the same branch.
@@ -508,6 +525,8 @@ module.exports = {
   storedPath,
   LEVELS,
   ORGANIZATION,
+  EMPLOYEE_SCOPES,
+  EMPLOYEE_LIST_HINT,
   EMPLOYEE_QUERIES,
   PATH_QUERIES,
   ASSIGNMENT_LIST_QUERY,

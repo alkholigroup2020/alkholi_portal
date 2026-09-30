@@ -427,6 +427,15 @@
       "invalidUpload": "Please select valid PNG or JPEG images.",
       "serviceUnavailable": "The business-card service is temporarily unavailable. Please try again later."
     },
+    "dtr": {
+      "forbidden": "You are not authorized to use the DTR application.",
+      "authFailed": "Authorization Failed!",
+      "invalidPeriod": "The selected time period is invalid.",
+      "invalidEmployeeCode": "The employee code is invalid.",
+      "employeeNotFound": "This employee is not within your DTR assignments.",
+      "invalidRequest": "The request could not be processed.",
+      "serviceUnavailable": "The DTR service is temporarily unavailable. Please try again later."
+    },
     "administration": {
       "bCards": {
         "memberExist": "This member already exist!",

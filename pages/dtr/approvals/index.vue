@@ -31,7 +31,7 @@
 
             <v-btn
               outlined
-              class="px-8 mx-2 text-capitalize"
+              class="px-8 mx-2 text-capitalize cursor-pointer"
               color="success darken-1 "
               text
               @click="approveAll"
@@ -40,7 +40,7 @@
             </v-btn>
             <v-btn
               outlined
-              class="px-8 text-capitalize"
+              class="px-8 text-capitalize cursor-pointer"
               color="error darken-1 "
               text
               @click="confirmAllDialog = false"
@@ -56,6 +56,7 @@
         <v-btn
           outlined
           text
+          class="cursor-pointer"
           :disabled="!employeesWaitingApproval.length > 0"
           @click="confirmAllDialog = true"
         >
@@ -160,6 +161,7 @@
                     outlined
                     text
                     elevation="0"
+                    class="cursor-pointer"
                     @click="confirmationDialog = true"
                   >
                     <v-icon>mdi-success</v-icon>
@@ -173,6 +175,7 @@
                     outlined
                     text
                     elevation="0"
+                    class="cursor-pointer"
                     @click="declineDialog = true"
                   >
                     <v-icon>mdi-success</v-icon>
@@ -238,7 +241,7 @@
 
                     <v-btn
                       outlined
-                      class="px-8 mx-2 text-capitalize"
+                      class="px-8 mx-2 text-capitalize cursor-pointer"
                       color="success darken-1 "
                       text
                       @click="singleApproval(employee.EmployeeCode)"
@@ -247,7 +250,7 @@
                     </v-btn>
                     <v-btn
                       outlined
-                      class="px-8 text-capitalize"
+                      class="px-8 text-capitalize cursor-pointer"
                       color="error darken-1 "
                       text
                       @click="confirmationDialog = false"
@@ -286,7 +289,7 @@
 
                     <v-btn
                       outlined
-                      class="px-8 mx-2 text-capitalize"
+                      class="px-8 mx-2 text-capitalize cursor-pointer"
                       color="success darken-1 "
                       text
                       @click="singleDecline(employee.EmployeeCode)"
@@ -295,7 +298,7 @@
                     </v-btn>
                     <v-btn
                       outlined
-                      class="px-8 text-capitalize"
+                      class="px-8 text-capitalize cursor-pointer"
                       color="error darken-1 "
                       text
                       @click="declineDialog = false"
@@ -316,6 +319,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { periodParts } from '~/utils/dtr-period'
 
 export default {
   filters: {
@@ -369,15 +373,12 @@ export default {
 
   mounted() {
     if (!this.dtrAppStartDate) {
-      this.$router.push('/dtr/dtr-table')
+      this.$router.push(this.localePath('/dtr/dtr-table'))
     } else {
-      const activeStartMonth = Number(this.dtrAppStartDate.split('-')[1])
-      const activeStartYear = Number(this.dtrAppEndDate.split('-')[2])
-      const activeEndMonth = Number(this.dtrAppEndDate.split('-')[1])
-      const activeEndYear = Number(this.dtrAppEndDate.split('-')[2])
+      const active = periodParts(this.dtrAppStartDate, this.dtrAppEndDate)
 
-      const theStartDate = new Date(activeStartYear, activeStartMonth - 1, 21)
-      const theEndDate = new Date(activeEndYear, activeEndMonth - 1, 20)
+      const theStartDate = new Date(active.startYear, active.startMonth - 1, 21)
+      const theEndDate = new Date(active.endYear, active.endMonth - 1, 20)
 
       this.getEmployeesWaitingForApproval()
 
@@ -443,41 +444,26 @@ export default {
 
     async getEmployeesWaitingForApproval() {
       try {
-        const managerCode = localStorage.getItem('employeeCode')
         const startDate = this.flipDateString(this.dtrAppStartDate)
         const endDate = this.flipDateString(this.dtrAppEndDate)
 
-        // make the SQL request to get the employees waiting for approval
-        const employeesWaitingApproval = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-params-call`,
-          {
-            query: `
-                SELECT * FROM [dtr].[dtrEntries] 
-                WHERE [ManagerCode] = @managerCode
-                AND [ApprovalStatus] = @approvalStatus
-                AND [StartDate] = @startDate
-                AND [EndDate] = @endDate
-              `,
-            parameters: {
-              approvalStatus: 1,
-              managerCode,
-              startDate,
-              endDate,
-            },
-          }
+        // the server returns only the pending entries of the period whose
+        // recorded manager is the signed-in user
+        const employeesWaitingApproval = await this.$store.dispatch(
+          'dtr/getPendingApprovals',
+          { start: startDate, end: endDate }
         )
-        if (employeesWaitingApproval.status === 200) {
-          // calculate employees status
-          const modifiedArray = []
-          employeesWaitingApproval.data.forEach((element) => {
-            if (element.ApprovalStatus === 1) {
-              element.statusColor = 'orange'
-              element.statusName = 'Waiting for your approval'
-              modifiedArray.push(element)
-            }
-          })
-          this.employeesWaitingApproval = modifiedArray
-        }
+
+        // calculate employees status
+        const modifiedArray = []
+        employeesWaitingApproval.forEach((element) => {
+          if (element.ApprovalStatus === 1) {
+            element.statusColor = 'orange'
+            element.statusName = 'Waiting for your approval'
+            modifiedArray.push(element)
+          }
+        })
+        this.employeesWaitingApproval = modifiedArray
       } catch (e) {
         await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
       }
@@ -485,12 +471,8 @@ export default {
 
     setDTRValues(databaseReplyObject) {
       if (databaseReplyObject) {
-        const dtrValues = {}
-        Object.keys(databaseReplyObject).forEach((key) => {
-          if (!isNaN(parseInt(key))) {
-            dtrValues[key] = databaseReplyObject[key]
-          }
-        })
+        // the saved value of every day of the period, keyed by day number
+        const dtrValues = { ...(databaseReplyObject.days || {}) }
 
         const mapping = {
           RA: 'Regular Attendance',

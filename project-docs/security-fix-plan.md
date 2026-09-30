@@ -164,8 +164,9 @@ Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before 
 | 3     | Deployed    | Partial read-only smoke 2026-09-29; user accepted it for progression the same day (remaining checks not performed) |
 | 4     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
 | 5     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
-| 6     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
-| 7–9   | Not started | Pending; do not advance automatically                         |
+| 6     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
+| 7     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
+| 8–9   | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -697,3 +698,159 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Account/fixture 
 - Saves and deletes are single transactions, so a failed operation leaves no partial card or audit row. A fixture changed by an authorized write test is restored only through step 6.
 - Do not restore an accessible release that serves `/business-cards-api/sql-call` or `/business-cards-api/hr-sql-call`; every pre-Phase-6 release does, and lets any signed-in user run SQL. A rollback candidate must also preserve the Phase 1–5 boundaries and the Phase 2 `open-sql-call` retirement. If none exists, keep `/business-cards` and the five management routes unavailable (for example at the reverse proxy) until fixed. The public card, vCard, and static artifact routes can stay available because they do not depend on this phase's routes.
 - Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed route and the old save response) or only the old routers. Preserve existing card rows, log rows, and uploaded files; no deletion or regeneration is required for rollback.
+
+### Phase 6 acceptance record — 2026-09-30
+
+Before any Phase 7 edit, the user was asked whether Phase 6 (recorded as **Implemented** only) had been tested and accepted, and chose “Accepted, deployed”. Phase 6 is accepted for progression to Phase 7 and its status is recorded as **Deployed** from that confirmation. The release identifier, maintenance window, account aliases, and individual Phase 6 smoke-check results were not supplied and are not inferred, so the status is not upgraded to **Verified**.
+
+### Phase 7 implementation record — 2026-09-30
+
+**Status: Implemented — local checks passed.** Phase 7 has not been deployed or verified in production. Starting checkout: `9755160`, with a clean working tree. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 8 has not started.
+
+**DTR is not fully secured by this phase.** `POST /dtr-api/sql-params-call` still executes SQL text sent by the browser (see “Remaining legacy calls”). Phase 7 moves the reads and their scope to the server and retires the two gateways that no caller needs any more.
+
+#### API contracts
+
+All routes are under `/dtr-api`, run the shared `authorize` middleware followed by `requireRole(..., 'dtrUser')` (the Phase 4 helper: one fixed `EXISTS` query on `dbo.dtr_users` for `req.auth.employeeCode`, evaluated on every request), and return JSON. Read routes send `Cache-Control: no-store`. **The caller is always `req.auth.employeeCode`.** No route accepts an administrator, manager, assignment, branch, or hierarchy value; such fields in the query string, body, or headers are ignored.
+
+Inputs: `start` and `end` are `YYYY-MM-DD` and must be the 21st of a month and the 20th of the following month (years 2000–2100). An employee code is 1–10 ASCII letters, digits, `_` or `-`, and not the text `undefined`. Repeated or structured values are rejected.
+
+| Route | Input | Success |
+| ----- | ----- | ------- |
+| `GET /assigned-employees` | none | `200` array: every active employee inside the caller's assignments, once each, in first-seen order (assignment `id`, then employee code): `employee_code`, `employee_name_eng`, `employee_name_a`, `employee_picture` |
+| `GET /period-entries` | `start`, `end`, optional `employeeCode` | `200` array of `EmployeeCode`, `ApprovalStatus` (0–3 as stored), `DeclineFlag` (boolean), for assigned employees that have an entry in that period. With `employeeCode`: zero or one row for that assigned employee |
+| `GET /employees/:employeeCode` | code in the path | `200 { employee_code, employee_name_eng, employee_picture, Manager_Code }` for an assigned employee (the details the calendar needs to save) |
+| `GET /employees/:employeeCode/calendar` | code in the path, `start`, `end` | `200 { EmployeeCode, entry }`. `entry` is `null` when nothing is saved, otherwise `{ ApprovalStatus, DeclineFlag, DeclineMessage, days }`, where `days` maps each day number of the period (28 to 31 keys) to the stored code or `null` |
+| `GET /pending-approvals` | `start`, `end` | `200` array in entry-`id` order: `EmployeeCode`, `employeeName`, `employeePicture`, `ApprovalStatus` (always `1`), `days` |
+
+Errors: `400 invalidPeriod`, `400 invalidEmployeeCode`, `400 invalidRequest` (malformed JSON or percent-encoding), `401 authFailed`, `403 forbidden` (not a DTR member), `404 employeeNotFound`, `404 notFound` (unknown route or method), `503 serviceUnavailable`. No database or exception text is returned. An empty scope returns `200 []`.
+
+`404 employeeNotFound` is one answer for an unknown employee, an inactive one, one outside the caller's assignments and, for the calendar, an entry the caller may not approve. It does not reveal whether the employee or an entry exists.
+
+**Removed:** `POST /dtr-api/sql-call` and `POST /dtr-api/hr-sql-call`. They reach the API's terminal JSON `404 notFound` for every method and caller, before any session lookup. No alias executes supplied SQL, and no browser-SQL route uses the HR connection any more.
+
+**Kept for Phase 8, handlers unchanged:** `POST /dtr-api/sql-params-call` and `POST /dtr-api/save-dtr-data`. Both now also require DTR membership (previously any signed-in employee).
+
+#### Implementation and material decisions
+
+- `server/dtr/services/dtrReads.js` holds every statement as a module constant; `router/dtrReads.js` and `createApi.js` compose it, and `main.js` injects `mssql`, both configs, and the role check. Request values are bound as `varchar(10)` inputs (`nvarchar(10)` for the manager code); no SQL text, table, column, or level name comes from the browser. The service never receives a request object.
+- **Scope resolution.** One fixed query reads the caller's `dtr.adminAssignment` rows. Each row is classified by the stored sentinel pattern exactly as the old page did: all three lower codes `undefined` is division level, then department, project, and sub-project. Any other pattern, an empty value, a value longer than the HR columns, or `undefined` in any other spelling matches no employee, as it did before; a malformed row can never widen the scope. Stored codes are used as data and are not restricted to a character set.
+- **Hierarchy rules are the Phase 5 ones, reused rather than copied.** `server/administration/services/dtrSetup.js` now exports the `FROM`/`WHERE` text of its four employee lists (`EMPLOYEE_SCOPES`); the DTR statements are built from that text with their own columns. HR mappings, the active filter (`pay_emp_finance.stop_val_flag = 0`), and branch scoping are therefore identical: division lists the whole division; department lists division employees whose project code is one of the department's projects; project lists employees whose unit is one of the project's sub-projects; sub-project matches the full path.
+- **Deduplication.** Identical assignment paths are resolved once; employees are keyed the way both databases compare codes (case-insensitive, trailing spaces ignored) and listed once in first-seen order. Overlapping assignments previously produced one panel per assignment for the same employee. No assignment, or only unusable ones, runs no HR statement and returns an empty list.
+- **One employee.** Details, single statuses, and calendars check the employee with the same scope text plus `A.employee_code = @employeeCode`, so a guessed code outside the caller's assignments is refused without listing anything. Two HR rows for one code return `503` instead of choosing one.
+- **Calendar access** is granted to an assignee, or to the recorded manager of an entry that is pending in the requested period. A manager loses access once the entry is approved or declined. Employee HR details are for assignees only.
+- **Pending approvals** are selected by `ManagerCode = <session employee>`, `ApprovalStatus = 1`, and the period. Inactive employees' pending entries are still listed, as before.
+- **Policy preserved:** DTR membership plus assignment scope for entry work, the recorded manager for approvals. `isDTRAdmin`, `isApprover`, and the other stored flags are not read anywhere.
+- **Periods.** The validated `YYYY-MM-DD` text is bound as `varchar(10)` and converted by SQL Server (`CONVERT(date, @periodStart, 23)`), so no driver or time-zone setting can shift a day. The server returns only the days that exist in the period; day columns a short month does not use are never returned.
+- **Responses are projected.** The old reads returned `SELECT *`: the full HR employee row (every column) for the save lookup, and whole `dtrEntries` rows. The new responses carry only the fields the screens use.
+- **Retiring the two gateways in this phase.** After the read callers moved, `/sql-call` and `/hr-sql-call` had no caller left, so they were removed instead of waiting for Phase 8. `/hr-sql-call` was the only browser-SQL route on the HR connection.
+- **Membership on the remaining legacy routes.** Item 2 of this phase requires DTR membership, and the DTR layout already sends non-members away, so the two remaining write routes now check it too. Their handlers are otherwise unchanged; `dtr-actions.js` is byte-identical. This narrows the remaining arbitrary-SQL exposure from every signed-in employee to DTR members. It costs one extra session lookup per save, because the untouched save router still runs its own check.
+- **Frontend.** `store/dtr/index.js` gained `getAssignedEmployees`, `getPeriodEntries`, `getCalendar`, `getEmployee`, and `getPendingApprovals`; the two pages and the calendar component use only these for reads. Errors are translated through the new `errorMessages.dtr` keys in English and Arabic; raw exception text is no longer shown for reads. A failed list shows an empty list; failed statuses leave the shown data unchanged; a failed employee lookup stops the save and clears the overlay. `cursor-pointer` was added to every button in the three edited files. Two redirects now use `localePath`.
+- **Period defects fixed** in the new `utils/dtr-period.js`, which replaces the page's date arithmetic (about 290 lines of `if`/`switch` branches):
+  - In October and November the old page produced `20-010-YYYY` and `21-011-YYYY`. The previous/next buttons then did nothing, and the malformed text was used as the period in the queries. Periods are now always zero-padded.
+  - Returning to either page with a stored December–January period took the start year from the end date, which produced an empty calendar. The start year now comes from the start date.
+  - The “current period” rule is unchanged: it uses the UTC calendar date, and days 1–20 belong to the period that started the previous month.
+- **Send button.** With no assigned employee the table is now empty without an error, and “Send For Approval” is disabled. Previously the page sent `IN ()`, which is not valid SQL.
+- **Status display is unchanged:** the same colors and English status texts, set in the page from `ApprovalStatus`.
+- **Phase 5 defect found and fixed here.** Timing the scope statements against HR showed that the deployed Phase 5 department list (`GET /administration-api/dtr-setup/employees/department`) reused a cached plan that took over 1.5 seconds for 7 of 184 department paths and 16.6 seconds for the worst, past the driver's 15-second limit (a `503`). The project list had 2 slow paths of 618 (worst 5.5 seconds). The cause is parameter-sensitive plans (`pay_code_tables.section_code` and `.division_code` are `varchar(max)`). The four Phase 5 list statements and the four new DTR list statements now end with `OPTION (RECOMPILE)`; nothing else in their text changed. After the change every path returned the same rows, the slowest in 253 ms. The single-employee statements seek the HR primary key and stayed under 40 ms without the hint.
+
+#### Read-only database evidence and limitations
+
+- One-off read-only scripts used the configured connections without importing an application entry point or starting Nuxt. They printed only schema metadata, counts, timings, and error numbers; no employee, assignment, or entry rows, credentials, tokens, or connection details were output or recorded.
+- **`dtr.dtrEntries`:** `id int identity` (clustered primary key); `EmployeeCode varchar(10)`, `employeeName varchar(100)`, `ManagerCode nvarchar(10)`, `StartDate date`, `EndDate date`, `ApprovalStatus int` (all `NOT NULL`); `employeePicture varchar(300)`, `ModifiedDate datetime`, `ModifiedBy nvarchar(20)`, `DeclineMessage nvarchar(300)`, `DeclineFlag bit`, and 31 day columns `[21]`…`[31]`, `[1]`…`[20]` of `nvarchar(5)`, all nullable. A unique index covers `(EmployeeCode, StartDate, EndDate)`. No trigger, default, check constraint, or foreign key. It holds 5 rows in 2 periods, one per employee, every period running from a 21st to the next 20th; statuses present are `0` and `1`.
+- **`dtr.adminAssignment`:** now 4 rows for 2 employees (3 division-level, 1 sub-project-level), no malformed sentinel pattern and no unusual characters. One holder's rows spell the employee code differently in case or trailing space; SQL treats them as equal and the statement keeps that comparison.
+- **Membership:** `dbo.dtr_users` has 2 rows. One of the 2 assignment holders and one of the 2 recorded managers are not members. They could not open the DTR screens before (the layout redirects) and are refused by the API now.
+- **HR:** `Pay_employees.employee_code varchar(15)` (primary key with `company_code`; all 10,382 codes are distinct, at most 6 characters, none with unusual characters); `Manager_Code`, `department`, `section`, `Division`, `Unit` are `varchar(15)`; `pay_emp_finance.stop_val_flag` is numeric. HR collation is `Arabic_CI_AS`, the portal's `SQL_Latin1_General_CP1_CI_AS`; both are case-insensitive.
+- **Procedures:** `dtr.dtrEntries_checkIfExist (@employeeID varchar(20), @startDate date, @endDate date)` is called only by the unchanged save handler. `OBJECT_DEFINITION` returns `NULL` for it and for `dtr.adminAssignment_addData`, so their internal SQL remains **unverified** (Phase 9). Phase 7 calls no procedure.
+- **Compile-only check:** the 12 new statements (4 portal, 8 HR) and the 4 updated Phase 5 lists were compiled against the live schemas inside `IF 1 = 0 BEGIN … END` with typed `DECLARE`s, so they were parsed and name-bound but never executed. 16/16 compiled; negative controls were rejected (unknown column 207, syntax 156).
+- **Equivalence with the old page logic (counts only):**
+  - Every path in HR: 83 divisions, 184 departments, 618 projects, and 125 sub-projects. For each, the employee set of the old loops equals the new statement's: 0 mismatches of 1,010, distinct totals 2,195 / 1,785 / 1,326 / 1,326, with 2,195 active employees.
+  - The 4 existing assignments: same employee sets (3, 1, 3, and 86 employees); per holder 90 and 3 employees, with no overlap today.
+  - Both stored periods: the parameterized period filter returns the same number of entries as the old literal filter (1 and 4).
+  - Both manager queues: same number of pending entries (3 and 1).
+- **Not exercised locally:** the real save handler behind the new composition (tests use a stand-in router because the real one imports the runtime session service), browser rendering, and department- or project-level assignments in production (none exist).
+- **Limitation:** `GET /period-entries` reads the period's entries with one fixed statement and keeps the assigned employees' rows on the server. The table has no index that starts with the period; at the current size this is irrelevant, and a later index would not change the API.
+
+#### Local validation and second review
+
+- `npm run test:security`: **133 passed, 0 failed** (exit 0) on Node 24.21.0: the 111 existing tests plus 22 in the new `tests/security/dtr-reads.test.js`, added explicitly to the package script; the runner output lists all 22 by name. Tests use mocked `mssql`, test-only signed sessions, the real `createAuth`/`createRoleChecks`/read service/routers, and loopback-only isolated Express servers. They do not load `.env` or import `server/*/main.js`. The mock interprets each fixed statement with the old page's loops, so results are compared against the previous behavior.
+- New coverage:
+  - statement text (no `SELECT *`, Phase 5 scope text, active filter, branch scoping, period conversion, manager and pending predicates, day-column order, recompile hint) and exact typed bindings;
+  - periods for every month of 2024–2026: 28, 29, 30, and 31 days, the December–January boundary, and 24 rejected shapes including the old `010` text, the old year bug, injection text, arrays, and out-of-range years;
+  - sentinel classification at all four levels and 21 malformed rows resolving to nothing;
+  - assigned employees at every level through HTTP, compared with the Phase 5 list of the same path, with inactive employees and equal codes in another branch excluded and projections without private HR columns;
+  - overlapping and repeated assignments in two branches listing each employee once in order; no assignment, malformed assignments, a manager without assignments, and an over-long caller code returning `[]` with no HR statement;
+  - period entries for each level and period; a guessed, unknown, inactive, or other-branch code refused alike with no entry read;
+  - calendars for each level, the four month lengths, a stale value in an unused day column not returned, an assignee without an entry, the recorded manager of a pending entry, and 15 refused combinations; access lost after approval;
+  - employee details for assignees only, fail-closed on duplicate HR codes;
+  - manager queues per manager and period, with a caller-selected manager ignored in the query string and headers;
+  - spoofed employee, administrator, manager, branch, division, level, and `query` parameters unable to widen any route; repeated and structured parameters rejected; `POST`/`PUT`/`DELETE` on read routes `404`;
+  - `401` for missing, malformed, tampered, and revoked sessions before any SQL; `403` for a non-member who holds an assignment and approvals, with only the role query executed; membership revocation on the next request;
+  - invalid periods and codes stopping after the role check; malformed percent-encoding; unknown routes; every statement, both connections, and the role check failing with `503` and no database text; all pools closed;
+  - retired `/sql-call` and `/hr-sql-call` returning `404` for members, managers, non-members, and anonymous callers on `GET`, `POST`, `PUT`, and `DELETE`, with no statement and no pool;
+  - the legacy gateway and the save route still answering members, and refusing non-members (`403`) and anonymous callers (`401`) before any statement;
+  - the period helper across three years, including the October and November cases and the twelve previous/next cases of the old switch;
+  - the real store, both page scripts, and the calendar script executed with mocks: requests, status mapping, empty and failed lists, the restored December period, the 28–31 day calendars, and the save lookup;
+  - source scans of callers and server files, English/Arabic keys, and `cursor-pointer` on every button in the edited templates.
+- **First runs:** the first run of the new file was 20 passed and 2 failed, both test mistakes (a count that included a code comment; a pattern that did not match the remaining gateway's name). After correction it passed 22/22. The first lint run flagged two `no-unmodified-loop-condition` errors in a test loop, which was rewritten.
+- **Second review:** the complete diff and new files were read and each request traced from page to store to `authorize`, the role check, validation, scope resolution, typed binding, response, and error handling. Findings fixed: the plan-sensitivity defect above (found by timing every HR path, which the first equivalence run over existing assignments had not reached); calendar and employee-detail reads at each assignment level were added to the tests; one template line was reformatted. The module entry point was loaded once outside the test suite to confirm its imports resolve and to list its routes; no request or connection was made.
+- **Final checks after all changes:** `npm run test:security` 133/133 (exit 0); `npm run lint` passed (exit 0); `git diff --check` passed; `npm run build` passed (exit 0), client and server compiled. Output keeps the existing outdated-Browserslist, large-bundle, and Babel `vue-pdf-embed` notices; no dependency changed.
+- **Independent searches:** no `sql-call`, `hr-sql-call`, `sqlCalls`, or `req.body.query` reference remains in the sources outside `server/dtr/createApi.js` and `server/dtr/router/sqlCalls.js`. The built client bundle contains no `dtr-api/sql-call`, `hr-sql-call`, `adminAssignment`, `Pay_employees`, or `pay_code_tables` text; it contains the new endpoints, and `sql-params-call` in exactly three chunks (the callers listed below).
+
+#### Remaining legacy calls and residual exposure (Phase 8 inventory)
+
+Every remaining browser-SQL call is a status `UPDATE` on `dtr.dtrEntries` sent to `POST /dtr-api/sql-params-call`:
+
+| Caller | Operation |
+| ------ | --------- |
+| `pages/dtr/dtr-table/index.vue` → `sendForApproval` | set status `1` for the listed employees and period; the employee codes are interpolated into an `IN (...)` list |
+| `components/dtr/dtr-table/employeeCalendar.vue` → `sendSingleForApproval` | set status `1` for one employee and period |
+| `pages/dtr/approvals/index.vue` → `singleApproval` | set status `3` for one employee and period |
+| `pages/dtr/approvals/index.vue` → `singleDecline` | set status `2`, decline message, and flag |
+| `pages/dtr/approvals/index.vue` → `approveAll` | set status `3` for the listed employees; codes interpolated into `IN (...)` |
+| `components/dtr/dtr-table/employeeCalendar.vue` → `saveData` | `POST /dtr-api/save-dtr-data` (not browser SQL, but it trusts body values) |
+
+- **Residual exposure until Phase 8:** any DTR member can still send arbitrary SQL to `/dtr-api/sql-params-call`, which runs on the portal connection. That bypasses the read scope added here and reaches every table that connection can use. The Phase 7 scope checks are therefore a complete boundary only for callers who use the new routes. Whether the portal login can reach HR data through cross-database or linked-server names was not tested.
+- **`/save-dtr-data` still trusts the body:** `managerCode`, `dtrAdmin`, `employeeName`, and `employeePicture` come from the request, no assignment check is made, and values are bound without types. Because the recorded manager decides who may approve and read a pending entry, a member can still choose that manager when saving.
+- **Findings for Phase 8:**
+  - The save handler's `UPDATE` filters on `EmployeeCode` only. With the unique key on employee and period, saving again for an employee who already has an entry in another period will fail, or move the single existing row to the new period. No employee has two entries yet.
+  - The save always writes status `0`, so a direct request can reset a pending or approved entry.
+  - The legacy handlers return database error text, and a failed connection leaves an unhandled rejection in their `finally` block.
+  - `GET /dtr-api/employees/:employeeCode` exists only to feed the save; it can be dropped when the server derives the manager.
+  - The `dtrApp.dtrPage.successApproval` and `successDecline` translation keys do not exist, so those notifications show the key.
+- **Unchanged behavior notes:** status texts, calendar day labels, and the approvals headings are untranslated English. A new entry cannot be deleted through the portal.
+- **Phase 9:** the two `dtr` procedure bodies are unreadable. The public vCard interpolation from Phase 2 remains.
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record the maintenance window, release identifier, and aliases for: a DTR member who holds assignments, a DTR member who is the recorded manager of pending entries, and an ordinary account without DTR membership. No SQL migration or key change is needed.
+2. Before deploying, note for the assignment holder how many employees the DTR table lists for the current period and the status of two or three of them, and for the manager how many entries the approvals page lists.
+3. Stop all workers and deploy frontend and backend together, including `server/dtr/{createApi.js,main.js,router/dtrReads.js,router/sqlCalls.js,services/dtrReads.js}`, `server/administration/services/dtrSetup.js`, `store/dtr/index.js`, `utils/dtr-period.js`, the two DTR pages, the calendar component, the locales, and the tests. Run the existing `npm ci` / `npm run build` / PM2 restart procedure, refresh cached/PWA clients, and avoid mixed old/new workers: an old client calls the removed routes and a new client needs the new ones.
+4. **Read-only checks, as the assignment holder, in English and Arabic:**
+   - Open the DTR table. The period dialog shows zero-padded dates (in October: `21-09-2026` to `20-10-2026`, then `21-10-2026` to `20-11-2026` from the 21st). Previous and next move one period at a time, including across December–January.
+   - Save the period. The employee list has the same people and statuses as in step 2, and nobody appears twice.
+   - Open an employee with a saved entry: the day values, and any decline message, match what was shown before. Open an employee without an entry: every day shows the default.
+   - Choose a December–January period, open the approvals page, and return to the table: the calendar still shows 21 December to 20 January.
+   - In developer tools these screens request only `GET /dtr-api/assigned-employees`, `/period-entries`, and `/employees/<code>/calendar`; nothing goes to `sql-call` or `hr-sql-call`.
+5. **As the manager:** the approvals page lists the same pending employees as in step 2 for that period and an empty message for a period without any. Opening a row shows its days. Do not approve or decline. The request is `GET /dtr-api/pending-approvals` with only `start` and `end`.
+6. **Boundary checks:**
+   - As a DTR member, `POST /dtr-api/sql-call` and `POST /dtr-api/hr-sql-call` with the harmless body `{}` return `404 {"message":"notFound"}`.
+   - As the ordinary account, `GET /dtr-api/assigned-employees` returns `403 {"message":"forbidden"}`; without a session it returns `401`. Direct navigation to `/dtr/dtr-table` redirects to the portal.
+   - As the assignment holder, `GET /dtr-api/period-entries?start=2026-12-21&end=2026-01-20` returns `400 invalidPeriod`, and `GET /dtr-api/employees/<a code outside the assignments>` returns `404 employeeNotFound`.
+   - As the manager, adding `&managerCode=<another code>` to the pending-approvals request returns the same own queue.
+   - Do not send SQL, injection payloads, or write requests to production for these checks.
+7. **Phase 5 re-check, as a portal administrator:** in DTR setup, “List all under …” on one of the largest departments now loads within a second.
+8. **Only with separate authorization (production write), on one designated test employee and period:** Phase 7 changed no write handler, so one save is enough to confirm the path.
+   - First record whether that employee has an entry for that period and, if so, every day value, its status, and its decline message.
+   - Change one day and save: the success message appears and the status shows “Ready to be sent for approval”. Reopen the calendar and confirm the value.
+   - Restore: if an entry existed, set the recorded day values back and save. A save always leaves status `0`; if the recorded status was different, or if no entry existed before, restoring means a manual database operation through the approved operational procedure, targeting that single `id`. If that cannot be authorized, do not run the write test. Do not send for approval, approve, or decline as part of this phase's checks.
+9. Check sanitized production logs for unexpected `400`, `401`, `403`, `404`, or `503` responses on DTR routes and confirm the portal, administration, DTR setup, business-card, CoC, and survey modules still load. Record outcomes below and mark Phase 7 **Deployed**, then **Verified**, only after those events occur. Do not start Phase 8 automatically.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-record aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- If verification fails, keep the DTR screens under maintenance and preserve sanitized diagnostics. Prefer fixing forward. This phase has no schema or data migration to reverse and wrote no data.
+- Do not restore an accessible release that serves `/dtr-api/sql-call` or `/dtr-api/hr-sql-call`; every pre-Phase-7 release does, and lets any signed-in employee run SQL on the portal and HR databases. A rollback candidate must also preserve the Phase 1–6 boundaries. If none exists, keep `/dtr` and `/dtr-api` unavailable (for example at the reverse proxy) until fixed; the other modules do not depend on this phase's routes.
+- The recompile hint on the Phase 5 lists is part of this release. If only that hint is suspected, remove the single constant in `server/administration/services/dtrSetup.js` and redeploy rather than restoring an older release.
+- Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed routes) or only the old routers. Existing entries and assignments are untouched; no deletion or regeneration is required for rollback.

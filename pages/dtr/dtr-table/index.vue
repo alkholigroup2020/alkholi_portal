@@ -26,13 +26,25 @@
                   : 'd-flex align-center flex-row-reverse'
               "
             >
-              <v-btn fab small outlined class="mx-1" @click="prev">
+              <v-btn
+                fab
+                small
+                outlined
+                class="mx-1 cursor-pointer"
+                @click="prev"
+              >
                 <v-icon size="30"> mdi-chevron-left </v-icon>
               </v-btn>
               <p class="mb-0 px-3 text-h6 text-md-h5">
                 {{ `From: ${startDate} - To: ${endDate}` }}
               </p>
-              <v-btn fab small outlined class="mx-1" @click="next">
+              <v-btn
+                fab
+                small
+                outlined
+                class="mx-1 cursor-pointer"
+                @click="next"
+              >
                 <v-icon size="30"> mdi-chevron-right </v-icon>
               </v-btn>
             </div>
@@ -44,7 +56,7 @@
             outlined
             text
             color="warning"
-            class="px-8 mx-2 text-capitalize"
+            class="px-8 mx-2 text-capitalize cursor-pointer"
             @click="goBack"
           >
             {{ $t('generals.back') }}
@@ -52,7 +64,7 @@
           <v-btn
             outlined
             color="success"
-            class="px-8 mx-2 text-capitalize"
+            class="px-8 mx-2 text-capitalize cursor-pointer"
             text
             @click="saveStartAndEndDatesInStore"
           >
@@ -91,7 +103,7 @@
 
             <v-btn
               outlined
-              class="px-8 mx-2 text-capitalize"
+              class="px-8 mx-2 text-capitalize cursor-pointer"
               color="success darken-1 "
               text
               @click="sendForApproval"
@@ -100,7 +112,7 @@
             </v-btn>
             <v-btn
               outlined
-              class="px-8 text-capitalize"
+              class="px-8 text-capitalize cursor-pointer"
               color="error darken-1 "
               text
               @click="approvalDialog = false"
@@ -116,6 +128,7 @@
         <v-btn
           outlined
           text
+          class="cursor-pointer"
           :disabled="disableSendForApprovalBTN"
           @click="approvalDialog = true"
         >
@@ -135,7 +148,7 @@
 
         <div>
           <div class="d-flex align-center">
-            <v-btn small outlined @click="refreshPage">
+            <v-btn small outlined class="cursor-pointer" @click="refreshPage">
               <v-icon small> mdi-calendar-multiselect-outline </v-icon>
               <span class="text-capitalize px-2">{{
                 $t('dtrApp.dtrPage.periodChange')
@@ -238,6 +251,8 @@ No Record => pink => No Changes Yet
 4 => gray => Migrated
 */
 import { mapState } from 'vuex'
+import { periodContaining, periodParts, shiftPeriod } from '~/utils/dtr-period'
+
 export default {
   layout: 'dtr',
   data() {
@@ -274,10 +289,7 @@ export default {
       // if the data range was already defined and saved --> set the date values based on the saved data
       this.startDate = this.dtrAppStartDate
       this.endDate = this.dtrAppEndDate
-      this.activeStartMonth = Number(this.dtrAppStartDate.split('-')[1])
-      this.activeStartYear = Number(this.dtrAppEndDate.split('-')[2])
-      this.activeEndMonth = Number(this.dtrAppEndDate.split('-')[1])
-      this.activeEndYear = Number(this.dtrAppEndDate.split('-')[2])
+      this.setActivePeriod()
       await this.getAssignedEmployees()
     }
   },
@@ -296,141 +308,10 @@ export default {
     async getAssignedEmployees() {
       try {
         this.overlay = true
-
-        const allEmployees = []
-
-        const employeeCode = localStorage.getItem('employeeCode')
-
-        const employeeSections = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-call`,
-          {
-            query: `
-              SELECT * FROM [alkholiPortal].[dtr].[adminAssignment]
-              WHERE employeeCode='${employeeCode}'
-            `,
-          }
+        // the server resolves the employees assigned to the signed-in user
+        const allEmployees = await this.$store.dispatch(
+          'dtr/getAssignedEmployees'
         )
-
-        for await (const element of employeeSections.data) {
-          const branchName = element.branchName
-          // if the admin was assigned on the division level
-          if (
-            element.departmentCode === 'undefined' &&
-            element.projectCode === 'undefined' &&
-            element.subProjectCode === 'undefined'
-          ) {
-            const allEmployeesInDivision = await this.$axios.post(
-              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-              {
-                query: `
-                  SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-                  FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-                  WHERE A.employee_code=B.employee_code
-                  AND A.branch_code='${branchName}' AND A.department='${element.divisionCode}'
-                  AND B.stop_val_flag='0'
-                `,
-              }
-            )
-            if (allEmployeesInDivision.status === 200) {
-              allEmployeesInDivision.data.forEach((e) => {
-                allEmployees.push(e)
-              })
-            }
-          }
-          // if the admin was assigned on the department level
-          else if (
-            element.projectCode === 'undefined' &&
-            element.subProjectCode === 'undefined'
-          ) {
-            const projects = await this.$axios.post(
-              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-              {
-                query: `SELECT system_desp_a, system_desp_e, section_code, major_code, system_code FROM [dbo].[pay_code_tables]
-                WHERE branch_code='${branchName}' and system_code_type='71'
-                and major_code='${element.divisionCode}' and section_code='${element.departmentCode}'`,
-              }
-            )
-            if (projects.status === 200) {
-              for await (const project of projects.data) {
-                const queryResult = await this.$axios.post(
-                  `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-                  {
-                    query: `SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-                        FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-                        WHERE A.employee_code=B.employee_code
-                        AND A.branch_code='${branchName}' AND A.department='${project.major_code}'
-                        AND A.Division='${project.system_code}'
-                        AND B.stop_val_flag='0'`,
-                  }
-                )
-                if (queryResult.status === 200) {
-                  queryResult.data.forEach((e) => {
-                    allEmployees.push(e)
-                  })
-                }
-              }
-            }
-          }
-          // if the admin was assigned on the project level
-          else if (element.subProjectCode === 'undefined') {
-            // get all sub-projects first
-            const subProjects = await this.$axios.post(
-              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-              {
-                query: `SELECT system_desp_a, system_desp_e, system_code, major_code, section_code, division_code
-                    FROM [dbo].[pay_code_tables] WHERE branch_code='${element.branchName}' and system_code_type='72'
-                    and major_code='${element.divisionCode}' and section_code='${element.departmentCode}'
-                    and division_code ='${element.projectCode}'`,
-              }
-            )
-            if (subProjects.status === 200) {
-              for await (const el of subProjects.data) {
-                const queryResult = await this.$axios.post(
-                  `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-                  {
-                    query: `
-                      SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-                      FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-                      WHERE A.employee_code=B.employee_code
-                      AND A.branch_code='${branchName}' AND A.department='${el.major_code}'
-                      AND A.Division='${el.division_code}'
-                      AND A.section='${el.section_code}' AND A.Unit='${el.system_code}'
-                      AND B.stop_val_flag='0'
-                    `,
-                  }
-                )
-                if (queryResult.status === 200) {
-                  queryResult.data.forEach((e) => {
-                    allEmployees.push(e)
-                  })
-                }
-              }
-            }
-          }
-          // if the admin was assigned on the sub-project level
-          else {
-            const queryResult = await this.$axios.post(
-              `${this.$config.baseURL}/dtr-api/hr-sql-call`,
-              {
-                query: `
-                SELECT A.employee_code, A.branch_code, A.employee_name_eng, A.employee_name_a, A.position, A.nationality, A.employee_picture, A.Manager_Code, A.Email
-                FROM [MenaITech].[dbo].[Pay_employees] as A, [MenaITech].[dbo].[pay_emp_finance] as B
-                WHERE A.employee_code=B.employee_code
-                AND A.branch_code='${element.branchName}' AND A.department='${element.divisionCode}'
-                AND A.Division='${element.projectCode}'
-                AND A.section='${element.departmentCode}' AND A.Unit='${element.subProjectCode}'
-                AND B.stop_val_flag='0'
-                `,
-              }
-            )
-            if (queryResult.status === 200) {
-              queryResult.data.forEach((e) => {
-                allEmployees.push(e)
-              })
-            }
-          }
-        }
-
         await this.getRecordsStatus(allEmployees)
         this.overlay = false
       } catch (e) {
@@ -473,27 +354,20 @@ export default {
         const startingDate = this.flipDateString(this.startDate)
         const endingDate = this.flipDateString(this.endDate)
 
-        const employeeCodes = assignedEmployees.map(
-          (employee) => `'${employee.employee_code}'`
-        )
+        // the server returns the entries of the assigned employees only;
+        // nothing is requested when no employee is assigned
+        const entries =
+          assignedEmployees.length > 0
+            ? await this.$store.dispatch('dtr/getPeriodEntries', {
+                start: startingDate,
+                end: endingDate,
+              })
+            : []
 
-        const employeeCodesStr = employeeCodes.join(', ')
-
-        const checkStatus = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-call`,
-          {
-            query: `
-              SELECT * FROM dtr.dtrEntries
-              WHERE EmployeeCode IN (${employeeCodesStr})
-              AND StartDate='${startingDate}'
-              AND EndDate='${endingDate}'
-            `,
-          }
-        )
-
-        if (checkStatus.status === 200) {
+        // null: the entries could not be loaded and the user was notified
+        if (entries) {
           const modifiedArray = assignedEmployees.map((element) => {
-            const employeeData = checkStatus.data.find(
+            const employeeData = entries.find(
               (record) => record.EmployeeCode === element.employee_code
             )
 
@@ -534,7 +408,7 @@ export default {
             this.allEmployeesData
           )
 
-          if (allApprovalStatusEqual) {
+          if (allApprovalStatusEqual && this.allEmployeesData.length > 0) {
             this.disableSendForApprovalBTN = false
           } else {
             this.disableSendForApprovalBTN = true
@@ -562,21 +436,16 @@ export default {
 
         const employeeCode = payload
 
-        const checkStatus = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-call`,
-          {
-            query: `
-              SELECT * FROM dtr.dtrEntries
-              WHERE EmployeeCode='${employeeCode}'
-              AND StartDate='${startingDate}'
-              AND EndDate='${endingDate}'
-            `,
-          }
-        )
+        const entries = await this.$store.dispatch('dtr/getPeriodEntries', {
+          start: startingDate,
+          end: endingDate,
+          employeeCode,
+        })
 
-        if (checkStatus.status === 200) {
+        // null: the entry could not be loaded and the user was notified
+        if (entries) {
           const modifiedArray = this.allEmployeesData.map((element) => {
-            const employeeData = checkStatus.data.find(
+            const employeeData = entries.find(
               (record) => record.EmployeeCode === element.employee_code
             )
 
@@ -626,295 +495,43 @@ export default {
 
     getDateRange() {
       /**
-       * Returns the start and end date of a season based on the current date
-       * An object with `startDate` and `endDate` properties in the format of DD-MM-YYYY
+       * Sets the start and end date of the period that contains the current date
+       * in the format of DD-MM-YYYY (from the 21st to the 20th of the next month)
        */
 
       // Get the current day, month, and year as numbers
-      const currentDay = Number(new Date().toISOString().substring(8, 10))
-      const currentMonth = Number(new Date().toISOString().substring(5, 7))
-      const currentYear = Number(new Date().toISOString().substring(0, 4))
+      const today = new Date().toISOString()
+      const currentDay = Number(today.substring(8, 10))
+      const currentMonth = Number(today.substring(5, 7))
+      const currentYear = Number(today.substring(0, 4))
 
-      // Calculate the start and end dates based on the current date and season
-      let startDate, endDate
-      if (currentMonth === 1) {
-        // Winter season
-        if (currentDay >= 1 && currentDay <= 20) {
-          // Before start date
-          startDate = `21-12-${currentYear - 1}`
-          endDate = `20-01-${currentYear}`
-        } else {
-          // After start date
-          startDate = `21-01-${currentYear}`
-          endDate = `20-02-${currentYear}`
-        }
-      } else if (currentMonth >= 2 && currentMonth <= 8) {
-        // Spring/Summer season
-        if (currentDay >= 1 && currentDay <= 20) {
-          // Before start date
-          startDate = `21-0${currentMonth - 1}-${currentYear}`
-          endDate = `20-0${currentMonth}-${currentYear}`
-        } else {
-          // After start date
-          startDate = `21-0${currentMonth}-${currentYear}`
-          endDate = `20-0${currentMonth + 1}-${currentYear}`
-        }
-      } else if (currentMonth === 9) {
-        // Fall season
-        if (currentDay >= 1 && currentDay <= 20) {
-          // Before start date
-          startDate = `21-08-${currentYear}`
-          endDate = `20-09-${currentYear}`
-        } else {
-          // After start date
-          startDate = `21-09-${currentYear}`
-          endDate = `20-10-${currentYear}`
-        }
-      } else if (currentMonth >= 10 && currentMonth <= 11) {
-        // Fall/Winter season
-        if (currentDay >= 1 && currentDay <= 20) {
-          // Before start date
-          startDate = `21-0${currentMonth - 1}-${currentYear}`
-          endDate = `20-0${currentMonth}-${currentYear}`
-        } else {
-          // After start date
-          startDate = `21-0${currentMonth}-${currentYear}`
-          endDate = `20-0${currentMonth + 1}-${currentYear}`
-        }
-      } else if (currentMonth === 12) {
-        // Winter season
-        if (currentDay >= 1 && currentDay <= 20) {
-          // Before start date
-          startDate = `21-11-${currentYear}`
-          endDate = `20-12-${currentYear}`
-        } else {
-          // After start date
-          startDate = `21-12-${currentYear}`
-          endDate = `20-01-${currentYear + 1}`
-        }
-      }
+      this.setPeriod(periodContaining(currentYear, currentMonth, currentDay))
+    },
 
-      // Set the start and end dates as an object with DD-MM-YYYY format
-      this.startDate = startDate.split('-').join('-')
-      this.endDate = endDate.split('-').join('-')
-      // Set other values to send it to the childe component
-      this.activeStartMonth = Number(startDate.split('-')[1])
-      this.activeStartYear = Number(startDate.split('-')[2])
-      this.activeEndMonth = Number(endDate.split('-')[1])
-      this.activeEndYear = Number(endDate.split('-')[2])
+    setPeriod(period) {
+      this.startDate = period.start
+      this.endDate = period.end
+      this.setActivePeriod()
+    },
+
+    setActivePeriod() {
+      // Set the values to send to the child component
+      const parts = periodParts(this.startDate, this.endDate)
+      this.activeStartMonth = parts.startMonth
+      this.activeStartYear = parts.startYear
+      this.activeEndMonth = parts.endMonth
+      this.activeEndYear = parts.endYear
     },
 
     prev() {
       this.overlay = true
-      const startingDateMonth = this.startDate.split('-')[1]
-      const currentYear = this.startDate.split('-')[2]
-      switch (startingDateMonth) {
-        case '01':
-          this.startDate = `21-12-${Number(currentYear - 1)}`
-          this.endDate = `20-01-${currentYear}`
-          this.activeStartMonth = 12
-          this.activeStartYear = Number(currentYear - 1)
-          this.activeEndMonth = 1
-          this.activeEndYear = Number(currentYear)
-          break
-        case '02':
-          this.startDate = `21-01-${currentYear}`
-          this.endDate = `20-02-${currentYear}`
-          this.activeStartMonth = 1
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 2
-          this.activeEndYear = Number(currentYear)
-          break
-        case '03':
-          this.startDate = `21-02-${currentYear}`
-          this.endDate = `20-03-${currentYear}`
-          this.activeStartMonth = 2
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 3
-          this.activeEndYear = Number(currentYear)
-          break
-        case '04':
-          this.startDate = `21-03-${currentYear}`
-          this.endDate = `20-04-${currentYear}`
-          this.activeStartMonth = 3
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 4
-          this.activeEndYear = Number(currentYear)
-          break
-        case '05':
-          this.startDate = `21-04-${currentYear}`
-          this.endDate = `20-05-${currentYear}`
-          this.activeStartMonth = 4
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 5
-          this.activeEndYear = Number(currentYear)
-          break
-        case '06':
-          this.startDate = `21-05-${currentYear}`
-          this.endDate = `20-06-${currentYear}`
-          this.activeStartMonth = 5
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 6
-          this.activeEndYear = Number(currentYear)
-          break
-        case '07':
-          this.startDate = `21-06-${currentYear}`
-          this.endDate = `20-07-${currentYear}`
-          this.activeStartMonth = 6
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 7
-          this.activeEndYear = Number(currentYear)
-          break
-        case '08':
-          this.startDate = `21-07-${currentYear}`
-          this.endDate = `20-08-${currentYear}`
-          this.activeStartMonth = 7
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 8
-          this.activeEndYear = Number(currentYear)
-          break
-        case '09':
-          this.startDate = `21-08-${currentYear}`
-          this.endDate = `20-09-${currentYear}`
-          this.activeStartMonth = 8
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 9
-          this.activeEndYear = Number(currentYear)
-          break
-        case '10':
-          this.startDate = `21-09-${currentYear}`
-          this.endDate = `20-10-${currentYear}`
-          this.activeStartMonth = 9
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 10
-          this.activeEndYear = Number(currentYear)
-          break
-        case '11':
-          this.startDate = `21-10-${currentYear}`
-          this.endDate = `20-11-${currentYear}`
-          this.activeStartMonth = 10
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 11
-          this.activeEndYear = Number(currentYear)
-          break
-        case '12':
-          this.startDate = `21-11-${currentYear}`
-          this.endDate = `20-12-${currentYear}`
-          this.activeStartMonth = 11
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 12
-          this.activeEndYear = Number(currentYear)
-          break
-        default:
-          break
-      }
+      this.setPeriod(shiftPeriod(this.startDate, -1))
       this.overlay = false
     },
 
     next() {
       this.overlay = true
-      const startingDateMonth = this.startDate.split('-')[1]
-      const currentYear = this.startDate.split('-')[2]
-      switch (startingDateMonth) {
-        case '01':
-          this.startDate = `21-02-${currentYear}`
-          this.endDate = `20-03-${currentYear}`
-          this.activeStartMonth = 2
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 3
-          this.activeEndYear = Number(currentYear)
-          break
-        case '02':
-          this.startDate = `21-03-${currentYear}`
-          this.endDate = `20-04-${currentYear}`
-          this.activeStartMonth = 3
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 4
-          this.activeEndYear = Number(currentYear)
-          break
-        case '03':
-          this.startDate = `21-04-${currentYear}`
-          this.endDate = `20-05-${currentYear}`
-          this.activeStartMonth = 4
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 5
-          this.activeEndYear = Number(currentYear)
-          break
-        case '04':
-          this.startDate = `21-05-${currentYear}`
-          this.endDate = `20-06-${currentYear}`
-          this.activeStartMonth = 5
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 6
-          this.activeEndYear = Number(currentYear)
-          break
-        case '05':
-          this.startDate = `21-06-${currentYear}`
-          this.endDate = `20-07-${currentYear}`
-          this.activeStartMonth = 6
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 7
-          this.activeEndYear = Number(currentYear)
-          break
-        case '06':
-          this.startDate = `21-07-${currentYear}`
-          this.endDate = `20-08-${currentYear}`
-          this.activeStartMonth = 7
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 8
-          this.activeEndYear = Number(currentYear)
-          break
-        case '07':
-          this.startDate = `21-08-${currentYear}`
-          this.endDate = `20-09-${currentYear}`
-          this.activeStartMonth = 8
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 9
-          this.activeEndYear = Number(currentYear)
-          break
-        case '08':
-          this.startDate = `21-09-${currentYear}`
-          this.endDate = `20-10-${currentYear}`
-          this.activeStartMonth = 9
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 10
-          this.activeEndYear = Number(currentYear)
-          break
-        case '09':
-          this.startDate = `21-10-${currentYear}`
-          this.endDate = `20-11-${currentYear}`
-          this.activeStartMonth = 10
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 11
-          this.activeEndYear = Number(currentYear)
-          break
-        case '10':
-          this.startDate = `21-11-${currentYear}`
-          this.endDate = `20-12-${currentYear}`
-          this.activeStartMonth = 11
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 12
-          this.activeEndYear = Number(currentYear)
-          break
-        case '11':
-          this.startDate = `21-12-${currentYear}`
-          this.endDate = `20-01-${Number(currentYear) + 1}`
-          this.activeStartMonth = 12
-          this.activeStartYear = Number(currentYear)
-          this.activeEndMonth = 1
-          this.activeEndYear = Number(currentYear) + 1
-          break
-        case '12':
-          this.startDate = `21-01-${Number(currentYear) + 1}`
-          this.endDate = `20-02-${Number(currentYear) + 1}`
-          this.activeStartMonth = 1
-          this.activeStartYear = Number(currentYear) + 1
-          this.activeEndMonth = 2
-          this.activeEndYear = Number(currentYear) + 1
-          break
-        default:
-          break
-      }
+      this.setPeriod(shiftPeriod(this.startDate, 1))
       this.overlay = false
     },
 
@@ -923,7 +540,7 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/')
+      this.$router.push(this.localePath('/'))
     },
 
     async closePanel(payload) {
