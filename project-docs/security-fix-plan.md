@@ -163,8 +163,9 @@ Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before 
 | 2     | Verified    | User confirmed deployed, verified, and accepted on 2026-09-22 |
 | 3     | Deployed    | Partial read-only smoke 2026-09-29; user accepted it for progression the same day (remaining checks not performed) |
 | 4     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
-| 5     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
-| 6–9   | Not started | Pending; do not advance automatically                         |
+| 5     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
+| 6     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
+| 7–9   | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -579,3 +580,120 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-rec
 - Assignment creation is one transaction, so a failed save leaves no partial row. A row created by an authorized write test is removed only through the recorded manual procedure in step 5.
 - Do not restore an accessible release that serves `/administration-api/sql-call` or `/administration-api/hr-sql-call`, or whose popup posts SQL to the business-card route; every pre-Phase-5 release does both. A rollback candidate must also preserve the Phase 1–4 boundaries and the Phase 2 `open-sql-call` retirement. If none exists, keep `/administration/dtr-setup` and `/administration-api/dtr-setup` unavailable (for example at the reverse proxy) until fixed; the Phase 4 membership screens can stay available because they do not depend on this phase's routes.
 - Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed routes) or only the old routers.
+
+### Phase 5 acceptance record — 2026-09-30
+
+Before any Phase 6 edit, the user was asked whether Phase 5 (recorded as **Implemented** only) had been tested and accepted, and chose “Accepted, deployed”. Phase 5 is accepted for progression to Phase 6 and its status is recorded as **Deployed** from that confirmation. The release identifier, maintenance window, account aliases, and individual Phase 5 smoke-check results were not supplied and are not inferred, so the status is not upgraded to **Verified**.
+
+### Phase 6 implementation record — 2026-09-30
+
+**Status: Implemented — local checks passed.** Phase 6 has not been deployed or verified in production. Starting checkout: `2afae1a`, with a clean working tree. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 7 has not started.
+
+#### API contracts
+
+All management routes are under `/business-cards-api`, run the shared `authorize` middleware followed by `requireRole(..., 'businessCardsAdmin')` (the Phase 4 helper: one fixed `EXISTS` query on `dbo.business_card_admins` for `req.auth.employeeCode`, evaluated on every request), and return JSON. Portal-administrator membership is not a substitute. Read routes send `Cache-Control: no-store`.
+
+| Route | Input | Success |
+| ----- | ----- | ------- |
+| `GET /cards` (new) | none | `200` array ordered by `employeeID`: `employeeID`, `fullName_e`, `mailAddress`, `title`, `profilePic`, `qrCodePath` |
+| `GET /cards/:employeeCode` (new) | card ID in the path | `200` one object: `employeeID`, `company`, `fullName_a`, `fullName_e`, `arabicTitle`, `title`, `mobileNumber`, `landLines`, `faxLine`, `mailAddress`, `webSite`, `mainColor` |
+| `GET /activity-logs` (new) | none | `200` array, newest first: `ID`, `theDate` (`YYYY-MM-DD`), `theTime` (`HH:MM:SS`), `Admin_Name`, `theAction`, `BCard_ID`, `BCard_Name` |
+| `POST /save-employee-data` (URL kept) | multipart: the existing text fields plus optional `employeePicture`, `companyLogo`, `qrLogo` images | `200 { "employeeID", "action": "Creation" \| "Update", "cleanupPending" }` (previously the bare ID as text) |
+| `POST /delete-business-card` (URL kept) | JSON `{ "bCardID" }` | `200 { "message": "successfullyDeleted", "cleanupPending" }` |
+
+Errors: `400 invalidEmployeeCode`, `400 invalidCardData`, `400 fileTypeError`, `400 fileTooLarge`, `400 invalidUpload`, `400 invalidRequest` (malformed JSON or percent-encoding), `401 authFailed`, `403 forbidden`, `404 cardNotFound`, `503 serviceUnavailable`. No database, file-system, or exception text is returned.
+
+**Removed:** `POST /business-cards-api/sql-call` and `GET /business-cards-api/hr-sql-call` (`router/sqlCalls.js` deleted, along with the now-unused `configs/hrSQL.js`), and `POST /business-cards-api/get-employee-data`, which had no caller and is superseded by `GET /cards/:employeeCode`. All three reach the API's terminal JSON `404 notFound` for every HTTP method and caller. No alias executes supplied SQL.
+
+**Unchanged and still public:** `GET /public-cards/:employeeCode`, `GET /vcard`, and the static `/business-cards/<file>` and `/vcard/<file>` mounts. They run no session or role check.
+
+#### Implementation and material decisions
+
+- `server/businessCards/services/cardManagement.js` holds every statement as a module constant; `router/cardManagement.js`, `services/qrCode.js`, and `createApi.js` compose it, and `main.js` injects `mssql`, the portal config, `fs.promises`, the QR renderer, and the role check. The legacy `router/business-cards.js` was deleted. Every request value is a typed input; no SQL text, table, column, or procedure name comes from the browser.
+- **Caller and audit identity.** The acting administrator is `req.auth.employeeCode`. The save and delete batches read that employee's `fullName` from `dbo.business_card_admins` inside the same transaction and pass it to `businessCards.logging`; if the row is gone the batch rolls back and the route returns `403`. The `creator`, `adminName`, `adminID`, and `adminAccount` fields the old client sent are ignored, and the client no longer sends them. On delete, the logged card name is the stored `fullName_e` and the removed QR file is the stored `qrCodePath`; the old handler took both from the request body, which allowed a caller to choose the file to delete.
+- **Save** is one fixed batch: `SET XACT_ABORT ON`, a transaction, the actor check, a lookup of the card `WITH (UPDLOCK, HOLDLOCK)`, then `businessCards.employeeData_addData` or `employeeData_updateData` with named typed parameters, a confirmation that the row exists with the new QR name, the audit call, and the commit. A logging failure now rolls the save back instead of leaving an unaudited change. The status row is read from the last recordset so procedure result sets cannot be mistaken for it.
+- **Delete** is one fixed batch with the same actor check and lock, `employeeData_deleteData @cardID`, a confirmation that the row is gone, the audit call, and the commit. A missing card returns `404 cardNotFound` with no audit row.
+- **Card IDs** are 1–10 ASCII letters, digits, `_` or `-` on every management route, and are upper-cased on save (the client already did this). The limit is 10 because `businessCards.logs.BCard_ID` and the logging procedure's `@cardID` are `varchar(10)`; a longer ID could not be audited without truncation. The longest existing ID is 6. The public lookup keeps its 20-character limit.
+- **Generated IDs** (`X` plus five digits, same range) are checked with a bound `EXISTS` query and written with a create-only flag, so a collision is retried instead of overwriting another card. The old loop never re-queried and could spin forever.
+- **Field validation** uses the procedure parameter sizes (names and titles 100, mobile 20, landlines and fax 150, email and website 50); longer values, control characters, and repeated fields return `400 invalidCardData` instead of being truncated. The company must be one of the nine existing names. Colors must be hex (`#RGB` to `#RRGGBBAA`). The QR width must be 100–2000 pixels (default 300); previously it was unbounded.
+- **Stored `undefined` markers are preserved.** Absent optional values are still stored as the text `undefined`, which the templates and the vCard compare against. A missing main color keeps the stored value on update.
+- **Uploads.** Authorization runs before multer reads the body. Files are held in memory (three files, 5,120,000 bytes each, as before), must be PNG or JPEG by declared type and by signature, and are written only after the card is validated, under server-generated names (`<cardID>_<uuid>.<png|jpg>`). The old handler built file names from the request's `employeeID` and the original extension.
+- **Files and failures.** New files are written before the database batch. If the batch fails, new files are removed and an overwritten same-name QR file is restored from the bytes read beforehand, and the route returns an error. After a commit, replaced pictures, logos, and QR files are removed; a missing file is harmless, and a file that cannot be removed returns success with `cleanupPending: true`. Only plain file names inside `uploads/businessCards` are ever removed; `profile.png`, `undefined`, and names containing path separators are left alone. Previously a missing old file made the whole update or delete fail after the database change.
+- **Delete removes only the card's QR file**, as before. The card's picture and logo stay on disk (see findings).
+- **Frontend.** `store/businessCards/index.js` gained `getGeneratedCards`, `getActivityLogs`, and `getCard`; `saveEmployeeData` and `deleteBusinessCard` no longer read identity from local storage and resolve to the saved ID or a boolean. The three pages and `bCardDeletion.vue` use only these actions. Errors are translated through the new `errorMessages.businessCards` keys in English and Arabic. A failed list shows an empty list. A missing card on an edit link leaves the empty form. A failed save keeps the entered values and no longer navigates to a stale card. After a successful save the page navigates with `localePath`. Search boxes treat the text literally and tolerate null fields. `cursor-pointer` was added to the buttons in the edited files.
+- `CLAUDE.md` no longer lists a business-card `sqlCalls.js` router.
+
+#### Read-only database evidence and limitations
+
+- One-off read-only scripts used the configured connection without importing an application entry point or starting Nuxt. They printed only schema metadata and aggregates; no card or log rows, credentials, tokens, or connection details were output or recorded.
+- **`businessCards.employeeData`:** `employeeID varchar(20) NOT NULL` (primary key, the only index); `mailAddress varchar(150)`, `company varchar(100)`, `fullName_a nvarchar(100)`, `fullName_e varchar(100)`, `arabicTitle nvarchar(100)`, `title varchar(100)`, `mobileNumber varchar(20)`, `landLines varchar(150)`, `faxLine varchar(150)`, `webSite varchar(50)`, `profilePic nvarchar(100)`, `companyLogo nvarchar(100)`, `qrCodePath varchar(25)`, `mainColor varchar(10)`, all nullable. 99 rows with 99 distinct IDs, none outside the accepted character set, none lower-case, 8 generated `X…` IDs. No file name contains a path separator, and no picture, logo, or QR file is shared between rows.
+- **`businessCards.logs`:** `ID int identity` (primary key), `theDate date`, `theTime time`, `Admin_Name varchar(100)`, `theAction varchar(20)`, `BCard_ID varchar(10)`, `BCard_Name nchar(100)`, all `NOT NULL`. 223 rows with actions `Creation`, `Update`, and `Deletion`. The response trims the fixed-width name.
+- The schema has no triggers, defaults, check constraints, or foreign keys. `dbo.business_card_admins.fullName` is `varchar(50)`.
+- **Procedures:** `sys.parameters` confirmed `employeeData_addData` and `employeeData_updateData` (15 parameters each; note `@mailAddress varchar(50)` against a 150-character column), `employeeData_deleteData (@cardID varchar(20))`, and `logging (@date date, @time time, @adminName varchar(100), @action varchar(20), @cardID varchar(10), @cardName varchar(100))`. The bound names and types match. `OBJECT_DEFINITION` returns `NULL` for all five, so their internal SQL and any side effects remain **unverified** (Phase 9). `employeeData_checkIfExist` is no longer called.
+- The database collation is `SQL_Latin1_General_CP1_CI_AS`. Arabic text typed into the `varchar` fields (English name, title, and the log's card name) is stored as `?`, as it was before this phase; the two `nvarchar` fields keep Arabic.
+- **Compile-only check:** the six new statements and the role query were compiled against the live schema inside `IF 1 = 0 BEGIN … END` with typed `DECLARE`s, so they were parsed and name-bound but never executed. 7/7 compiled; negative controls were rejected (unknown column 207, syntax 156). Procedure parameter binding happens only at run time and rests on the metadata comparison.
+- **Not exercised locally:** a live save or delete, real lock behavior, the procedures' run-time behavior inside a transaction, and browser rendering.
+
+#### Local validation and second review
+
+- `npm run test:security`: **111 passed, 0 failed** (exit 0) on Node 24.21.0: the 90 existing tests plus 21 in the new `tests/security/business-cards.test.js`, added explicitly to the package script; the runner output lists all 21 by name. Tests use mocked `mssql`, test-only signed sessions, a temporary upload directory, the real `createAuth`/`createRoleChecks`/card service/routers, and loopback-only isolated Express servers. They do not load `.env` or import `server/*/main.js`.
+- New coverage:
+  - statement text (no `SELECT *`, ordering, transaction, lock hints, actor lookup, named procedure calls) and exact typed bindings;
+  - projections for the three reads, checked against the fields each page uses;
+  - invalid and injection-like IDs rejected before any pool, QR, or file work; field sizes, companies, colors, and QR widths;
+  - creation with apostrophes and Arabic text stored as data, spoofed audit fields ignored, the audit row carrying the session administrator's name;
+  - editing with and without new uploads, QR size changes, placeholder and traversal-like stored file names never removed, locked files reported as pending;
+  - generated-ID collision and race retries, and exhaustion as a controlled `503`;
+  - connection, query, procedure, disk, and QR failures leaving no new file, restoring the previous QR, writing no audit row, and returning no success; membership revoked between the guard and the write;
+  - delete using the stored name and file, repeat delete `404`, missing and locked QR files, database failures keeping the card;
+  - through HTTP: the full administrator lifecycle on a fixture card; `403` for an ordinary employee on all five routes with only their own role query executed despite spoofed body, query, header, and form fields; `401` for missing, tampered, and revoked sessions before any SQL; revocation on the next request;
+  - retired `/sql-call`, `/hr-sql-call`, `/open-sql-call`, and `/get-employee-data` returning `404` for administrators, ordinary users, and anonymous callers on `GET`, `POST`, `PUT`, and `DELETE` with no statement executed;
+  - the public card lookup, the real `vCard` router, and static artifacts answering without a session, with a stale token, and for non-administrators, with no role query;
+  - wrong type, oversized, unexpected, and mismatched uploads, oversized fields, malformed JSON and percent-encoding, and hostile original file names;
+  - the real store, the three page scripts, and the delete dialog executed with mocks; source scans of callers and server files; English/Arabic keys; `cursor-pointer` on every button in the edited templates; and the real QR renderer producing a PNG.
+- `tests/security/public-cards.test.js` and `tests/security/dtr-setup.test.js` were updated for the new composition: the two business-card gateways are asserted as `404`, and the caller scan expects no remaining business-card SQL caller.
+- **First runs:** the first run of the new file was 19 passed and 2 failed, both test mistakes (a `GET` sent with a body; a scan that matched a translation key in a template). After correction it passed 21/21. The first lint run flagged one `no-control-regex` error on the deliberate control-character check, which now carries a targeted disable comment.
+- **Second review:** the complete diff and new files were read and each request traced from page to store to `authorize`, the role check, validation, typed binding, response, and error handling. Findings fixed: multer field-limit errors were reported as upload errors and are now `invalidCardData` (regression assertion added); the unused business-card HR connection config was removed. The module entry point was loaded once outside the test suite to confirm its imports resolve; no request or connection was made.
+- **Final checks after all changes:** `npm run test:security` 111/111 (exit 0); `npm run lint` passed (exit 0); `git diff --check` passed; `npm run build` passed (exit 0), client and server compiled. Output keeps the existing outdated-Browserslist, large-bundle, and Babel `vue-pdf-embed` notices; no dependency changed.
+- **Independent searches:** no `sql-call`, `sqlCalls`, `get-employee-data`, or `req.body.query` reference remains outside `server/dtr` and the DTR table page and calendar component. The built client bundle contains no `business-cards-api/sql-call`, `hr-sql-call`, `get-employee-data`, or `[businessCards]` text, and does contain the new endpoints. Every `.query(...)` argument under `server/businessCards` other than `vCard.js` is a module constant.
+
+#### Explicit residual exposure and findings for later phases
+
+- **Phases 7–8 — DTR generic SQL:** `/dtr-api/sql-call` and `/dtr-api/hr-sql-call` remain, called by `pages/dtr/dtr-table/index.vue` and `components/dtr/dtr-table/employeeCalendar.vue`. They are now the only browser-SQL gateways left, and any authenticated user can still reach them.
+- **Phase 9:** `GET /business-cards-api/vcard` still interpolates `req.query.employeeID` into `SELECT *` and is public. The five `businessCards` procedure bodies are unreadable.
+- **Static artifacts stay public by design.** Card pictures, logos, and QR files under `/business-cards-api/business-cards/` need no session (unchanged; document-access hardening is deferred).
+- **Orphaned files.** Deleting a card leaves its picture and logo on disk and publicly reachable by file name (unchanged behavior). Files orphaned by earlier failed saves also remain. A cleanup needs a separate decision.
+- **Concurrent administrators.** Two administrators saving and deleting the same card at the same moment can leave a card row whose QR file was just removed; saving the card again regenerates it. The database changes themselves are serialized by the row lock.
+- **Behavior notes:** a card ID over 10 characters is now rejected; an edit link to a deleted card followed by Submit creates the card again (unchanged upsert behavior); the activity log shows the administrator's name from `business_card_admins`, which may be formatted differently from the name the browser used to send.
+
+#### Production deployment and smoke checks — user to perform
+
+1. Record the maintenance window, release identifier, and aliases for a business-card administrator account and an ordinary account without that membership (ideally a portal administrator who is not a card administrator). Only if separately authorized, agree one designated fixture card ID for the write test. No SQL migration or key change is needed.
+2. Stop all workers and deploy frontend and backend together, including `server/businessCards/{createApi.js,main.js,router/cardManagement.js,services/cardManagement.js,services/qrCode.js}` with `router/sqlCalls.js`, `router/business-cards.js`, and `configs/hrSQL.js` removed, the three pages, the delete dialog, the store, the locales, and the tests. Run the existing `npm ci` / `npm run build` / PM2 restart procedure, refresh cached/PWA clients, and avoid mixed old/new workers: an old client calls the removed route and expects the old save response.
+3. **Read-only checks, as the card administrator, in English and Arabic:**
+   - Generated cards: the list loads in ID order with the same names, IDs, emails, titles, and pictures as before; search by ID and by name works; a QR link downloads and “Show the card” opens the public card.
+   - Open an existing card's edit link: every field is filled as before, including Arabic name and title, and the color for a Custom card. Leave without submitting.
+   - Open `/business-cards/card-generator?id=<an unused ID>`: a translated “not found” message appears and the empty form stays usable.
+   - Activity logs: newest first, with the same dates, times, names, and actions as before; search works.
+   - In developer tools these screens request only `GET /business-cards-api/cards`, `/cards/<id>`, and `/activity-logs`; nothing goes to `sql-call`.
+4. **Boundary checks:**
+   - As the administrator, `POST /business-cards-api/sql-call` with the harmless body `{}`, `GET /business-cards-api/hr-sql-call`, and `POST /business-cards-api/get-employee-data` with `{}` return `404 {"message":"notFound"}`.
+   - As the ordinary account, `GET /business-cards-api/cards` and `GET /business-cards-api/activity-logs` return `403 {"message":"forbidden"}`; without a session they return `401`. Direct navigation to `/business-cards/generated-cards` redirects to the portal.
+   - Do not send SQL, injection payloads, or write requests to production for these checks.
+5. **Public checks, signed out:** an existing card opens in English and Arabic for each available company layout, its vCard downloads, a printed or saved QR still opens the card, and the profile QR shortcut on the portal home still appears for an account with a card.
+6. **Only with separate authorization (production write), using the designated fixture ID:**
+   - First record whether a card with that ID exists. If it does, record every field from its edit form, its picture, logo, and QR file names from the list, keep copies of those three files, and note the current top activity-log entry.
+   - Generate (or update) the fixture with a picture and a name containing an apostrophe and an Arabic name: the public card opens, the list shows it, the QR downloads, and the log shows `Creation` or `Update` with your own name.
+   - Edit it without uploading files and change the title: the picture and logo are unchanged and the log shows `Update`.
+   - Delete it: the row disappears, the public URL shows the not-found state, the log shows `Deletion`, and a second delete attempt from a stale tab shows the translated not-found message.
+   - Restore the recorded state: if the fixture existed before, generate it again with the recorded values and the saved picture and logo and compare the edit form and public card; if it did not, leave it deleted. The test's activity-log rows remain as a record; do not delete log rows.
+7. Check sanitized production logs for unexpected `400`, `401`, `403`, `404`, or `503` responses on business-card routes and confirm the portal, administration, DTR setup, DTR table, CoC, and survey modules still load. Record outcomes below and mark Phase 6 **Deployed**, then **Verified**, only after those events occur. Do not start Phase 7 automatically.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/fixture aliases and smoke results: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- If verification fails, keep the business-card management screens under maintenance and preserve sanitized diagnostics. Prefer fixing forward. This phase has no schema or data migration to reverse.
+- Saves and deletes are single transactions, so a failed operation leaves no partial card or audit row. A fixture changed by an authorized write test is restored only through step 6.
+- Do not restore an accessible release that serves `/business-cards-api/sql-call` or `/business-cards-api/hr-sql-call`; every pre-Phase-6 release does, and lets any signed-in user run SQL. A rollback candidate must also preserve the Phase 1–5 boundaries and the Phase 2 `open-sql-call` retirement. If none exists, keep `/business-cards` and the five management routes unavailable (for example at the reverse proxy) until fixed. The public card, vCard, and static artifact routes can stay available because they do not depend on this phase's routes.
+- Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed route and the old save response) or only the old routers. Preserve existing card rows, log rows, and uploaded files; no deletion or regeneration is required for rollback.

@@ -1774,12 +1774,8 @@ test('no DTR setup caller sends SQL, and the popup left the business-card routes
       .map(relative)
       .sort()
   assert.deepEqual(callers(/administration-api\/(hr-)?sql-call/), [])
-  // Remaining generic business-card SQL callers, for Phase 6 to migrate.
-  assert.deepEqual(callers(/business-cards-api\/(hr-)?sql-call/), [
-    'pages/business-cards/activity-logs/index.vue',
-    'pages/business-cards/card-generator/index.vue',
-    'pages/business-cards/generated-cards/index.vue',
-  ])
+  // Phase 6 migrated the business-card pages and retired that gateway.
+  assert.deepEqual(callers(/business-cards-api\/(hr-)?sql-call/), [])
 })
 
 test('English and Arabic contain every DTR setup error code', () => {

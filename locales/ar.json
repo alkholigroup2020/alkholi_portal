@@ -415,6 +415,18 @@
       "profileNotFound": "تعذر العثور على ملفك الشخصي.",
       "serviceUnavailable": "خدمة الملف الشخصي غير متاحة مؤقتًا."
     },
+    "businessCards": {
+      "forbidden": "ليس لديك صلاحية لإدارة بطاقات العمل.",
+      "authFailed": "فشل التحقق من الصلاحية!",
+      "invalidEmployeeCode": "يرجى إدخال رقم موظف صحيح (حتى 10 أحرف أو أرقام).",
+      "invalidCardData": "بعض بيانات البطاقة غير صالحة أو أطول من المسموح.",
+      "invalidRequest": "تعذرت معالجة الطلب.",
+      "cardNotFound": "لم يتم العثور على بطاقة العمل هذه.",
+      "fileTypeError": "يرجى رفع صورة بصيغة PNG أو JPEG أو JPG فقط!",
+      "fileTooLarge": "يجب ألا يتجاوز حجم كل صورة 5 ميجابايت.",
+      "invalidUpload": "يرجى اختيار صور صالحة بصيغة PNG أو JPEG.",
+      "serviceUnavailable": "خدمة بطاقات العمل غير متاحة مؤقتًا. يرجى المحاولة لاحقًا."
+    },
     "administration": {
       "bCards": {
         "memberExist": "تم إضافة الموظف مسبقاً!",

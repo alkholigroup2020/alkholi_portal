@@ -59,10 +59,8 @@
             </thead>
             <tbody>
               <tr v-for="log in logsArray" :key="log.ID">
-                <td>
-                  {{ log.theDate.slice(0, 10) }}
-                </td>
-                <td>{{ log.theTime.slice(11, 19) }}</td>
+                <td>{{ log.theDate }}</td>
+                <td>{{ log.theTime }}</td>
                 <td>{{ log.Admin_Name }}</td>
                 <td>{{ log.theAction }}</td>
                 <td>{{ log.BCard_ID }}</td>
@@ -77,30 +75,29 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   layout: 'businessCards',
   data() {
     return {
       searchTerm: '',
-      activityLogs: [],
       overlay: false,
     }
   },
   computed: {
+    ...mapState({
+      activityLogs: (state) => state.businessCards.activityLogs,
+    }),
     logsArray() {
-      return this.activityLogs.filter((singleCard) => {
-        return (
-          singleCard.BCard_ID.toLowerCase().match(
-            this.searchTerm.toLowerCase()
-          ) ||
-          singleCard.BCard_Name.toLowerCase().match(
-            this.searchTerm.toLowerCase()
-          ) ||
-          singleCard.theAction
+      const term = this.searchTerm.toLowerCase()
+      return this.activityLogs.filter((log) =>
+        [log.BCard_ID, log.BCard_Name, log.theAction].some((value) =>
+          String(value || '')
             .toLowerCase()
-            .match(this.searchTerm.toLowerCase())
+            .includes(term)
         )
-      })
+      )
     },
   },
   mounted() {
@@ -108,27 +105,11 @@ export default {
   },
   methods: {
     async getActivityLogs() {
+      this.overlay = true
       try {
-        this.overlay = true
-        const savedLogs = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `SELECT * FROM [businessCards].[logs] ORDER BY ID DESC`,
-          }
-        )
-        this.activityLogs = savedLogs.data
+        await this.$store.dispatch('businessCards/getActivityLogs')
+      } finally {
         this.overlay = false
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
       }
     },
   },

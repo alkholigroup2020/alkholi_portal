@@ -415,6 +415,18 @@
       "profileNotFound": "Your profile could not be found.",
       "serviceUnavailable": "The profile service is temporarily unavailable."
     },
+    "businessCards": {
+      "forbidden": "You are not authorized to manage business cards.",
+      "authFailed": "Authorization Failed!",
+      "invalidEmployeeCode": "Please enter a valid employee ID (up to 10 letters or digits).",
+      "invalidCardData": "One or more card fields are invalid or too long.",
+      "invalidRequest": "The request could not be processed.",
+      "cardNotFound": "This business card could not be found.",
+      "fileTypeError": "Please upload a PNG, JPEG, or JPG file only!",
+      "fileTooLarge": "Each image must not exceed 5 MB.",
+      "invalidUpload": "Please select valid PNG or JPEG images.",
+      "serviceUnavailable": "The business-card service is temporarily unavailable. Please try again later."
+    },
     "administration": {
       "bCards": {
         "memberExist": "This member already exist!",

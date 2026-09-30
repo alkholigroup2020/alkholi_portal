@@ -1,7 +1,15 @@
 <template>
   <v-dialog v-model="dialog" width="500" persistent>
     <template #activator="{ on, attrs }">
-      <v-btn text fab small v-bind="attrs" v-on="on" @click="dialog = true">
+      <v-btn
+        text
+        fab
+        small
+        class="cursor-pointer"
+        v-bind="attrs"
+        v-on="on"
+        @click="dialog = true"
+      >
         <v-icon small color="error">mdi-delete</v-icon>
       </v-btn>
     </template>
@@ -24,7 +32,7 @@
 
         <v-btn
           outlined
-          class="px-8 mx-2 text-capitalize"
+          class="px-8 mx-2 text-capitalize cursor-pointer"
           color="success darken-1"
           text
           @click="deleteBusinessCard()"
@@ -33,7 +41,7 @@
         </v-btn>
         <v-btn
           outlined
-          class="px-8 text-capitalize"
+          class="px-8 text-capitalize cursor-pointer"
           color="error darken-1"
           text
           @click="dialog = false"
@@ -48,17 +56,8 @@
 
 <script>
 export default {
-  layout: 'adminPage',
   props: {
     employee: {
-      type: String,
-      default: '',
-    },
-    file: {
-      type: String,
-      default: '',
-    },
-    name: {
       type: String,
       default: '',
     },
@@ -70,30 +69,17 @@ export default {
   },
   methods: {
     async deleteBusinessCard() {
+      this.dialog = false
+      this.$nuxt.$loading.start()
       try {
-        this.dialog = false
-        this.$nextTick(async () => {
-          this.$nuxt.$loading.start()
-          await this.$store.dispatch('businessCards/deleteBusinessCard', {
-            code: this.employee,
-            file: this.file,
-            name: this.name,
-          })
-          // notify the parent to update the generated cards list
-          this.$emit('updateCards')
-          this.$nuxt.$loading.finish()
+        // The server identifies the acting administrator from the session.
+        await this.$store.dispatch('businessCards/deleteBusinessCard', {
+          code: this.employee,
         })
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
+        // refresh even after a failure: the card may already be gone
+        this.$emit('updateCards')
+      } finally {
+        this.$nuxt.$loading.finish()
       }
     },
   },

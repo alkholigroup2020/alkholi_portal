@@ -1,17 +1,38 @@
+const path = require('path')
+const fs = require('fs')
 const sql = require('mssql')
+const QRCode = require('qrcode')
+const { createCanvas, loadImage } = require('canvas')
+const { createRoleChecks, requireRole } = require('../shared/roles')
 const portalConfig = require('./configs/sql')
+const authorize = require('./middleware/authorization')
 const createApi = require('./createApi')
 const { createPublicCards } = require('./services/publicCards')
-const businessCards = require('./router/business-cards.js')
+const { createCardManagement } = require('./services/cardManagement')
+const { createQrRenderer } = require('./services/qrCode')
 const vCard = require('./router/vCard.js')
-const sqlCalls = require('./router/sqlCalls.js')
+
+const uploadDirectory = path.join(__dirname, '../../uploads/businessCards')
 
 module.exports = {
   path: '/business-cards-api',
   handler: createApi({
+    authorize,
+    requireCardsAdmin: requireRole(
+      createRoleChecks({ sql, portalConfig }),
+      'businessCardsAdmin'
+    ),
     publicCards: createPublicCards({ sql, portalConfig }),
-    businessCards,
+    cardManagement: createCardManagement({
+      sql,
+      portalConfig,
+      fileSystem: fs.promises,
+      uploadDirectory,
+      renderQr: createQrRenderer({ QRCode, createCanvas, loadImage }),
+      publicCardUrl: (employeeID) =>
+        `https://portal.alkholi.com/business-card/${employeeID}`,
+    }),
     vCard,
-    sqlCalls,
+    uploadDirectory,
   }),
 }

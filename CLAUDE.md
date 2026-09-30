@@ -68,7 +68,7 @@ When adding a new module, follow the same pattern and **register it in both `nux
 - Use fixed, server-written SQL with typed input parameters. Never build SQL from request values. Procedure names, table names and identifiers must never come from request data.
 - Check input lengths against the column sizes, and always close connection pools.
 - In migrated modules, `main.js` injects dependencies into a `createApi.js` factory and services, so tests can mock SQL, LDAP and the file system. `server/login/services/repository.js`, `server/portal/services/portalIdentity.js` and `server/businessCards/services/publicCards.js` are reference implementations.
-- **Legacy code is unsafe; don't copy it.** Some routers interpolate request values into SQL strings, and the `sqlCalls.js` routers in `businessCards` and `dtr` run raw SQL sent by the browser. These are being replaced phase by phase per `project-docs/security-fix-plan.md`; check its progress table before touching those modules.
+- **Legacy code is unsafe; don't copy it.** Some routers interpolate request values into SQL strings, and the `sqlCalls.js` router in `dtr` runs raw SQL sent by the browser. These are being replaced phase by phase per `project-docs/security-fix-plan.md`; check its progress table before touching those modules.
 
 Two databases are used:
 - `alkholiPortal` (config `server/login/configs/sql.js`, env `sql*`) — application data, tokens, admin membership tables.

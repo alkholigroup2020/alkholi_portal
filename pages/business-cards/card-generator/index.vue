@@ -286,6 +286,7 @@
               <template #activator="{ on, attrs }">
                 <div class="d-flex align-center mb-3">
                   <v-btn
+                    class="cursor-pointer"
                     :color="mainColor"
                     v-bind="attrs"
                     small
@@ -311,10 +312,16 @@
                 ></v-color-picker>
                 <v-divider class="mb-2"></v-divider>
                 <div class="d-flex justify-space-around pb-2">
-                  <v-btn color="success" text @click="mainBGColor = false">
+                  <v-btn
+                    class="cursor-pointer"
+                    color="success"
+                    text
+                    @click="mainBGColor = false"
+                  >
                     {{ $t('generals.save') }}
                   </v-btn>
                   <v-btn
+                    class="cursor-pointer"
                     color="warning"
                     text
                     @click=";(mainBGColor = false), (mainColor = '#07074eFF')"
@@ -328,6 +335,7 @@
               <template #activator="{ on, attrs }">
                 <div class="d-flex align-center mb-3">
                   <v-btn
+                    class="cursor-pointer"
                     :color="frColor"
                     v-bind="attrs"
                     small
@@ -353,10 +361,16 @@
                 ></v-color-picker>
                 <v-divider class="mb-2"></v-divider>
                 <div class="d-flex justify-space-around pb-2">
-                  <v-btn color="success" text @click="frColorDialog = false">
+                  <v-btn
+                    class="cursor-pointer"
+                    color="success"
+                    text
+                    @click="frColorDialog = false"
+                  >
                     {{ $t('generals.save') }}
                   </v-btn>
                   <v-btn
+                    class="cursor-pointer"
                     color="warning"
                     text
                     @click=";(frColorDialog = false), (frColor = '#07074eFF')"
@@ -370,6 +384,7 @@
               <template #activator="{ on, attrs }">
                 <div class="d-flex align-center">
                   <v-btn
+                    class="cursor-pointer"
                     :color="bgColor"
                     v-bind="attrs"
                     small
@@ -395,10 +410,16 @@
                 ></v-color-picker>
                 <v-divider class="mb-2"></v-divider>
                 <div class="d-flex justify-space-around pb-2">
-                  <v-btn color="success" text @click="bgColorDialog = false">
+                  <v-btn
+                    class="cursor-pointer"
+                    color="success"
+                    text
+                    @click="bgColorDialog = false"
+                  >
                     {{ $t('generals.save') }}
                   </v-btn>
                   <v-btn
+                    class="cursor-pointer"
                     color="warning"
                     text
                     @click=";(bgColorDialog = false), (bgColor = '#FFF')"
@@ -434,7 +455,7 @@
                   $vuetify.theme.dark ? 'orange darken-4' : 'yellow darken-3'
                 "
                 type="reset"
-                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text mx-3"
+                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text mx-3 cursor-pointer"
                 @click="resetValues"
               >
                 {{ $t('generals.reset') }}
@@ -445,7 +466,7 @@
                   $vuetify.theme.dark ? 'green darken-4' : 'green darken-1'
                 "
                 type="submit"
-                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text"
+                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text cursor-pointer"
               >
                 {{ $t('generals.submit') }}
               </v-btn>
@@ -458,8 +479,6 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
-
 import { isValidNumber } from 'libphonenumber-js'
 
 import { extend, localize } from 'vee-validate'
@@ -559,23 +578,20 @@ export default {
       employeeFaxLine: undefined,
     }
   },
-  computed: {
-    ...mapState({
-      userCardID: (state) => state.businessCards.userCardID,
-    }),
-  },
   mounted() {
-    if (this.$nuxt.context.query.id) {
-      this.getEmployeeData(this.$nuxt.context.query.id)
+    const id = this.$route.query.id
+    if (typeof id === 'string' && id) {
+      this.getEmployeeData(id)
     }
   },
   methods: {
     async generateCard() {
+      this.$nuxt.$loading.start()
       try {
-        this.$nextTick(async () => {
-          this.$nuxt.$loading.start()
-          const creator = localStorage.getItem('userFullName')
-          const employeeData = {
+        // The acting administrator is identified by the server session.
+        const cardID = await this.$store.dispatch(
+          'businessCards/saveEmployeeData',
+          {
             employeeID: this.employeeID,
             companyLogo: this.companyLogo,
             company: this.company,
@@ -594,27 +610,14 @@ export default {
             mainColor: this.mainColor,
             qrSize: this.qrSize,
             faxLine: this.employeeFaxLine,
-            creator,
           }
-          await this.$store.dispatch(
-            'businessCards/saveEmployeeData',
-            employeeData
-          )
-          this.resetValues()
-          this.$nuxt.$loading.finish()
-          this.$router.push(`/business-card/${this.userCardID}`)
-        })
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
         )
+        // keep the form as entered when saving failed
+        if (!cardID) return
+        this.resetValues()
+        this.$router.push(this.localePath(`/business-card/${cardID}`))
+      } finally {
+        this.$nuxt.$loading.finish()
       }
     },
     resetValues() {
@@ -640,48 +643,27 @@ export default {
       this.$refs.theForm.reset()
     },
     async getEmployeeData(id) {
-      try {
-        const employeeData = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `SELECT * FROM [businessCards].[employeeData] WHERE employeeID = '${id}'`,
-          }
-        )
-        if (employeeData.status === 200) {
-          const result = employeeData.data
-          this.employeeID = result[0].employeeID
-          this.company = result[0].company
-          this.employeeArabicTitle =
-            result[0].arabicTitle === 'undefined' ? '' : result[0].arabicTitle
-          this.employeeFaxLine =
-            result[0].faxLine === 'undefined' ? '' : result[0].faxLine
-          this.employeeArabicName =
-            result[0].fullName_a === 'undefined' ? '' : result[0].fullName_a
-          this.employeeEnglishName =
-            result[0].fullName_e === 'undefined' ? '' : result[0].fullName_e
-          this.employeeLandLines =
-            result[0].landLines === 'undefined' ? '' : result[0].landLines
-          this.employeeMailAddress =
-            result[0].mailAddress === 'undefined' ? '' : result[0].mailAddress
-          this.employeeMobileNumber =
-            result[0].mobileNumber === 'undefined' ? '' : result[0].mobileNumber
-          this.employeeEnglishTitle =
-            result[0].title === 'undefined' ? '' : result[0].title
-          this.employeeWebSite =
-            result[0].webSite === 'undefined' ? '' : result[0].webSite
-          this.mainColor = result[0].mainColor
-        }
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
+      const card = await this.$store.dispatch('businessCards/getCard', id)
+      // a missing or deleted card leaves the empty form in place
+      if (!card) return
+      const stored = (value) =>
+        value === 'undefined' || value === null || value === undefined
+          ? ''
+          : value
+      this.employeeID = card.employeeID
+      this.company = card.company
+      this.employeeArabicTitle = stored(card.arabicTitle)
+      this.employeeFaxLine = stored(card.faxLine)
+      this.employeeArabicName = stored(card.fullName_a)
+      this.employeeEnglishName = stored(card.fullName_e)
+      this.employeeLandLines = stored(card.landLines)
+      this.employeeMailAddress = stored(card.mailAddress)
+      this.employeeMobileNumber = stored(card.mobileNumber)
+      this.employeeEnglishTitle = stored(card.title)
+      this.employeeWebSite = stored(card.webSite)
+      // cards without a stored color keep the default
+      if (/^#[0-9a-fA-F]{3,8}$/.test(card.mainColor)) {
+        this.mainColor = card.mainColor
       }
     },
   },

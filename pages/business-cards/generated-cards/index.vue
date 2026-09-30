@@ -69,7 +69,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="member in bCardsArray" :key="member._id">
+              <tr v-for="member in bCardsArray" :key="member.employeeID">
                 <td>
                   <v-avatar
                     v-if="member.profilePic"
@@ -122,7 +122,13 @@
                     "
                     class="text-decoration-none"
                   >
-                    <v-btn fab text color="primaryText" x-small>
+                    <v-btn
+                      fab
+                      text
+                      color="primaryText"
+                      x-small
+                      class="cursor-pointer"
+                    >
                       <v-icon>mdi-credit-card-edit-outline</v-icon>
                     </v-btn>
                   </nuxt-link>
@@ -131,8 +137,6 @@
                 <td>
                   <bCardDeletion
                     :employee="member.employeeID"
-                    :file="member.qrCodePath"
-                    :name="member.fullName_e"
                     @updateCards="getGeneratedCards"
                   />
                 </td>
@@ -146,27 +150,29 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+
 export default {
   layout: 'businessCards',
   data() {
     return {
-      bCards: [],
       searchTerm: '',
       overlay: false,
     }
   },
   computed: {
+    ...mapState({
+      bCards: (state) => state.businessCards.cards,
+    }),
     bCardsArray() {
-      return this.bCards.filter((singleCard) => {
-        return (
-          singleCard.employeeID
+      const term = this.searchTerm.toLowerCase()
+      return this.bCards.filter((singleCard) =>
+        [singleCard.employeeID, singleCard.fullName_e].some((value) =>
+          String(value || '')
             .toLowerCase()
-            .match(this.searchTerm.toLowerCase()) ||
-          singleCard.fullName_e
-            .toLowerCase()
-            .match(this.searchTerm.toLowerCase())
+            .includes(term)
         )
-      })
+      )
     },
   },
   mounted() {
@@ -174,27 +180,11 @@ export default {
   },
   methods: {
     async getGeneratedCards() {
+      this.overlay = true
       try {
-        this.overlay = true
-        const generatedCards = await this.$axios.post(
-          `${this.$config.baseURL}/business-cards-api/sql-call`,
-          {
-            query: `SELECT * FROM [businessCards].[employeeData]`,
-          }
-        )
-        this.bCards = generatedCards.data
+        await this.$store.dispatch('businessCards/getGeneratedCards')
+      } finally {
         this.overlay = false
-      } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
-        )
       }
     },
   },

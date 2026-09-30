@@ -94,24 +94,6 @@ function databaseFixture() {
   }
 }
 
-// Load the actual remaining SQL router with injected dependencies, never runtime
-// config, .env, the full app entry point, or a production auth/SQL connection.
-function legacyRouter(sql, authorize) {
-  const filename = path.join(root, 'server/businessCards/router/sqlCalls.js')
-  const module = { exports: {} }
-  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
-    module,
-    require(name) {
-      if (name === 'express') return express
-      if (name === 'mssql') return sql
-      if (name === '../middleware/authorization') return authorize
-      if (name === '../configs/sql' || name === '../configs/hrSQL') return {}
-      throw new Error(`Unexpected dependency: ${name}`)
-    },
-  })
-  return module.exports
-}
-
 async function httpFixture(t) {
   const f = databaseFixture()
   const sessions = createSessions('public-card-tests-only-key')
@@ -130,11 +112,15 @@ async function httpFixture(t) {
   const app = express()
   app.use(
     '/business-cards-api',
+    // Management routes are covered in business-cards.test.js; here they only
+    // need to exist behind the session check and a role check that refuses.
     createApi({
+      authorize: auth.authorize,
+      requireCardsAdmin: (req, res) =>
+        res.status(403).json({ message: 'forbidden' }),
       publicCards: f.publicCards,
-      businessCards: express.Router(),
+      cardManagement: {},
       vCard: express.Router(),
-      sqlCalls: legacyRouter(f.sql, auth.authorize),
     })
   )
   const server = await new Promise((resolve) => {
@@ -304,14 +290,19 @@ test('missing, ambiguous and unavailable cards have safe HTTP responses and clos
   assert.ok(f.pools.every((pool) => pool.closed))
 })
 
-test('retired SQL route is 404 in mounted API; remaining generic routes still require auth', async (t) => {
+test('retired SQL routes are 404 in mounted API; management routes still require auth', async (t) => {
   const f = await httpFixture(t)
   const token = f.sessions.issue({
     employeeCode: '00123',
     userAccount: 'test',
     domain: 'alkholi',
   })
-  for (const suffix of ['/open-sql-call', '/open-sql-call/']) {
+  for (const suffix of [
+    '/open-sql-call',
+    '/open-sql-call/',
+    '/sql-call',
+    '/hr-sql-call',
+  ]) {
     for (const bearer of ['', token]) {
       assert.deepEqual(
         await f.request(suffix, {
@@ -326,8 +317,13 @@ test('retired SQL route is 404 in mounted API; remaining generic routes still re
       )
     }
   }
-  assert.equal((await f.request('/sql-call', { method: 'POST' })).status, 401)
-  assert.equal((await f.request('/hr-sql-call')).status, 401)
+  assert.equal((await f.request('/hr-sql-call')).status, 404)
+  assert.equal(f.authorizationChecks(), 0)
+  assert.equal((await f.request('/cards')).status, 401)
+  assert.equal(
+    (await f.request('/delete-business-card', { method: 'POST' })).status,
+    401
+  )
   assert.equal(f.calls.length, 0)
   assert.equal(f.authorizationChecks(), 0)
 })
