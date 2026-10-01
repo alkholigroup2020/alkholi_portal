@@ -1,12 +1,33 @@
 const path = require('path')
+const fs = require('fs')
 const express = require('express')
 const cron = require('node-cron') // Add cron dependency
 const api = express()
-const cocJS = require('./router/cocJS.js')
+const sql = require('mssql')
+const nodemailer = require('nodemailer')
+const { createRoleChecks, requireRole } = require('../shared/roles')
+const portalConfig = require('./configs/sql')
+const authorize = require('./middleware/authorization')
+const cocJS = require('./router/cocJS.js')({
+  sql,
+  portalConfig,
+  authorize,
+  fs,
+  requireCocAdmin: requireRole(
+    createRoleChecks({ sql, portalConfig }),
+    'cocAdmin'
+  ),
+  transporter: nodemailer.createTransport({
+    host: process.env.EMAIL_HOST,
+    port: process.env.EMAIL_PORT,
+    secure: false,
+    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+  }),
+})
 const dataSync = require('./router/dataSync.js') // Import sync function
 
-api.use(express.json())
-api.use(express.urlencoded({ extended: true }))
+api.use(express.json({ limit: '256kb' }))
+api.use(express.urlencoded({ extended: false, limit: '256kb' }))
 api.use(cocJS)
 // api.use(dataSync.router)
 api.use(
@@ -45,5 +66,5 @@ if (!process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0') {
 
 module.exports = {
   path: '/coc-api',
-  handler: api,
+  handler: require('../shared/finishApi')(api),
 }

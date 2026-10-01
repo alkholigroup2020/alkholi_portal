@@ -39,7 +39,7 @@
               <v-btn
                 outlined
                 :color="$vuetify.theme.dark ? 'white' : 'primary'"
-                class="text-capitalize"
+                class="text-capitalize cursor-pointer"
                 height="38"
                 @click="reportDialog = true"
               >
@@ -208,6 +208,7 @@
                     "
                   >
                     <EmailConfirmation
+                      :employee-code="employee.employee_id"
                       :email="employee.email"
                       :name="employee.name_eng.split(' ')[0]"
                       @sending="overlay = true"
@@ -237,7 +238,7 @@
                       fab
                       small
                       text
-                      class="mx-1 py-0 px-0 text-capitalize"
+                      class="mx-1 py-0 px-0 text-capitalize cursor-pointer"
                       @click.prevent="openPdf(employee.signed_document_path)"
                       ><v-icon>mdi-file-document</v-icon></v-btn
                     >
@@ -257,16 +258,26 @@
                   >
                     <!-- accept btn -->
                     <div>
-                      <v-dialog v-model="acceptDialog" width="500" persistent>
-                        <template #activator="{ on, attrs }">
+                      <v-dialog
+                        :value="
+                          acceptDialog &&
+                          selectedSignatureId === employee.signature_id
+                        "
+                        width="500"
+                        persistent
+                        @input="
+                          selectedSignatureId === employee.signature_id &&
+                            (acceptDialog = $event)
+                        "
+                      >
+                        <template #activator="{ attrs }">
                           <v-btn
                             outlined
                             v-bind="attrs"
                             rounded
                             color="success"
-                            class="mx-2 text-subtitle-1 py-0 px-5"
-                            v-on="on"
-                            @click="acceptDialog = true"
+                            class="mx-2 text-subtitle-1 py-0 px-5 cursor-pointer"
+                            @click="openSignatureDialog(employee, 'approve')"
                           >
                             <v-icon>mdi-check</v-icon>
                           </v-btn>
@@ -289,6 +300,11 @@
                                 )
                               }}
                             </p>
+                            <p class="text-center">
+                              {{ employee.name_eng }} ({{
+                                employee.employee_id
+                              }})
+                            </p>
                           </v-card-text>
 
                           <v-card-actions class="pb-10">
@@ -296,11 +312,11 @@
 
                             <v-btn
                               outlined
-                              class="px-8 mx-2 text-capitalize"
+                              class="px-8 mx-2 text-capitalize cursor-pointer"
                               color="success darken-1"
                               :loading="approving"
                               @click.prevent="
-                                approveSignature(employee.signature_id)
+                                approveSignature(selectedSignatureId)
                               "
                             >
                               {{ $t('generals.yes') }}
@@ -308,7 +324,7 @@
                             <v-btn
                               outlined
                               :disabled="approving"
-                              class="px-8 text-capitalize"
+                              class="px-8 text-capitalize cursor-pointer"
                               color="error darken-1"
                               @click="acceptDialog = false"
                             >
@@ -321,16 +337,26 @@
                     </div>
                     <!-- reject btn -->
                     <div>
-                      <v-dialog v-model="rejectDialog" width="500" persistent>
-                        <template #activator="{ on, attrs }">
+                      <v-dialog
+                        :value="
+                          rejectDialog &&
+                          selectedSignatureId === employee.signature_id
+                        "
+                        width="500"
+                        persistent
+                        @input="
+                          selectedSignatureId === employee.signature_id &&
+                            (rejectDialog = $event)
+                        "
+                      >
+                        <template #activator="{ attrs }">
                           <v-btn
                             outlined
                             v-bind="attrs"
                             rounded
                             color="error"
-                            class="mx-2 text-subtitle-1 py-0 px-5"
-                            v-on="on"
-                            @click="rejectDialog = true"
+                            class="mx-2 text-subtitle-1 py-0 px-5 cursor-pointer"
+                            @click="openSignatureDialog(employee, 'reject')"
                           >
                             <v-icon>mdi-close</v-icon>
                           </v-btn>
@@ -349,6 +375,11 @@
                                 $t('codeOfConduct.employeesList.rejectMessage')
                               }}
                             </p>
+                            <p class="text-center">
+                              {{ employee.name_eng }} ({{
+                                employee.employee_id
+                              }})
+                            </p>
                           </v-card-text>
 
                           <v-card-actions class="pb-10">
@@ -356,18 +387,18 @@
 
                             <v-btn
                               outlined
-                              class="px-8 mx-2 text-capitalize"
+                              class="px-8 mx-2 text-capitalize cursor-pointer"
                               color="success darken-1"
                               :loading="rejecting"
                               @click.prevent="
-                                rejectSignature(employee.signature_id)
+                                rejectSignature(selectedSignatureId)
                               "
                             >
                               {{ $t('generals.yes') }}
                             </v-btn>
                             <v-btn
                               outlined
-                              class="px-8 text-capitalize"
+                              class="px-8 text-capitalize cursor-pointer"
                               color="error darken-1"
                               :disabled="rejecting"
                               @click="rejectDialog = false"
@@ -395,7 +426,7 @@
           class="d-flex justify-space-between text-body-2 text-sm-body-1"
         >
           <span>{{ $t('codeOfConduct.employeesList.pdfViewer') }}</span>
-          <v-btn icon @click="pdfDialog = false">
+          <v-btn class="cursor-pointer" icon @click="pdfDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -452,7 +483,7 @@
           <v-btn
             outlined
             color="error"
-            class="text-capitalize mx-3"
+            class="text-capitalize mx-3 cursor-pointer"
             @click="reportDialog = false"
           >
             {{ $t('codeOfConduct.employeesList.reportCancel') }}
@@ -461,7 +492,7 @@
           <v-btn
             outlined
             color="success"
-            class="text-capitalize mx-3"
+            class="text-capitalize mx-3 cursor-pointer"
             :loading="generating"
             @click="generateReport"
           >
@@ -475,6 +506,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { securityMessage } from '~/utils/security-error'
 export default {
   layout: 'codeOfConduct',
   data() {
@@ -489,6 +521,8 @@ export default {
       sendingEmail: false,
       rejectDialog: false,
       selectedPdfUrl: null,
+      selectedSignatureId: null,
+      selectedSignaturePath: null,
       sendEmailsDialog: false,
       rejecting: false,
       emailDialog: false,
@@ -564,7 +598,7 @@ export default {
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: error.response?.data?.message || 'Employees Sync Failed!',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       }
     },
@@ -577,51 +611,28 @@ export default {
       //
     },
 
-    async sendEmail(email, name) {
-      try {
-        this.emailDialog = false
-        this.sendingEmail = true
-        this.overlay = true
-        const response = await this.$axios.post(
-          `${this.$config.baseURL}/coc-api/send-single-email`,
-          {
-            email,
-            name,
-          }
-        )
-        if (response.status === 200) {
-          this.$store.dispatch('appNotifications/addNotification', {
-            type: 'success',
-            message: 'Email sent successfully',
-          })
-        }
-      } catch (error) {
-        this.$store.dispatch('appNotifications/addNotification', {
-          type: 'error',
-          message: error.response?.data?.message || 'Email sending failed',
-        })
-      } finally {
-        this.sendingEmail = false
-        this.overlay = false
-      }
-    },
-
     openPdf(filePath) {
       this.selectedPdfUrl = `${this.$config.baseURL}/coc-api/signed-coc-documents/${filePath}`
       this.pdfDialog = true
+    },
+
+    openSignatureDialog(employee, action) {
+      this.selectedSignatureId = employee.signature_id
+      this.selectedSignaturePath = employee.signed_document_path
+      this.acceptDialog = action === 'approve'
+      this.rejectDialog = action === 'reject'
     },
 
     // Approve a signature
     async approveSignature(signatureId) {
       try {
         this.approving = true
-        const adminId = localStorage.getItem('employeeCode')
 
         const response = await this.$axios.post(
           `${this.$config.baseURL}/coc-api/approve-signature`,
           {
             signatureId,
-            adminId,
+            expectedFilePath: this.selectedSignaturePath,
           }
         )
         if (response.status === 200) {
@@ -630,14 +641,23 @@ export default {
             message: 'Signature approved successfully',
           })
           this.pdfDialog = false
+          this.acceptDialog = false
+          this.rejectDialog = false
           await this.syncEmployees()
-          this.approving = false
         }
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: error.response?.data?.message || 'Approval failed',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
+        if (error.response?.status === 409) {
+          this.pdfDialog = false
+          this.acceptDialog = false
+          this.rejectDialog = false
+          await this.syncEmployees()
+        }
+      } finally {
+        this.approving = false
       }
     },
 
@@ -649,6 +669,7 @@ export default {
           `${this.$config.baseURL}/coc-api/reject-signature`,
           {
             signatureId,
+            expectedFilePath: this.selectedSignaturePath,
           }
         )
         if (response.status === 200) {
@@ -657,14 +678,23 @@ export default {
             message: 'Signature rejected successfully',
           })
           this.pdfDialog = false
+          this.acceptDialog = false
+          this.rejectDialog = false
           await this.syncEmployees()
-          this.rejecting = false
         }
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: error.response?.data?.message || 'Rejection failed',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
+        if (error.response?.status === 409) {
+          this.pdfDialog = false
+          this.acceptDialog = false
+          this.rejectDialog = false
+          await this.syncEmployees()
+        }
+      } finally {
+        this.rejecting = false
       }
     },
 
@@ -713,7 +743,7 @@ export default {
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Failed to generate report',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       } finally {
         this.generating = false

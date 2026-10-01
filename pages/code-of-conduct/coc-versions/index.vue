@@ -292,13 +292,8 @@ export default {
 
       this.overlay = true
 
-      const adminID = localStorage.getItem('employeeCode')
-      const adminName = localStorage.getItem('userFullName')
-
       const cocDocumentData = {
         cocFile: this.cocDocument,
-        adminName,
-        adminID,
         versionNumber: this.versionNumber,
       }
 

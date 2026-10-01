@@ -11,6 +11,7 @@
         <v-spacer></v-spacer>
         <div>
           <v-btn
+            class="cursor-pointer"
             depressed
             text
             tile
@@ -55,6 +56,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { securityMessage } from '~/utils/security-error'
 export default {
   layout: 'elevatorsSurvey',
   data() {
@@ -156,11 +158,9 @@ export default {
           this.surveysData = request.data
         }
       } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
         const notification = {
           type: 'error',
-          message: newErrorString,
+          message: securityMessage(e, (key) => this.$t(key)),
         }
         await this.$store.dispatch(
           'appNotifications/addNotification',
@@ -178,11 +178,9 @@ export default {
           this.$refs.fileDownload.click()
         }
       } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
         const notification = {
           type: 'error',
-          message: newErrorString,
+          message: securityMessage(e, (key) => this.$t(key)),
         }
         await this.$store.dispatch(
           'appNotifications/addNotification',
@@ -194,5 +192,4 @@ export default {
 }
 </script>
 
-<style>
-</style>
+<style></style>

@@ -1,3 +1,5 @@
+import { securityMessage } from '~/utils/security-error'
+
 export const state = () => ({})
 
 export const mutations = {}
@@ -8,8 +10,6 @@ export const actions = {
       const FormData = require('form-data')
       const dataToSend = new FormData()
 
-      dataToSend.append('adminID', payload.adminID.toUpperCase())
-      dataToSend.append('adminName', payload.adminName)
       dataToSend.append('versionNumber', payload.versionNumber)
       dataToSend.append('attachment', payload.cocFile)
 
@@ -33,7 +33,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -64,17 +64,14 @@ export const actions = {
           root: true,
         })
 
-        await dispatch('fetchCoCVersions')
+        await dispatch('fetchCoCVersions', true)
 
         return serverCall.data
       }
     } catch (error) {
       const notification = {
         type: 'error',
-        message:
-          error.response?.data?.message === 'inactiveEmployee'
-            ? this.app.i18n.t('codeOfConduct.cocForm.inactiveEmployee')
-            : error.response?.data?.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -82,10 +79,12 @@ export const actions = {
     }
   },
 
-  async fetchCoCVersions({ dispatch }) {
+  async fetchCoCVersions({ dispatch }, currentOnly = false) {
     try {
       const response = await this.$axios.get(
-        `${this.$config.baseURL}/coc-api/get-coc-versions`
+        `${this.$config.baseURL}/coc-api/${
+          currentOnly ? 'get-current-coc-version' : 'get-coc-versions'
+        }`
       )
 
       if (response.status === 200) {
@@ -94,7 +93,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -115,7 +114,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -137,10 +136,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message:
-          error.response?.data?.message === 'inactiveEmployee'
-            ? this.app.i18n.t('codeOfConduct.cocForm.inactiveEmployee')
-            : error.response?.data?.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,
@@ -170,7 +166,7 @@ export const actions = {
     } catch (error) {
       const notification = {
         type: 'error',
-        message: error.response.data.message,
+        message: securityMessage(error, (key) => this.app.i18n.t(key)),
       }
       await dispatch('appNotifications/addNotification', notification, {
         root: true,

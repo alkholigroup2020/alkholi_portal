@@ -7,7 +7,7 @@
         fab
         small
         text
-        class="mx-1 py-0 px-0 text-capitalize"
+        class="mx-1 py-0 px-0 text-capitalize cursor-pointer"
         v-on="on"
         @click.prevent="emailDialog = true"
       >
@@ -31,15 +31,15 @@
 
         <v-btn
           outlined
-          class="px-8 mx-2 text-capitalize"
+          class="px-8 mx-2 text-capitalize cursor-pointer"
           color="success darken-1"
-          @click.prevent="sendEmail(email, name)"
+          @click.prevent="sendEmail()"
         >
           {{ $t('generals.yes') }}
         </v-btn>
         <v-btn
           outlined
-          class="px-8 text-capitalize"
+          class="px-8 text-capitalize cursor-pointer"
           color="error darken-1"
           @click="emailDialog = false"
         >
@@ -52,9 +52,14 @@
 </template>
 
 <script>
+import { securityMessage } from '~/utils/security-error'
 export default {
   layout: 'adminPage',
   props: {
+    employeeCode: {
+      type: String,
+      required: true,
+    },
     email: {
       type: String,
       default: '',
@@ -70,7 +75,7 @@ export default {
     }
   },
   methods: {
-    async sendEmail(email, name) {
+    async sendEmail() {
       try {
         // notify that the sending process starts
         this.$emit('sending')
@@ -78,8 +83,7 @@ export default {
         const response = await this.$axios.post(
           `${this.$config.baseURL}/coc-api/send-single-email`,
           {
-            email,
-            name,
+            employeeCode: this.employeeCode,
           }
         )
         if (response.status === 200) {
@@ -95,7 +99,7 @@ export default {
         this.$emit('error')
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: error.response?.data?.message || 'Email sending failed',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       }
     },

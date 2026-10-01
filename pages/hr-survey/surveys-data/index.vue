@@ -28,7 +28,7 @@
           depressed
           height="100%"
           color="transparent"
-          class="text-subtitle-1 text-capitalize primaryText--text"
+          class="text-subtitle-1 text-capitalize primaryText--text cursor-pointer"
           @click="doPrint = true"
         >
           <span class="px-1">{{ $t('generals.print') }}</span>
@@ -82,6 +82,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { securityMessage } from '~/utils/security-error'
 export default {
   layout: 'hrSurvey',
   data() {
@@ -165,11 +166,9 @@ export default {
                     this.surveysData.push(element)
                   }
                 } catch (e) {
-                  const error = e.toString()
-                  const newErrorString = error.replaceAll('Error: ', '')
                   const notification = {
                     type: 'error',
-                    message: newErrorString,
+                    message: securityMessage(e, (key) => this.$t(key)),
                   }
                   await this.$store.dispatch(
                     'appNotifications/addNotification',
@@ -182,11 +181,9 @@ export default {
           })
         }
       } catch (e) {
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
         const notification = {
           type: 'error',
-          message: newErrorString,
+          message: securityMessage(e, (key) => this.$t(key)),
         }
         await this.$store.dispatch(
           'appNotifications/addNotification',

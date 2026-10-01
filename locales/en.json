@@ -554,5 +554,14 @@
     "back": "Back",
     "send": "Send",
     "delete": "Delete"
+  },
+  "security": {
+    "invalidRequest": "Please check the submitted values.",
+    "forbidden": "You do not have permission for this operation.",
+    "stateConflict": "This record changed or was already processed. Reload before trying again.",
+    "serviceUnavailable": "The service is unavailable. Please try again later.",
+    "notFound": "The requested record was not found.",
+    "authFailed": "Please sign in again.",
+    "duplicateContract": "This contract already has a survey request."
   }
 }

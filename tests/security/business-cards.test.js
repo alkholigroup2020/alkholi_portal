@@ -202,10 +202,9 @@ function fixture(t) {
       logChange(v, adminName, 'Deletion', old.fullName_e)
       return status({ outcome: 'deleted', oldQrCodePath: old.qrCodePath })
     }
-    // The public lookup and the unchanged legacy vCard query.
+    // Public cards and vCards share the bound lookup.
     const publicId = v.employeeCode
-    const legacyId = (statement.match(/WHERE employeeID = '([^']*)'/) || [])[1]
-    const row = state.cards.get(publicId || legacyId)
+    const row = state.cards.get(publicId)
     return { recordset: row ? [row] : [] }
   }
 
@@ -1024,33 +1023,16 @@ test('the QR renderer returns a PNG with and without an inner logo', async () =>
   )
 })
 
-// Load the unchanged public vCard router with injected dependencies only.
+// Exercise the production public router with the same injected lookup.
 function realVCardRouter(f) {
-  const directory = path.join(
-    f.temporaryRoot,
-    'server',
-    'businessCards',
-    'router'
-  )
-  const module = { exports: {} }
-  vm.runInNewContext(
-    fs.readFileSync(
-      path.join(root, 'server/businessCards/router/vCard.js'),
-      'utf8'
-    ),
-    {
-      module,
-      __dirname: directory,
-      require(name) {
-        if (name === 'mssql') return f.sql
-        if (name === '../configs/sql') return {}
-        if (['path', 'express', 'vcards-js', 'short-uuid'].includes(name))
-          return require(name)
-        throw new Error(`Unexpected dependency: ${name}`)
-      },
-    }
-  )
-  return module.exports
+  return require('../../server/businessCards/router/vCard')({
+    publicCards:
+      require('../../server/businessCards/services/publicCards').createPublicCards(
+        { sql: f.sql, portalConfig: {} }
+      ),
+    embedPhoto: (card) =>
+      card.photo.embedFromString(PNG.toString('base64'), 'image/png'),
+  })
 }
 
 async function httpFixture(t) {
@@ -2017,9 +1999,7 @@ test('no caller or server route still depends on the retired business-card gatew
       )
   }
 
-  const server = sourceFiles(['server/businessCards'])
-    .map(relative)
-    .filter((file) => !file.endsWith('/router/vCard.js'))
+  const server = sourceFiles(['server/businessCards']).map(relative)
   assert.ok(server.includes('server/businessCards/router/cardManagement.js'))
   assert.ok(!server.includes('server/businessCards/router/sqlCalls.js'))
   assert.ok(!server.includes('server/businessCards/router/business-cards.js'))

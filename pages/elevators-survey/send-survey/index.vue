@@ -126,12 +126,7 @@
                   $vuetify.theme.dark ? 'green darken-4' : 'green darken-1'
                 "
                 type="submit"
-                class="
-                  py-3 py-md-5
-                  px-16
-                  text-subtitle-1 text-capitalize
-                  white--text
-                "
+                class="py-3 py-md-5 px-16 text-subtitle-1 text-capitalize white--text cursor-pointer"
               >
                 {{ $t('generals.send') }}
               </v-btn>
@@ -146,6 +141,7 @@
 <script>
 import { extend, localize } from 'vee-validate'
 import { required, email, numeric, length } from 'vee-validate/dist/rules'
+import { securityMessage } from '~/utils/security-error'
 
 extend('required', {
   ...required,
@@ -242,11 +238,9 @@ Thank you in advance for your valuable insights.  Your input will be used to ens
           }
         } catch (e) {
           this.$nuxt.$loading.finish()
-          const error = e.toString()
-          const newErrorString = error.replaceAll('Error: ', '')
           const notification = {
             type: 'error',
-            message: newErrorString,
+            message: securityMessage(e, (key) => this.$t(key)),
           }
           await this.$store.dispatch(
             'appNotifications/addNotification',
@@ -258,4 +252,3 @@ Thank you in advance for your valuable insights.  Your input will be used to ens
   },
 }
 </script>
-

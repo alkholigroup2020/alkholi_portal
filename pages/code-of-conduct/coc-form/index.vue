@@ -37,7 +37,7 @@
           <div>
             <v-btn
               color="success"
-              class="text-capitalize text-caption text-sm-body-2"
+              class="text-capitalize text-caption text-sm-body-2 cursor-pointer"
               :large="$vuetify.breakpoint.mdAndUp"
               :small="$vuetify.breakpoint.smAndDown"
               :disabled="formApproved || formPending || noDocument"
@@ -261,7 +261,7 @@
                         <div class="d-flex align-center pb-2 flex-wrap">
                           <div class="my-1 mx-1">
                             <v-btn
-                              class="text-capitalize px-5 text-caption text-sm-body-2"
+                              class="text-capitalize px-5 text-caption text-sm-body-2 cursor-pointer"
                               color="primary"
                               :loading="generatingForm"
                               @click="generateAndPrint"
@@ -276,7 +276,7 @@
                           </div>
                           <div class="my-1 mx-1">
                             <v-btn
-                              class="text-capitalize text-caption text-sm-body-2"
+                              class="text-capitalize text-caption text-sm-body-2 cursor-pointer"
                               color="primary"
                               :loading="downloadingForm"
                               @click="generateAndDownload"
@@ -291,7 +291,7 @@
                           </div>
                           <div class="my-1 mx-1">
                             <v-btn
-                              class="text-capitalize px-5 text-caption text-sm-body-2"
+                              class="text-capitalize px-5 text-caption text-sm-body-2 cursor-pointer"
                               color="primary"
                               @click="signatureStepper = 2"
                             >
@@ -304,7 +304,7 @@
                           </div>
                           <div class="my-1 mx-1">
                             <v-btn
-                              class="text-capitalize px-5 text-caption text-sm-body-2"
+                              class="text-capitalize px-5 text-caption text-sm-body-2 cursor-pointer"
                               color="error"
                               @click="showForm = false"
                             >
@@ -353,7 +353,7 @@
                                   <!-- back btn -->
                                   <div class="ma-1">
                                     <v-btn
-                                      class="text-capitalize px-8 text-caption text-sm-body-2"
+                                      class="text-capitalize px-8 text-caption text-sm-body-2 cursor-pointer"
                                       color="primary"
                                       @click="signatureStepper = 1"
                                     >
@@ -369,7 +369,7 @@
                                     <v-btn
                                       :disabled="valid.invalid"
                                       color="success"
-                                      class="px-5 py-0 text-capitalize text-caption text-sm-body-2"
+                                      class="px-5 py-0 text-capitalize text-caption text-sm-body-2 cursor-pointer"
                                       type="submit"
                                       @click="signatureStepper = 3"
                                       >{{
@@ -379,7 +379,7 @@
                                   </div>
                                   <div class="ma-1">
                                     <v-btn
-                                      class="text-capitalize px-8 text-caption text-sm-body-2"
+                                      class="text-capitalize px-8 text-caption text-sm-body-2 cursor-pointer"
                                       color="error"
                                       @click="showForm = false"
                                     >
@@ -412,7 +412,7 @@
                         <div class="d-flex align-center pb-2">
                           <div class="my-1">
                             <v-btn
-                              class="text-capitalize px-8 py-1 text-caption text-sm-body-2"
+                              class="text-capitalize px-8 py-1 text-caption text-sm-body-2 cursor-pointer"
                               color="primary"
                               :disabled="!showSuccessMessage"
                               :loading="!showSuccessMessage"
@@ -454,6 +454,7 @@
 <script>
 import { extend, localize } from 'vee-validate'
 import { ext, size, required } from 'vee-validate/dist/rules'
+import { securityMessage } from '~/utils/security-error'
 
 // Override the default message.
 extend('ext', {
@@ -562,7 +563,10 @@ export default {
 
     async loadDocument() {
       try {
-        const versions = await this.$store.dispatch('coc/fetchCoCVersions')
+        const versions = await this.$store.dispatch(
+          'coc/fetchCoCVersions',
+          true
+        )
         this.currentCoC = versions.find((v) => v.active_flag)
         if (!this.currentCoC) throw new Error('No active CoC found!')
       } catch (error) {
@@ -614,7 +618,7 @@ export default {
 
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Could not fetch employee data!',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       }
     },
@@ -625,12 +629,7 @@ export default {
         // Call server to generate PDF
         const response = await this.$axios.post(
           `${this.$config.baseURL}/coc-api/generate-print-form`,
-          {
-            employeeID: this.formData.employee_id,
-            position: this.formData.title_e,
-            name: this.formData.name_eng,
-            date: this.formData.date,
-          }
+          {}
         )
 
         const pdfUrl = `${this.$config.baseURL}${response.data.url}`
@@ -653,7 +652,7 @@ export default {
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Form generation failed. Please try again.',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       } finally {
         this.generatingForm = false
@@ -666,12 +665,7 @@ export default {
         // Call server to generate PDF
         const response = await this.$axios.post(
           `${this.$config.baseURL}/coc-api/generate-print-form`,
-          {
-            employeeID: this.formData.employee_id,
-            position: this.formData.title_e,
-            name: this.formData.name_eng,
-            date: this.formData.date,
-          }
+          {}
         )
 
         const pdfUrl = `${this.$config.baseURL}${response.data.url}`
@@ -686,7 +680,7 @@ export default {
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Form generation failed. Please try again.',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       } finally {
         this.downloadingForm = false
@@ -714,7 +708,7 @@ export default {
       } catch (error) {
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Failed to upload the signed document. Please try again.',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       }
     },

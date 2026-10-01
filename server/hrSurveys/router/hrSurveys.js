@@ -1,179 +1,131 @@
 const path = require('path')
-const express = require('express')
-const router = express.Router()
-const { MongoClient, ObjectId } = require('mongodb')
+const { ObjectId } = require('mongodb')
 const createCsvWriter = require('csv-writer').createObjectCsvWriter
-const sql = require('mssql')
-const sqlConfigs = require('../configs/sql')
-const hrSQLConfigs = require('../configs/hrSQL')
-const auth = require('../middleware/authorization')
+const {
+  safeRouter,
+  connect,
+  text,
+  failure,
+} = require('../../shared/auditBoundary')
 
-async function portalDB() {
-  const pool = new sql.ConnectionPool(sqlConfigs)
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
-  }
-}
+module.exports = function createHrSurveysRouter({
+  sql,
+  portalConfig,
+  hrConfig,
+  auth,
+  requireSurveyMember,
+  createClient,
+  createCsvWriter: csvWriter = createCsvWriter,
+}) {
+  const router = safeRouter()
+  const memberOnly = [auth, requireSurveyMember]
+  const portalDB = () => connect(sql, portalConfig)
+  const hrDB = () => connect(sql, hrConfig)
 
-async function hrDB() {
-  const pool = new sql.ConnectionPool(hrSQLConfigs)
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
-  }
-}
-
-const uri = `mongodb://${process.env.hrSurvey_dbUser}:${process.env.hrSurvey_dbPassword}@${process.env.hrSurvey_dbServerIP}/`
-const client = new MongoClient(uri, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-
-router.get('/get-hr-survey-data', auth, async (req, res) => {
-  try {
-    await client.connect()
-    const allData = await client
-      .db('hr-engagement-survey')
-      .collection('survey')
-      .find()
-      .toArray()
-    res.send(allData)
-  } catch (error) {
-    res.status(500).json({
-      message: `${error}`,
-    })
-  } finally {
-    await client.close()
-  }
-})
-
-router.post('/get-single-hr-survey', auth, async (req, res) => {
-  try {
-    await client.connect()
-    const surveyData = await client
-      .db('hr-engagement-survey')
-      .collection('survey')
-      .findOne({ _id: ObjectId(req.body.id) })
-    res.send(surveyData)
-  } catch (error) {
-    res.status(500).json({
-      message: `${error}`,
-    })
-  } finally {
-    await client.close()
-  }
-})
-
-router.post('/get-survey-employee-data', auth, async (req, res) => {
-  const portalDBConnection = await portalDB()
-
-  const hrDBConnection = await hrDB()
-
-  try {
-    // get member picture path
-
-    const memberPicPath = await portalDBConnection.request().query(`
-        SELECT [portalProfilePicPath]
-        FROM [alkholiPortal].[dbo].[usersInfo]
-        where employeeID = '${req.body.code}'
-      `)
-
-    let memberPicturePath, hrPicture, portalPicture
-
-    // if we have any info on the portal
-    if (memberPicPath.recordset.length > 0) {
-      // if he has no profile picture on the portal
-      if (memberPicPath.recordset[0].portalProfilePicPath === null) {
-        // get the info from HR system
-        const picPath = await hrDBConnection.request().query(`
-            SELECT [employee_picture]
-            FROM dbo.Pay_employees
-            WHERE employee_code = '${req.body.code}'
-          `)
-        memberPicturePath = picPath.recordset[0].employee_picture
-        hrPicture = true
-        portalPicture = false
-      } else {
-        // if he has a profile picture on the portal
-        memberPicturePath = memberPicPath.recordset[0].portalProfilePicPath
-        hrPicture = false
-        portalPicture = true
-      }
-    } else {
-      // if we don't have any info on the portal
-      const picPath = await hrDBConnection.request().query(`
-          SELECT [employee_picture]
-          FROM dbo.Pay_employees
-          WHERE employee_code = '${req.body.code}'
-        `)
-      // if no picture on HR system
-      if (picPath.recordset.length <= 0) {
-        memberPicturePath = 'anonymousProfilePicture.jpeg'
-        hrPicture = false
-        portalPicture = true
-      }
-      // if no picture on HR system
-      else if (picPath.recordset[0].employee_picture === '') {
-        memberPicturePath = 'anonymousProfilePicture.jpeg'
-        hrPicture = false
-        portalPicture = true
-      } // if we get a path from HR system
-      else {
-        memberPicturePath = picPath.recordset[0].employee_picture
-        hrPicture = true
-        portalPicture = false
-      }
+  router.get('/get-hr-survey-data', ...memberOnly, async (req, res) => {
+    const client = createClient()
+    try {
+      await client.connect()
+      const allData = await client
+        .db('hr-engagement-survey')
+        .collection('survey')
+        .find()
+        .toArray()
+      res.send(allData)
+    } finally {
+      await client.close().catch(() => {})
     }
-    // get member info from HR db
-    const memberInfo = await hrDBConnection.request().query(`
-        SELECT [employee_code] ,[branch_code] ,[employee_name_eng] ,[Email] ,[position]
-        FROM dbo.Pay_employees
-        WHERE employee_code = '${req.body.code}'
-      `)
-    if (memberInfo.recordset.length <= 0) {
-      res.status(205).send()
-      return
-    }
-    const employeePositionCode = Number(memberInfo.recordset[0].position)
+  })
 
-    const titleInfo = await hrDBConnection.request().query(`
-        SELECT [system_desp_a], [system_desp_e]
-        FROM [dbo].[pay_code_tables]
-        where [system_code] =  '${employeePositionCode}' and [branch_code] = '${memberInfo.recordset[0].branch_code}'
-        and system_code_type = '21'
-      `)
-    if (titleInfo.recordset.length <= 0) {
-      res.status(205).send()
-      return
+  router.post('/get-single-hr-survey', ...memberOnly, async (req, res) => {
+    if (
+      typeof req.body.id !== 'string' ||
+      !/^[a-fA-F0-9]{24}$/.test(req.body.id)
+    )
+      throw failure('invalidRequest')
+    const client = createClient()
+    try {
+      await client.connect()
+      const surveyData = await client
+        .db('hr-engagement-survey')
+        .collection('survey')
+        .findOne({ _id: ObjectId(req.body.id) })
+      if (!surveyData) throw failure('notFound', 404)
+      res.send(surveyData)
+    } finally {
+      await client.close().catch(() => {})
     }
+  })
 
-    // prepare a reply object
-    const result = {
-      memberInfo: memberInfo.recordset[0],
-      titleInfo: titleInfo.recordset[0],
-      memberPicturePath,
-      hrPicture,
-      portalPicture,
+  router.post('/get-survey-employee-data', ...memberOnly, async (req, res) => {
+    const code = text(req.body.code, 15)
+    let portal, hr
+    try {
+      portal = await portalDB()
+      hr = await hrDB()
+      const employeeResult = await hr
+        .request()
+        .input('code', sql.VarChar(15), code)
+        .query(
+          'SELECT employee_code, branch_code, employee_name_eng, Email, position, employee_picture FROM dbo.Pay_employees WHERE employee_code = @code'
+        )
+      if (!employeeResult.recordset.length) return res.status(205).send()
+      if (employeeResult.recordset.length !== 1)
+        throw failure('serviceUnavailable', 503)
+      const employee = employeeResult.recordset[0]
+      const storedPosition = text(employee.position, 15)
+      // Preserve the legacy numeric title-code normalization, while keeping
+      // nonnumeric stored values as bound data rather than SQL fragments.
+      const position = Number.isFinite(Number(storedPosition))
+        ? String(Number(storedPosition))
+        : storedPosition
+      const titleResult = await hr
+        .request()
+        .input('position', sql.VarChar(15), text(position, 15))
+        .input('branch', sql.VarChar(10), text(employee.branch_code, 10))
+        .query(
+          "SELECT system_desp_a, system_desp_e FROM dbo.pay_code_tables WHERE system_code = @position AND branch_code = @branch AND system_code_type = '21'"
+        )
+      if (!titleResult.recordset.length) return res.status(205).send()
+      const pictureResult = await portal
+        .request()
+        .input('code', sql.VarChar(20), code)
+        .query(
+          'SELECT portalProfilePicPath FROM dbo.usersInfo WHERE employeeID = @code'
+        )
+      const portalPath = pictureResult.recordset[0]?.portalProfilePicPath
+      const hrPicture = !portalPath && Boolean(employee.employee_picture)
+      const { employee_picture: picture, ...memberInfo } = employee
+      res.json({
+        memberInfo,
+        titleInfo: titleResult.recordset[0],
+        memberPicturePath:
+          portalPath || picture || 'anonymousProfilePicture.jpeg',
+        hrPicture,
+        portalPicture: !hrPicture,
+      })
+    } finally {
+      if (hr) await hr.close().catch(() => {})
+      if (portal) await portal.close().catch(() => {})
     }
-    res.status(200).send(result)
-  } catch (error) {
-    res.status(500).json({
-      message: `${error}`,
-    })
-  } finally {
-    await portalDBConnection.close()
-    await hrDBConnection.close()
-  }
-})
+  })
 
-router.post('/export-csv-data', auth, async (req, res) => {
-  try {
-    const csvWriter = createCsvWriter({
+  router.post('/export-csv-data', ...memberOnly, async (req, res) => {
+    if (!Array.isArray(req.body) || req.body.length > 1000)
+      throw failure('invalidRequest')
+    for (const item of req.body) {
+      const keys = Object.keys(item || {})
+      if (keys.length !== 1) throw failure('invalidRequest')
+      text(keys[0], 1000)
+      const values = item[keys[0]]
+      if (
+        !Array.isArray(values) ||
+        values.length !== 5 ||
+        values.some((v) => !Number.isFinite(v) || v < 0)
+      )
+        throw failure('invalidRequest')
+    }
+    const writer = csvWriter({
       path: `${path.join(
         __dirname,
         '../../../uploads/exportedFiles/results-summary.csv'
@@ -202,14 +154,10 @@ router.post('/export-csv-data', auth, async (req, res) => {
       records.push(record)
     })
 
-    await csvWriter.writeRecords(records) // returns a promise
+    await writer.writeRecords(records) // returns a promise
 
     res.send()
-  } catch (error) {
-    res.status(500).json({
-      message: `${error}`,
-    })
-  }
-})
+  })
 
-module.exports = router
+  return router
+}

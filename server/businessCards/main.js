@@ -10,7 +10,7 @@ const createApi = require('./createApi')
 const { createPublicCards } = require('./services/publicCards')
 const { createCardManagement } = require('./services/cardManagement')
 const { createQrRenderer } = require('./services/qrCode')
-const vCard = require('./router/vCard.js')
+const createVCardRouter = require('./router/vCard.js')
 
 const uploadDirectory = path.join(__dirname, '../../uploads/businessCards')
 
@@ -32,7 +32,9 @@ module.exports = {
       publicCardUrl: (employeeID) =>
         `https://portal.alkholi.com/business-card/${employeeID}`,
     }),
-    vCard,
+    vCard: createVCardRouter({
+      publicCards: createPublicCards({ sql, portalConfig }),
+    }),
     uploadDirectory,
   }),
 }

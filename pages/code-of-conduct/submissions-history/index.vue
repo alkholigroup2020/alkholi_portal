@@ -78,6 +78,7 @@
             <td>
               <!-- Button to open PDF in dialog -->
               <v-btn
+                class="cursor-pointer"
                 rounded
                 fab
                 small
@@ -96,7 +97,7 @@
       <v-card>
         <v-card-title class="d-flex justify-space-between">
           <span>PDF Viewer</span>
-          <v-btn icon @click="pdfDialog = false">
+          <v-btn class="cursor-pointer" icon @click="pdfDialog = false">
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-card-title>
@@ -115,6 +116,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { securityMessage } from '~/utils/security-error'
 export default {
   layout: 'codeOfConduct', // Use the same layout as other CoC pages
   data() {
@@ -165,7 +167,7 @@ export default {
         // Display error notification if fetch fails
         this.$store.dispatch('appNotifications/addNotification', {
           type: 'error',
-          message: 'Failed to fetch submissions history',
+          message: securityMessage(error, (key) => this.$t(key)),
         })
       } finally {
         this.overlay = false // Hide loading spinner
