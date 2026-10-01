@@ -1,29 +1,24 @@
 const express = require('express')
 const createDtrReadsRouter = require('./router/dtrReads')
-const createLegacySqlRouter = require('./router/sqlCalls')
+const createDtrActionsRouter = require('./router/dtr-actions')
 
 // Shared composition for production and isolated HTTP tests; no runtime imports.
 module.exports = function createApi({
   authorize,
   requireDtrUser,
   dtrReads,
-  legacySql,
-  legacyActions,
+  dtrWrites,
 }) {
   // Every DTR route requires a verified session and current DTR membership,
   // checked on the server for each request.
   const memberOnly = [authorize, requireDtrUser]
 
   const api = express()
-  api.use(express.json())
-  api.use(express.urlencoded({ extended: true }))
+  api.use(express.json({ limit: '1mb' }))
+  api.use(express.urlencoded({ extended: false, limit: '1mb' }))
   api.use(createDtrReadsRouter({ memberOnly, dtrReads }))
 
-  // Legacy write paths, unchanged until Phase 8 apart from the membership
-  // check: the SQL gateway for submit/approve/decline and the save handler.
-  api.use(createLegacySqlRouter({ ...legacySql, memberOnly }))
-  api.post('/save-dtr-data', ...memberOnly)
-  api.use(legacyActions)
+  api.use(createDtrActionsRouter({ memberOnly, dtrWrites }))
 
   // Unknown API routes must not fall through to Nuxt's page renderer.
   api.use((req, res) => res.status(404).json({ message: 'notFound' }))

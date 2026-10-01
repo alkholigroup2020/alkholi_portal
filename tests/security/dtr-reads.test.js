@@ -3,12 +3,9 @@ const assert = require('node:assert/strict')
 const fs = require('node:fs')
 const path = require('node:path')
 const vm = require('node:vm')
-const express = require('express')
 const babel = require('@babel/core')
 const compiler = require('vue-template-compiler')
-const createApi = require('../../server/dtr/createApi')
 const {
-  createDtrReads,
   DtrError,
   parsePeriod,
   validateEmployeeCode,
@@ -26,501 +23,28 @@ const {
   EMPLOYEE_QUERIES,
   LEVELS,
 } = require('../../server/administration/services/dtrSetup')
-const {
-  createRoleChecks,
-  requireRole,
-  ROLE_QUERIES,
-} = require('../../server/shared/roles')
-const { createAuth } = require('../../server/login/services/auth')
-const { createSessions } = require('../../server/login/services/session')
+
+const { entryVersion } = require('../../server/dtr/services/entryVersion')
 
 const root = path.resolve(__dirname, '../..')
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8')
 
-// Callers. Everyone but NON_MEMBER is in dbo.dtr_users.
-const ADM_DIV = 'A100'
-const ADM_DEP = 'A200'
-const ADM_PRJ = 'A300'
-const ADM_SUB = 'A400'
-const ADM_MIX = 'A500'
-const ADM_NONE = 'A600'
-const ADM_BAD = 'A700'
-const MGR1 = 'M100'
-const MGR2 = 'M200'
-const NON_MEMBER = 'N100'
-const LONG_CODE = 'LONGCODE123456'
-const CALLERS = {
-  division: ADM_DIV,
-  department: ADM_DEP,
-  project: ADM_PRJ,
-  subProject: ADM_SUB,
-  mixed: ADM_MIX,
-  none: ADM_NONE,
-  bad: ADM_BAD,
-  manager: MGR1,
-  manager2: MGR2,
-  nonMember: NON_MEMBER,
-  longCode: LONG_CODE,
-}
-
-// 31, 28, 29 (leap year) and 30 day periods; WINTER crosses the year.
-const WINTER = { start: '2025-12-21', end: '2026-01-20' }
-const SHORT = { start: '2026-02-21', end: '2026-03-20' }
-const LEAP = { start: '2024-02-21', end: '2024-03-20' }
-const SPRING = { start: '2026-04-21', end: '2026-05-20' }
-
-const U = 'undefined'
-
-function codeRow(branch, type, code, major, section, division) {
-  return {
-    branch_code: branch,
-    system_code_type: type,
-    system_code: code,
-    major_code: major,
-    section_code: section,
-    division_code: division,
-  }
-}
-
-function employee(code, branch, department, section, division, unit, extra) {
-  return {
-    employee_code: code,
-    branch_code: branch,
-    department,
-    section,
-    Division: division,
-    Unit: unit,
-    employee_name_eng: `Employee ${code}`,
-    employee_name_a: `موظف ${code}`,
-    employee_picture: `${code}.jpg`,
-    Manager_Code: MGR1,
-    Email: `${code.toLowerCase()}@example.invalid`,
-    salary: 'private',
-    nationality: 'private',
-    active: true,
-    ...extra,
-  }
-}
-
-function assignment(
-  id,
-  employeeCode,
-  branch,
-  division,
-  department,
-  project,
-  sub
-) {
-  return {
-    id,
-    employeeCode,
-    adminName: 'private',
-    adminEmail: 'private',
-    isDTRAdmin: 0,
-    isApprover: 0,
-    branchName: branch,
-    divisionCode: division,
-    departmentCode: department === undefined ? U : department,
-    projectCode: project === undefined ? U : project,
-    subProjectCode: sub === undefined ? U : sub,
-  }
-}
-
-let nextEntryId = 1
-function entry(employeeCode, period, status, manager, extra = {}) {
-  const row = {
-    id: nextEntryId++,
-    EmployeeCode: employeeCode,
-    employeeName: `Employee ${employeeCode}`,
-    employeePicture: `${employeeCode}.jpg`,
-    ManagerCode: manager,
-    StartDate: period.start,
-    EndDate: period.end,
-    ModifiedDate: 'private',
-    ModifiedBy: 'private',
-    ApprovalStatus: status,
-    DeclineMessage: null,
-    DeclineFlag: null,
-  }
-  const days = parsePeriod(period.start, period.end).days
-  for (const day of DAY_COLUMNS) row[day] = days.includes(day) ? 'RA' : null
-  return { ...row, ...extra }
-}
-
-const sameCode = (left, right) =>
-  String(left).trimEnd().toUpperCase() === String(right).trimEnd().toUpperCase()
-
-// Mocked mssql. Each fixed statement is interpreted over in-memory HR and
-// portal data with the rules the browser used to apply; every call is
-// recorded with its typed inputs and the configuration of its pool.
-function databaseFixture() {
-  const portalConfig = { name: 'portal' }
-  const hrConfig = { name: 'hr' }
-  const calls = []
-  const pools = []
-  const state = {
-    failAt: null,
-    members: [
-      ADM_DIV,
-      ADM_DEP,
-      ADM_PRJ,
-      ADM_SUB,
-      ADM_MIX,
-      ADM_NONE,
-      ADM_BAD,
-      MGR1,
-      MGR2,
-      LONG_CODE,
-    ],
-    assignments: [
-      assignment(1, ADM_DIV, 'BR1', '1'),
-      assignment(2, ADM_DEP, 'BR1', '1', '10'),
-      assignment(3, ADM_PRJ, 'BR1', '1', '10', '100'),
-      assignment(4, ADM_SUB, 'BR1', '1', '10', '100', '01'),
-      // Overlapping and repeated scopes, in two branches.
-      assignment(5, ADM_MIX, 'BR1', '2'),
-      assignment(6, ADM_MIX, 'BR1', '1', '10'),
-      assignment(7, ADM_MIX, 'BR1', '1', '10', '100'),
-      assignment(8, ADM_MIX, 'BR1', '1', '10'),
-      assignment(9, ADM_MIX, 'BR2', '1'),
-      // Patterns the old page could not resolve to any employee.
-      assignment(10, ADM_BAD, 'BR1', '1', undefined, '100'),
-      assignment(11, ADM_BAD, 'BR1', '1', undefined, undefined, '01'),
-      assignment(12, ADM_BAD, 'BR1', '1', '10', undefined, '01'),
-      assignment(13, ADM_BAD, U, '1'),
-      assignment(14, ADM_BAD, 'BR1', ''),
-      assignment(15, ADM_BAD, 'BR1', '1', 'Undefined'),
-      assignment(16, ADM_BAD, 'A-BRANCH-NAME-LONGER-THAN-HR', '1'),
-      assignment(17, ADM_BAD, 'BR1', null),
-      // Holds an assignment and approvals but is not a DTR member.
-      assignment(18, NON_MEMBER, 'BR1', '1'),
-    ],
-    codes: [
-      // BR1 and BR2 deliberately share every code.
-      ...['BR1', 'BR2'].flatMap((branch) => [
-        codeRow(branch, '41', '1', '0', null, null),
-        codeRow(branch, '42', '10', '1', null, null),
-        codeRow(branch, '71', '100', '1', '10', ''),
-        codeRow(branch, '72', '01', '1', '10', '100'),
-      ]),
-      codeRow('BR1', '41', '2', '0', null, null),
-      codeRow('BR1', '42', '11', '1', null, null),
-      codeRow('BR1', '71', '101', '1', '11', ''),
-      codeRow('BR1', '72', '02', '1', '10', '100'),
-    ],
-    employees: [
-      employee('E1', 'BR1', '1', '10', '100', '01'),
-      employee('E2', 'BR1', '1', '10', '100', ''),
-      employee('E3', 'BR1', '1', '10', '100', '01', { active: false }),
-      employee('E4', 'BR2', '1', '10', '100', '01', { Manager_Code: MGR2 }),
-      employee('E5', 'BR1', '1', '', '', ''),
-      employee('E6', 'BR1', '1', '11', '101', ''),
-      employee('E7', 'BR1', '1', '10', '100', '02'),
-      employee('E8', 'BR1', '2', '', '', ''),
-      // Project code of department 10 but another section: listed by the
-      // department rule, not by the project rule (existing behavior).
-      employee('E9', 'BR1', '1', '99', '100', '01'),
-    ],
-    entries: [
-      entry('E1', WINTER, 0, MGR1, { 25: 'AB', 3: 'UP<20' }),
-      entry('E2', WINTER, 1, MGR1, { 1: 'SV' }),
-      entry('E7', WINTER, 2, MGR1, {
-        DeclineFlag: true,
-        DeclineMessage: 'Fix day 3',
-      }),
-      entry('E5', WINTER, 3, MGR2),
-      entry('E4', WINTER, 1, MGR2),
-      entry('E8', WINTER, 1, MGR1),
-      // Pending entry of an employee who is inactive now.
-      entry('E3', WINTER, 1, MGR1),
-      // A stale value in a column the 28-day period does not have.
-      entry('E1', SHORT, 1, MGR1, { 30: 'AB', 28: 'AV' }),
-      entry('E1', LEAP, 0, MGR1, { 29: 'HA' }),
-      entry('E2', SPRING, 1, MGR2),
-      entry('E1', SPRING, 1, NON_MEMBER),
-    ],
-    legacy: new Map(),
-  }
-
-  const active = () => state.employees.filter((row) => row.active)
-  const typed = (type, v, match) =>
-    state.codes.filter(
-      (row) =>
-        row.system_code_type === type &&
-        row.branch_code === v.branch &&
-        match(row)
-    )
-
-  // The loops of the old DTR table page, one per assignment level.
-  const legacyScope = {
-    division: (v) =>
-      active().filter(
-        (row) => row.branch_code === v.branch && row.department === v.division
-      ),
-    department: (v) => {
-      const projects = typed(
-        '71',
-        v,
-        (row) =>
-          row.major_code === v.division && row.section_code === v.department
-      )
-      return active().filter((row) =>
-        projects.some(
-          (project) =>
-            row.branch_code === v.branch &&
-            row.department === project.major_code &&
-            row.Division === project.system_code
-        )
-      )
-    },
-    project: (v) => {
-      const subProjects = typed(
-        '72',
-        v,
-        (row) =>
-          row.major_code === v.division &&
-          row.section_code === v.department &&
-          row.division_code === v.project
-      )
-      return active().filter((row) =>
-        subProjects.some(
-          (sub) =>
-            row.branch_code === v.branch &&
-            row.department === sub.major_code &&
-            row.Division === sub.division_code &&
-            row.section === sub.section_code &&
-            row.Unit === sub.system_code
-        )
-      )
-    },
-    'sub-project': (v) =>
-      active().filter(
-        (row) =>
-          row.branch_code === v.branch &&
-          row.department === v.division &&
-          row.Division === v.project &&
-          row.section === v.department &&
-          row.Unit === v.subProject
-      ),
-  }
-
-  const inPeriod = (row, v) =>
-    row.StartDate === v.periodStart && row.EndDate === v.periodEnd
-  const byCode = (left, right) =>
-    left.employee_code.localeCompare(right.employee_code)
-
-  const handlers = new Map()
-  const names = new Map()
-  function register(name, statement, handler) {
-    handlers.set(statement, handler)
-    names.set(statement, name)
-  }
-  register('role', ROLE_QUERIES.get('dtrUser'), (v) => [
-    { hasRole: state.members.includes(v.employeeCode) },
-  ])
-  register('assignments', ASSIGNMENTS_QUERY, (v) =>
-    state.assignments
-      .filter((row) => sameCode(row.employeeCode, v.employeeCode))
-      .sort((left, right) => left.id - right.id)
-  )
-  for (const level of LEVELS.keys()) {
-    register(`list:${level}`, SCOPE_LIST_QUERIES.get(level), (v) =>
-      legacyScope[level](v).sort(byCode)
-    )
-    register(`one:${level}`, SCOPE_EMPLOYEE_QUERIES.get(level), (v) =>
-      legacyScope[level](v).filter((row) =>
-        sameCode(row.employee_code, v.employeeCode)
-      )
-    )
-    // The Phase 5 list, for comparing both services on the same data.
-    register(`setup:${level}`, EMPLOYEE_QUERIES.get(level), (v) =>
-      legacyScope[level](v)
-    )
-  }
-  register('periodEntries', PERIOD_ENTRIES_QUERY, (v) =>
-    state.entries.filter((row) => inPeriod(row, v))
-  )
-  register('entry', ENTRY_QUERY, (v) =>
-    state.entries
-      .filter(
-        (row) => inPeriod(row, v) && sameCode(row.EmployeeCode, v.employeeCode)
-      )
-      .slice(0, 1)
-  )
-  register('pending', PENDING_APPROVALS_QUERY, (v) =>
-    state.entries
-      .filter(
-        (row) =>
-          inPeriod(row, v) &&
-          row.ApprovalStatus === 1 &&
-          sameCode(row.ManagerCode, v.managerCode)
-      )
-      .sort((left, right) => left.id - right.id)
-  )
-
-  class ConnectionPool {
-    constructor(config) {
-      this.config = config
-      this.closed = false
-      pools.push(this)
-    }
-
-    // eslint-disable-next-line require-await
-    async connect() {
-      if (
-        state.failAt === 'connect' ||
-        state.failAt === `connect:${this.config.name}`
-      )
-        throw new Error('private connection detail')
-    }
-
-    // eslint-disable-next-line require-await
-    async close() {
-      this.closed = true
-    }
-
-    request() {
-      const pool = this
-      const inputs = {}
-      return {
-        input(name, type, value) {
-          // The legacy gateway binds untyped values: input(name, value).
-          inputs[name] =
-            arguments.length === 2
-              ? { type: null, value: type }
-              : { type, value }
-          return this
-        },
-        async query(statement) {
-          const name = names.get(statement) || 'legacy'
-          calls.push({ name, statement, inputs, config: pool.config.name })
-          await new Promise((resolve) => setImmediate(resolve))
-          if (state.failAt === statement || state.failAt === name)
-            throw new Error('private SQL detail: dtr.secret_table')
-          const values = Object.fromEntries(
-            Object.entries(inputs).map(([key, input]) => [key, input.value])
-          )
-          if (state.legacy.has(statement))
-            return state.legacy.get(statement)(values)
-          const handler = handlers.get(statement)
-          if (!handler) throw new Error('statement is not server-owned')
-          const recordset = handler(values)
-          return { recordset, recordsets: [recordset] }
-        },
-      }
-    }
-  }
-
-  const sql = {
-    ConnectionPool,
-    VarChar: (length) => ({ name: 'varchar', length }),
-    NVarChar: (length) => ({ name: 'nvarchar', length }),
-  }
-  return {
-    calls,
-    pools,
-    state,
-    sql,
-    portalConfig,
-    hrConfig,
-    names: () => calls.map((call) => call.name),
-    roles: createRoleChecks({ sql, portalConfig }),
-    dtrReads: createDtrReads({ sql, portalConfig, hrConfig }),
-  }
-}
-
-async function httpFixture(t) {
-  const f = databaseFixture()
-  const sessions = createSessions('dtr-reads-tests-only-key')
-  const tokens = {}
-  for (const [name, employeeCode] of Object.entries(CALLERS))
-    tokens[name] = sessions.issue({
-      employeeCode,
-      userAccount: name.toLowerCase(),
-      domain: 'alkholi',
-    })
-  const revoked = new Set()
-  const auth = createAuth({
-    sessions,
-    repository: {
-      isRegistered: async (identity) => !revoked.has(identity.token),
-    },
-    adAuth: async () => {},
-    cipher: {},
-  })
-  // Stands in for the untouched legacy save router.
-  const saves = []
-  const legacyActions = express.Router()
-  legacyActions.post('/save-dtr-data', (req, res) => {
-    saves.push({ caller: req.auth && req.auth.employeeCode, body: req.body })
-    res.send([1])
-  })
-  const app = express()
-  app.use(
-    '/dtr-api',
-    createApi({
-      authorize: auth.authorize,
-      requireDtrUser: requireRole(f.roles, 'dtrUser'),
-      dtrReads: f.dtrReads,
-      legacySql: { sql: f.sql, portalConfig: f.portalConfig },
-      legacyActions,
-    })
-  )
-  // Anything the API does not answer would reach the page renderer.
-  app.use((req, res) => res.status(418).send('<html>nuxt</html>'))
-  const server = await new Promise((resolve) => {
-    const server = app.listen(0, '127.0.0.1', () => resolve(server))
-  })
-  t.after(
-    () =>
-      new Promise((resolve) => {
-        server.closeAllConnections()
-        server.close(resolve)
-      })
-  )
-  const base = `http://127.0.0.1:${server.address().port}/dtr-api`
-  async function request(
-    suffix,
-    { as = 'division', method, body, headers } = {}
-  ) {
-    const allHeaders = { ...(headers || {}) }
-    if (as) allHeaders.Authorization = `Bearer ${tokens[as] || as}`
-    if (body !== undefined) allHeaders['Content-Type'] = 'application/json'
-    const response = await fetch(base + suffix, {
-      method: method || (body === undefined ? 'GET' : 'POST'),
-      headers: allHeaders,
-      body:
-        body === undefined
-          ? undefined
-          : typeof body === 'string'
-          ? body
-          : JSON.stringify(body),
-    })
-    const text = await response.text()
-    let parsed = text
-    try {
-      parsed = text ? JSON.parse(text) : null
-    } catch {}
-    return {
-      status: response.status,
-      body: parsed,
-      cacheControl: response.headers.get('cache-control'),
-    }
-  }
-  const get = (suffix, query, options) =>
-    request(
-      query ? `${suffix}?${new URLSearchParams(query).toString()}` : suffix,
-      options
-    )
-  return {
-    ...f,
-    request,
-    get,
-    tokens,
-    saves,
-    revoke: (token) => revoked.add(token),
-  }
-}
+const {
+  ADM_DIV,
+  ADM_SUB,
+  MGR1,
+  MGR2,
+  NON_MEMBER,
+  CALLERS,
+  WINTER,
+  SHORT,
+  LEAP,
+  SPRING,
+  U,
+  employee,
+  assignment,
+  httpFixture,
+} = require('./helpers/dtr-fixture')
 
 const codesOf = (rows, key = 'employee_code') => rows.map((row) => row[key])
 const NOT_FOUND = [404, { message: 'employeeNotFound' }]
@@ -583,7 +107,7 @@ test('statements are fixed, typed and reuse the DTR setup hierarchy rules', () =
   ]) {
     assert.match(statement, /FROM dtr\.dtrEntries/)
     assert.match(statement, period)
-    assert.doesNotMatch(statement, /SELECT \*|alkholiPortal|\$\{|ModifiedBy/)
+    assert.doesNotMatch(statement, /SELECT \*|alkholiPortal|\$\{/)
   }
   assert.match(ENTRY_QUERY, /WHERE EmployeeCode = @employeeCode AND StartDate/)
   assert.match(
@@ -936,6 +460,12 @@ test('overlapping assignments list each employee once; empty scope stays empty',
 
 test('period entries cover assigned employees only, for the requested period', async (t) => {
   const f = await httpFixture(t)
+  const versionOf = (code, period = WINTER) =>
+    entryVersion(
+      f.state.entries.find(
+        (row) => row.EmployeeCode === code && row.StartDate === period.start
+      )
+    )
   const winter = await f.get('/period-entries', WINTER)
   assert.equal(winter.status, 200)
   assert.equal(winter.cacheControl, 'no-store')
@@ -945,10 +475,30 @@ test('period entries cover assigned employees only, for the requested period', a
       left.EmployeeCode.localeCompare(right.EmployeeCode)
     ),
     [
-      { EmployeeCode: 'E1', ApprovalStatus: 0, DeclineFlag: false },
-      { EmployeeCode: 'E2', ApprovalStatus: 1, DeclineFlag: false },
-      { EmployeeCode: 'E5', ApprovalStatus: 3, DeclineFlag: false },
-      { EmployeeCode: 'E7', ApprovalStatus: 2, DeclineFlag: true },
+      {
+        EmployeeCode: 'E1',
+        ApprovalStatus: 0,
+        DeclineFlag: false,
+        version: versionOf('E1'),
+      },
+      {
+        EmployeeCode: 'E2',
+        ApprovalStatus: 1,
+        DeclineFlag: false,
+        version: versionOf('E2'),
+      },
+      {
+        EmployeeCode: 'E5',
+        ApprovalStatus: 3,
+        DeclineFlag: false,
+        version: versionOf('E5'),
+      },
+      {
+        EmployeeCode: 'E7',
+        ApprovalStatus: 2,
+        DeclineFlag: true,
+        version: versionOf('E7'),
+      },
     ]
   )
   assert.deepEqual(f.names(), [
@@ -980,7 +530,12 @@ test('period entries cover assigned employees only, for the requested period', a
 
   // Other periods are separate; a period without entries is empty.
   assert.deepEqual((await f.get('/period-entries', SHORT)).body, [
-    { EmployeeCode: 'E1', ApprovalStatus: 1, DeclineFlag: false },
+    {
+      EmployeeCode: 'E1',
+      ApprovalStatus: 1,
+      DeclineFlag: false,
+      version: versionOf('E1', SHORT),
+    },
   ])
   assert.deepEqual(
     (await f.get('/period-entries', { start: '2026-06-21', end: '2026-07-20' }))
@@ -992,7 +547,17 @@ test('period entries cover assigned employees only, for the requested period', a
   f.calls.length = 0
   assert.deepEqual(
     outcome(await f.get('/period-entries', { ...WINTER, employeeCode: 'e7' })),
-    [200, [{ EmployeeCode: 'E7', ApprovalStatus: 2, DeclineFlag: true }]]
+    [
+      200,
+      [
+        {
+          EmployeeCode: 'E7',
+          ApprovalStatus: 2,
+          DeclineFlag: true,
+          version: versionOf('E7'),
+        },
+      ],
+    ]
   )
   assert.deepEqual(f.names(), ['role', 'assignments', 'one:division', 'entry'])
   assert.deepEqual(f.calls[2].inputs.employeeCode, {
@@ -1043,6 +608,7 @@ test('calendar details need an assignment or a pending approval', async (t) => {
   assert.equal(draft.body.EmployeeCode, 'E1')
   assert.deepEqual(Object.keys(draft.body.entry), [
     'ApprovalStatus',
+    'version',
     'DeclineFlag',
     'DeclineMessage',
     'days',
@@ -1248,6 +814,7 @@ test('pending approvals belong to the signed-in manager and the requested period
       'employeeName',
       'employeePicture',
       'ApprovalStatus',
+      'version',
       'days',
     ])
     assert.equal(row.ApprovalStatus, 1)
@@ -1613,109 +1180,13 @@ test('retired DTR SQL endpoints return 404 and execute nothing', async (t) => {
   assert.equal(f.calls.length, 0)
   assert.equal(f.pools.length, 0)
 
-  // The module no longer has a gateway to the HR database at all.
-  const legacy = read('server/dtr/router/sqlCalls.js')
-  assert.deepEqual(
-    [...legacy.matchAll(/router\.(\w+)\(\s*'([^']+)'/g)].map((match) => [
-      match[1],
-      match[2],
-    ]),
-    [['post', '/sql-params-call']]
-  )
-  assert.doesNotMatch(legacy, /hrSQL|hrConfig|hrDB|require\('mssql'\)/)
-  const main = read('server/dtr/main.js')
-  assert.match(main, /legacySql: \{ sql, portalConfig \}/)
-  assert.match(
-    main,
-    /requireRole\(\s*createRoleChecks\(\{ sql, portalConfig \}\),\s*'dtrUser'\s*\)/
-  )
-  const api = read('server/dtr/createApi.js')
-  assert.doesNotMatch(api + main, /sql-call'|hr-sql-call/)
-})
-
-test('legacy write routes kept for Phase 8 still work, now for DTR members only', async (t) => {
-  const f = await httpFixture(t)
-  // The exact request the DTR table sends for "send for approval".
-  const statement = `
-                UPDATE [dtr].[dtrEntries]
-                SET [ApprovalStatus] = @approvalStatus
-                WHERE [EmployeeCode] IN ('E1','E2')
-                AND [StartDate] = @startDate
-                AND [EndDate] = @endDate
-              `
-  const parameters = {
-    approvalStatus: 1,
-    startDate: WINTER.start,
-    endDate: WINTER.end,
-  }
-  const executed = []
-  f.state.legacy.set(statement, (values) => {
-    executed.push(values)
-    return { recordset: undefined, rowsAffected: [2] }
-  })
-  const body = { query: statement, parameters }
-
-  for (const as of [null, 'not-a-token']) {
-    assert.equal(
-      (await f.request('/sql-params-call', { body, as })).status,
-      401
-    )
-    assert.equal(
-      (await f.request('/save-dtr-data', { body: { employeeCode: 'E1' }, as }))
-        .status,
-      401
-    )
-  }
-  assert.equal(f.calls.length, 0)
-  assert.deepEqual(
-    outcome(await f.request('/sql-params-call', { body, as: 'nonMember' })),
-    [403, { message: 'forbidden' }]
-  )
-  assert.deepEqual(
-    outcome(
-      await f.request('/save-dtr-data', {
-        body: { employeeCode: 'E1' },
-        as: 'nonMember',
-      })
-    ),
-    [403, { message: 'forbidden' }]
-  )
-  assert.deepEqual(executed, [])
-  assert.deepEqual(f.saves, [])
-  assert.deepEqual(f.names(), ['role', 'role'])
-
-  // Members: both legacy callers behave as before.
-  const sent = await f.request('/sql-params-call', { body })
-  assert.equal(sent.status, 200)
-  assert.deepEqual(executed, [parameters])
-  const saved = await f.request('/save-dtr-data', {
-    body: { employeeCode: 'E1', dtrEntries: [] },
-  })
-  assert.deepEqual(outcome(saved), [200, [1]])
-  assert.deepEqual(f.saves, [
-    { caller: ADM_DIV, body: { employeeCode: 'E1', dtrEntries: [] } },
-  ])
-  // The approvals page writes through the same gateway as a manager.
   assert.equal(
-    (await f.request('/sql-params-call', { body, as: 'manager' })).status,
-    200
+    fs.existsSync(path.join(root, 'server/dtr/router/sqlCalls.js')),
+    false
   )
-  assert.ok(f.pools.every((pool) => pool.closed))
-
-  // The real save router is still the one mounted in production, unchanged.
-  assert.match(
-    read('server/dtr/main.js'),
-    /const dtrActions = require\('\.\/router\/dtr-actions\.js'\)[\s\S]+legacyActions: dtrActions/
-  )
-  assert.match(
-    read('server/dtr/router/dtr-actions.js'),
-    /router\.post\('\/save-dtr-data', auth, async \(req, res\) => \{/
-  )
-  const api = read('server/dtr/createApi.js')
-  assert.match(api, /api\.post\('\/save-dtr-data', \.\.\.memberOnly\)/)
-  assert.ok(
-    api.indexOf("api.post('/save-dtr-data', ...memberOnly)") <
-      api.indexOf('api.use(legacyActions)')
+  assert.doesNotMatch(
+    read('server/dtr/createApi.js') + read('server/dtr/main.js'),
+    /legacySql|legacyActions|sqlCalls/
   )
 })
 
@@ -2069,7 +1540,7 @@ test('the DTR table lists and statuses come from the store, for the chosen perio
       ['E1', 'yellow', 'Ready to be sent for approval', false],
       ['E2', 'orange', 'Waiting for manager approval', false],
       ['E5', 'green', 'Approved', false],
-      ['E6', 'pink', 'No changes yet!', undefined],
+      ['E6', 'pink', 'No changes yet!', false],
       ['E7', 'red', 'Declined - Needs Review', true],
     ]
   )
@@ -2429,7 +1900,7 @@ test('the employee calendar loads saved days and employee details through the st
     // A day without a saved value keeps the default.
     assert.equal(filled(context).find((day) => day.dayNumber === 3).type, 'RA')
     assert.equal(context.declineMessage, 'Fix day 3')
-    assert.equal(context.dtrEntriesArray.length, length - 1)
+    assert.equal(context.dtrEntriesArray.length, length)
     assert.ok(
       context.dtrEntriesArray.every((day) => Number.isInteger(day.date))
     )
@@ -2449,42 +1920,8 @@ test('the employee calendar loads saved days and employee details through the st
     assert.equal(context.overlay, false)
   }
 
-  // Saving: the manager and employee details come from the server lookup.
-  const save = calendarContext(component, 2026, 2)
-  save.context.results = {
-    'dtr/getEmployee': () => ({
-      employee_code: 'E1',
-      employee_name_eng: 'Employee E1',
-      employee_picture: 'E1.jpg',
-      Manager_Code: MGR1,
-    }),
-  }
-  save.context.postResult = { data: [1] }
-  component.methods.prepareDataArray.call(save.context)
-  await component.methods.saveData.call(save.context)
-  assert.deepEqual(save.dispatched[0], ['dtr/getEmployee', 'E1'])
-  assert.equal(save.posts.length, 1)
-  assert.equal(save.posts[0].url, '/dtr-api/save-dtr-data')
-  const { dtrEntries, ...sent } = save.posts[0].body
-  assert.deepEqual(sent, {
-    employeeCode: 'E1',
-    managerCode: MGR1,
-    startingDate: '2026-02-21',
-    endingDate: '2026-03-20',
-    dtrAdmin: 'Portal User',
-    employeeName: 'Employee E1',
-    employeePicture: 'E1.jpg',
-  })
-  assert.deepEqual(
-    dtrEntries.map((day) => day.date),
-    parsePeriod('2026-02-21', '2026-03-20').days
-  )
-  assert.deepEqual(save.events, [['employeeDataSaved', 'E1']])
-  assert.equal(save.context.overlay, false)
-
-  // An employee outside the caller's assignments is not saved.
+  // A failed calendar load blocks saving, even if the user changes a day.
   const refused = calendarContext(component, 2026, 2)
-  refused.context.results = { 'dtr/getEmployee': () => null }
   component.methods.prepareDataArray.call(refused.context)
   await component.methods.saveData.call(refused.context)
   assert.deepEqual(refused.posts, [])
@@ -2507,7 +1944,7 @@ function sourceFiles(directories) {
 
 const relative = (file) => path.relative(root, file).replaceAll('\\', '/')
 
-test('DTR read callers send no SQL; the remaining legacy callers are exactly the Phase 8 writes', () => {
+test('DTR callers send no SQL and all DTR gateways are retired', () => {
   const frontend = sourceFiles([
     'pages',
     'components',
@@ -2533,14 +1970,7 @@ test('DTR read callers send no SQL; the remaining legacy callers are exactly the
     {}
   )
   assert.deepEqual(occurrences(/sql-call/g), {})
-  // Inventory for Phase 8: every remaining browser-SQL call is a status UPDATE.
-  const inventory = {
-    'components/dtr/dtr-table/employeeCalendar.vue': 1,
-    'pages/dtr/approvals/index.vue': 3,
-    'pages/dtr/dtr-table/index.vue': 1,
-  }
-  assert.deepEqual(occurrences(/dtr-api\/sql-params-call/g), inventory)
-  assert.deepEqual(occurrences(/sql-(?:\w+-)*call/g), inventory)
+  assert.deepEqual(occurrences(/sql-(?:\w+-)*call/g), {})
   assert.deepEqual(occurrences(/dtr-api\/save-dtr-data/g), {
     'components/dtr/dtr-table/employeeCalendar.vue': 1,
   })
@@ -2559,26 +1989,16 @@ test('DTR read callers send no SQL; the remaining legacy callers are exactly the
       /localStorage\.getItem\('(?:employeeCode|managerCode)'\)|ManagerCode\]? = @managerCode/,
       file
     )
-    const queries = [...script.matchAll(/query: `([\s\S]*?)`/g)].map((match) =>
-      match[1].trim()
-    )
-    for (const query of queries)
-      assert.match(
-        query,
-        /^UPDATE \[dtr\]\.\[dtrEntries\]\s+SET \[ApprovalStatus\]/
-      )
-    assert.equal(
-      queries.length,
-      (script.match(/sql-params-call/g) || []).length,
-      file
+    assert.doesNotMatch(
+      script,
+      /\b(?:SELECT|UPDATE|INSERT|DELETE)\b|\bquery\s*:|localStorage/
     )
   }
   const store = read('store/dtr/index.js')
   assert.doesNotMatch(store, /sql-call|\bquery\s*:|\$axios\.post|localStorage/)
   assert.equal((store.match(/this\.\$axios\.get\(/g) || []).length, 5)
 
-  // Server side: no DTR file reads SQL text from a request except the one
-  // legacy gateway, and nothing else can reach the HR database.
+  // Every DTR statement is server-owned; no request supplies SQL.
   const server = sourceFiles(['server/dtr']).map(relative).sort()
   assert.deepEqual(server, [
     'server/dtr/configs/hrSQL.js',
@@ -2588,23 +2008,24 @@ test('DTR read callers send no SQL; the remaining legacy callers are exactly the
     'server/dtr/middleware/authorization.js',
     'server/dtr/router/dtr-actions.js',
     'server/dtr/router/dtrReads.js',
-    'server/dtr/router/sqlCalls.js',
     'server/dtr/services/dtrReads.js',
+    'server/dtr/services/dtrWrites.js',
+    'server/dtr/services/entryVersion.js',
   ])
   for (const file of server)
-    if (file !== 'server/dtr/router/sqlCalls.js')
-      assert.doesNotMatch(
-        read(file),
-        /body\.query|query\(req\.|query\(`\$\{req/,
-        file
-      )
-  // Only the read service is given the HR connection.
+    assert.doesNotMatch(
+      read(file),
+      /body\.query|query\(req\.|query\(`\$\{req/,
+      file
+    )
+  // Reads and writes reuse the same HR scope service.
   assert.deepEqual(
     server.filter((file) => /hrSQL|hrConfig/.test(read(file))),
     [
       'server/dtr/configs/hrSQL.js',
       'server/dtr/main.js',
       'server/dtr/services/dtrReads.js',
+      'server/dtr/services/dtrWrites.js',
     ]
   )
   assert.ok(
@@ -2623,6 +2044,12 @@ test('English and Arabic contain every DTR error code; edited buttons are clicka
     'employeeNotFound',
     'invalidRequest',
     'serviceUnavailable',
+    'invalidDays',
+    'invalidVersion',
+    'stateConflict',
+    'invalidTargets',
+    'invalidDeclineMessage',
+    'employeeInfoInvalid',
   ]
   for (const locale of ['en', 'ar']) {
     const messages = JSON.parse(read(`locales/${locale}.json`)).errorMessages
@@ -2647,7 +2074,7 @@ test('English and Arabic contain every DTR error code; edited buttons are clicka
     for (const pattern of [
       /DtrError\(\s*'(\w+)'/g,
       /message:\s*'(\w+)'/g,
-      /[?:]\s*'(\w+)'/g,
+      /[?:]\s*'([A-Za-z]\w*)'/g,
     ])
       for (const [, code] of read(file).matchAll(pattern)) emitted.add(code)
   for (const code of ['invalidPeriod', 'employeeNotFound', 'forbidden'])

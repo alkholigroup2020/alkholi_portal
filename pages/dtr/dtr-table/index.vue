@@ -94,7 +94,7 @@
             <p
               class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
             >
-              {{ $t('dtrApp.approvalPage.approveAllMessage') }}
+              {{ $t('dtrApp.dtrPage.confirmSubmit') }}
             </p>
           </v-card-text>
 
@@ -242,6 +242,10 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
+import { authErrorMessage } from '~/utils/auth-client'
+import { periodContaining, periodParts, shiftPeriod } from '~/utils/dtr-period'
+
 /*
 No Record => pink => No Changes Yet
 0 => yellow => Ready to be sent
@@ -250,8 +254,6 @@ No Record => pink => No Changes Yet
 3 => green => Approved
 4 => gray => Migrated
 */
-import { mapState } from 'vuex'
-import { periodContaining, periodParts, shiftPeriod } from '~/utils/dtr-period'
 
 export default {
   layout: 'dtr',
@@ -371,14 +373,8 @@ export default {
               (record) => record.EmployeeCode === element.employee_code
             )
 
-            if (employeeData) {
-              if (employeeData.DeclineFlag) {
-                element.declineFlag = true
-              } else {
-                element.declineFlag = false
-              }
-            }
-
+            element.version = employeeData ? employeeData.version : null
+            element.declineFlag = !!(employeeData && employeeData.DeclineFlag)
             if (employeeData) {
               if (employeeData.ApprovalStatus === 0) {
                 element.statusColor = 'yellow'
@@ -449,6 +445,8 @@ export default {
               (record) => record.EmployeeCode === element.employee_code
             )
 
+            element.version = employeeData ? employeeData.version : null
+            element.declineFlag = !!(employeeData && employeeData.DeclineFlag)
             if (employeeData) {
               if (employeeData.ApprovalStatus === 0) {
                 element.statusColor = 'yellow'
@@ -459,6 +457,9 @@ export default {
               } else if (employeeData.ApprovalStatus === 2) {
                 element.statusColor = 'red'
                 element.statusName = 'Declined - Needs Review'
+              } else if (employeeData.ApprovalStatus === 3) {
+                element.statusColor = 'green'
+                element.statusName = 'Approved'
               }
             }
             return element
@@ -588,30 +589,15 @@ export default {
           const startingDate = formatDate(this.startDate)
           const endingDate = formatDate(this.endDate)
 
-          const buildEmployeeCodesString = (employees) =>
-            `(${employees.map((e) => `'${e.employee_code}'`).join(',')})`
-
-          const employeeCodesString = buildEmployeeCodesString(
-            this.allEmployeesData
-          )
-
-          // Update the ApprovalStatus to 1 for the given date range and employees
-          // Using parameterized queries to prevent SQL injection
           const response = await this.$axios.post(
-            `${this.$config.baseURL}/dtr-api/sql-params-call`,
+            `${this.$config.baseURL}/dtr-api/bulk-submit`,
             {
-              query: `
-                UPDATE [dtr].[dtrEntries]
-                SET [ApprovalStatus] = @approvalStatus
-                WHERE [EmployeeCode] IN ${employeeCodesString}
-                AND [StartDate] = @startDate
-                AND [EndDate] = @endDate
-              `,
-              parameters: {
-                approvalStatus: 1,
-                startDate: startingDate,
-                endDate: endingDate,
-              },
+              start: startingDate,
+              end: endingDate,
+              targets: this.allEmployeesData.map((employee) => ({
+                employeeCode: employee.employee_code,
+                version: employee.version,
+              })),
             }
           )
 
@@ -629,10 +615,14 @@ export default {
           this.approvalDialog = false
           await this.notifyUser('error', 'dtrApp.dtrPage.notReadyForApproval')
         }
-      } catch (e) {
+      } catch (error) {
         this.overlay = false
         this.approvalDialog = false
-        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        await this.getRecordsStatus(this.allEmployeesData)
       }
     },
 

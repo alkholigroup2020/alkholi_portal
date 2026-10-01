@@ -5,7 +5,7 @@ const hrConfig = require('./configs/hrSQL')
 const authorize = require('./middleware/authorization')
 const createApi = require('./createApi')
 const { createDtrReads } = require('./services/dtrReads')
-const dtrActions = require('./router/dtr-actions.js')
+const { createDtrWrites } = require('./services/dtrWrites')
 
 module.exports = {
   path: '/dtr-api',
@@ -16,7 +16,6 @@ module.exports = {
       'dtrUser'
     ),
     dtrReads: createDtrReads({ sql, portalConfig, hrConfig }),
-    legacySql: { sql, portalConfig },
-    legacyActions: dtrActions,
+    dtrWrites: createDtrWrites({ sql, portalConfig, hrConfig }),
   }),
 }

@@ -162,10 +162,12 @@
                     text
                     elevation="0"
                     class="cursor-pointer"
-                    @click="confirmationDialog = true"
+                    @click="openDecision(employee)"
                   >
                     <v-icon>mdi-success</v-icon>
-                    <span class="text-capitalize">Approve</span>
+                    <span class="text-capitalize">{{
+                      $t('dtrApp.approvalPage.approve')
+                    }}</span>
                   </v-btn>
                 </div>
 
@@ -176,10 +178,12 @@
                     text
                     elevation="0"
                     class="cursor-pointer"
-                    @click="declineDialog = true"
+                    @click="openDecision(employee, true)"
                   >
                     <v-icon>mdi-success</v-icon>
-                    <span class="text-capitalize">Decline</span>
+                    <span class="text-capitalize">{{
+                      $t('dtrApp.approvalPage.decline')
+                    }}</span>
                   </v-btn>
                 </div>
               </div>
@@ -222,7 +226,15 @@
               </table>
 
               <!-- single approve confirmation dialog -->
-              <v-dialog v-model="confirmationDialog" width="500" persistent>
+              <v-dialog
+                v-if="
+                  selectedEntry &&
+                  selectedEntry.EmployeeCode === employee.EmployeeCode
+                "
+                v-model="confirmationDialog"
+                width="500"
+                persistent
+              >
                 <v-card>
                   <v-card-title class="text-subtitle-1 primary_5">
                     {{ $t('adminPage.bCards.confirmationTitle') }}
@@ -232,7 +244,7 @@
                     <p
                       class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
                     >
-                      {{ $t('adminPage.bCards.confirmationMessage') }}
+                      {{ $t('dtrApp.approvalPage.confirmApprove') }}
                     </p>
                   </v-card-text>
 
@@ -263,7 +275,15 @@
               </v-dialog>
 
               <!-- single decline confirmation dialog -->
-              <v-dialog v-model="declineDialog" width="500" persistent>
+              <v-dialog
+                v-if="
+                  selectedEntry &&
+                  selectedEntry.EmployeeCode === employee.EmployeeCode
+                "
+                v-model="declineDialog"
+                width="500"
+                persistent
+              >
                 <v-card>
                   <v-card-title class="text-subtitle-1 primary_5">
                     {{ $t('adminPage.bCards.confirmationTitle') }}
@@ -273,12 +293,13 @@
                     <p
                       class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
                     >
-                      {{ $t('adminPage.bCards.confirmationMessage') }}
+                      {{ $t('dtrApp.approvalPage.confirmDecline') }}
                     </p>
                     <v-textarea
                       v-model="declineMSG"
                       outlined
-                      label="Decline Message"
+                      :label="$t('dtrApp.dtrPage.declineMessage')"
+                      counter="300"
                       color="primary--text"
                       height="100"
                     ></v-textarea>
@@ -292,6 +313,7 @@
                       class="px-8 mx-2 text-capitalize cursor-pointer"
                       color="success darken-1 "
                       text
+                      :disabled="!declineMSG.trim() || declineMSG.length > 300"
                       @click="singleDecline(employee.EmployeeCode)"
                     >
                       {{ $t('generals.yes') }}
@@ -319,6 +341,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { authErrorMessage } from '~/utils/auth-client'
 import { periodParts } from '~/utils/dtr-period'
 
 export default {
@@ -355,6 +378,7 @@ export default {
       confirmationDialog: false,
       declineDialog: false,
       declineMSG: '',
+      selectedEntry: null,
       confirmAllDialog: false,
       weeks: [],
       days: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
@@ -434,6 +458,15 @@ export default {
   },
 
   methods: {
+    openDecision(employee, decline = false) {
+      // Bind the dialog to the displayed row/version, including cached panels.
+      this.selectedEntry = {
+        EmployeeCode: employee.EmployeeCode,
+        version: employee.version,
+      }
+      this.confirmationDialog = !decline
+      this.declineDialog = decline
+    },
     flipDateString(dateString) {
       const dateParts = dateString.split('-')
       const year = dateParts[2]
@@ -512,22 +545,19 @@ export default {
         const startDate = this.flipDateString(this.dtrAppStartDate)
         const endDate = this.flipDateString(this.dtrAppEndDate)
 
+        const target =
+          this.selectedEntry && this.selectedEntry.EmployeeCode === employeeCode
+            ? this.selectedEntry
+            : this.employeesWaitingApproval.find(
+                (employee) => employee.EmployeeCode === employeeCode
+              )
         const approveSingleEmployee = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-params-call`,
+          `${this.$config.baseURL}/dtr-api/approve`,
           {
-            query: `
-              UPDATE [dtr].[dtrEntries] 
-              SET [ApprovalStatus] = @approvalStatus
-              WHERE [EmployeeCode] = @employeeCode
-              AND [StartDate] = @startDate
-              AND [EndDate] = @endDate 
-            `,
-            parameters: {
-              approvalStatus: 3,
-              employeeCode,
-              startDate,
-              endDate,
-            },
+            employeeCode,
+            start: startDate,
+            end: endDate,
+            version: target && target.version,
           }
         )
         if (approveSingleEmployee.status === 200) {
@@ -543,9 +573,13 @@ export default {
           // Send a successful feedback to the user
           await this.notifyUser('success', 'dtrApp.dtrPage.successApproval')
         }
-      } catch (e) {
+      } catch (error) {
         this.overlay = false
-        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        await this.getEmployeesWaitingForApproval()
       }
     },
 
@@ -557,26 +591,20 @@ export default {
         const endDate = this.flipDateString(this.dtrAppEndDate)
         const declineMSG = this.declineMSG
 
+        const target =
+          this.selectedEntry && this.selectedEntry.EmployeeCode === employeeCode
+            ? this.selectedEntry
+            : this.employeesWaitingApproval.find(
+                (employee) => employee.EmployeeCode === employeeCode
+              )
         const declineSingleEmployee = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-params-call`,
+          `${this.$config.baseURL}/dtr-api/decline`,
           {
-            query: `
-              UPDATE [dtr].[dtrEntries]
-              SET [ApprovalStatus] = @approvalStatus,
-              [DeclineMessage] = @declineMSG,
-              [DeclineFlag] = @declineFlag
-              WHERE [EmployeeCode] = @employeeCode
-              AND [StartDate] = @startDate
-              AND [EndDate] = @endDate
-            `,
-            parameters: {
-              approvalStatus: 2,
-              declineMSG,
-              declineFlag: true,
-              employeeCode,
-              startDate,
-              endDate,
-            },
+            employeeCode,
+            start: startDate,
+            end: endDate,
+            version: target && target.version,
+            declineMessage: declineMSG,
           }
         )
         if (declineSingleEmployee.status === 200) {
@@ -594,9 +622,13 @@ export default {
           // Send a successful feedback to the user
           await this.notifyUser('success', 'dtrApp.dtrPage.successDecline')
         }
-      } catch (e) {
+      } catch (error) {
         this.overlay = false
-        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        await this.getEmployeesWaitingForApproval()
       }
     },
 
@@ -608,28 +640,15 @@ export default {
         const startDate = this.flipDateString(this.dtrAppStartDate)
         const endDate = this.flipDateString(this.dtrAppEndDate)
 
-        const buildEmployeeCodesString = (employees) =>
-          `(${employees.map((e) => `'${e.EmployeeCode}'`).join(',')})`
-
-        const employeeCodesString = buildEmployeeCodesString(
-          this.employeesWaitingApproval
-        )
-
         const approveSingleEmployee = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-params-call`,
+          `${this.$config.baseURL}/dtr-api/bulk-approve`,
           {
-            query: `
-              UPDATE [dtr].[dtrEntries]
-              SET [ApprovalStatus] = @approvalStatus
-              WHERE [EmployeeCode] IN ${employeeCodesString}
-              AND [StartDate] = @startDate
-              AND [EndDate] = @endDate
-            `,
-            parameters: {
-              approvalStatus: 3,
-              startDate,
-              endDate,
-            },
+            start: startDate,
+            end: endDate,
+            targets: this.employeesWaitingApproval.map((employee) => ({
+              employeeCode: employee.EmployeeCode,
+              version: employee.version,
+            })),
           }
         )
         if (approveSingleEmployee.status === 200) {
@@ -639,9 +658,13 @@ export default {
           // Send a successful feedback to the user
           await this.notifyUser('success', 'dtrApp.dtrPage.successApproval')
         }
-      } catch (e) {
+      } catch (error) {
         this.overlay = false
-        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        await this.getEmployeesWaitingForApproval()
       }
     },
 

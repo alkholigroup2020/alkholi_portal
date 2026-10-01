@@ -165,8 +165,9 @@ Baseline: `ce02b0b830eebe965beb225a71b285d82a8ad3ff`; working tree clean before 
 | 4     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
 | 5     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
 | 6     | Deployed    | User confirmed deployed and accepted on 2026-09-30 (smoke-check details not supplied) |
-| 7     | Implemented | Local checks passed 2026-09-30; not deployed or verified      |
-| 8–9   | Not started | Pending; do not advance automatically                         |
+| 7     | Implemented | User confirmed tested and accepted on 2026-10-01; deployment and individual verification results not supplied |
+| 8     | Implemented | Local checks passed 2026-10-01; deployment and production verification pending |
+| 9     | Not started | Pending; do not advance automatically                         |
 
 Production release, maintenance window, and designated test accounts/records: to be recorded by the user before deployment.
 
@@ -854,3 +855,86 @@ Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-rec
 - Do not restore an accessible release that serves `/dtr-api/sql-call` or `/dtr-api/hr-sql-call`; every pre-Phase-7 release does, and lets any signed-in employee run SQL on the portal and HR databases. A rollback candidate must also preserve the Phase 1–6 boundaries. If none exists, keep `/dtr` and `/dtr-api` unavailable (for example at the reverse proxy) until fixed; the other modules do not depend on this phase's routes.
 - The recompile hint on the Phase 5 lists is part of this release. If only that hint is suspected, remove the single constant in `server/administration/services/dtrSetup.js` and redeploy rather than restoring an older release.
 - Replace frontend and backend atomically and refresh browser/PWA caches. Do not restore only the old pages (they need the removed routes) or only the old routers. Existing entries and assignments are untouched; no deletion or regeneration is required for rollback.
+
+### Phase 7 acceptance record — 2026-10-01
+
+Before any Phase 8 edit, the user explicitly confirmed: “Yes, Phase 7 been tested and accepted”. This authorizes progression to Phase 8. Deployment, release identifier, maintenance window, account aliases, and individual smoke-check results were not supplied and are not inferred. The progress status remains **Implemented**; this confirmation does not manufacture a deployment or detailed **Verified** record. Historical implementation and recovery instructions above describe their original releases; the Phase 8 instructions below supersede their DTR deployment/write-check instructions for this checkout.
+
+### Phase 8 implementation record — 2026-10-01
+
+**Status: Implemented — local checks passed.** Deployment and production verification are pending. Starting checkout: `d50a278` (Phase 7). The existing deletion of `uploads/businessCards/E00025_QR_800x800.png` was preserved. No application startup, process restart, production data/schema write, email, deployment, commit, or push was performed. Phase 9 has not started.
+
+#### API changes and workflow
+
+All writes require the shared verified session and current DTR membership. Caller/editor identity comes only from `req.auth.employeeCode`. Assignment and employee scope reuse Phase 7 services, including active employment and the existing branch/hierarchy rules. No unused DTR role flag is activated.
+
+| POST route under `/dtr-api` | Request body | Server-owned transition |
+| --- | --- | --- |
+| `/save-dtr-data` | `employeeCode`, `start`, `end`, `version`, `dtrEntries: [{date, type}]` | Absent entry or draft `0`/declined `2` → draft `0`, assigned employee only |
+| `/submit` | `employeeCode`, `start`, `end`, `version` | Draft `0`/declined `2` → pending `1`, assigned employee only |
+| `/approve` | `employeeCode`, `start`, `end`, `version` | Pending `1` → approved `3`, recorded manager only |
+| `/decline` | Same single-target fields plus `declineMessage` | Pending `1` → declined `2`, recorded manager only |
+| `/bulk-submit` | `start`, `end`, `targets: [{employeeCode, version}]` | Same submit rules for every target, atomically |
+| `/bulk-approve` | Same bulk fields | Same approve rules for every target, atomically |
+
+- Unknown body fields, SQL text, client-selected status, manager/editor/name/picture metadata, malformed periods/versions, duplicate targets, and unsupported day codes are rejected. Bulk requests contain 1–5000 distinct targets. Server-owned queries and identifiers use typed `mssql` inputs; ID lists are never assembled into SQL.
+- Reads add an opaque `version` derived from the complete stored entry. Saving a genuinely absent entry requires `version: null`; other requests require the displayed version. Save returns `{message: 'dtrSaved', version}`; actions return `{message: 'dtrUpdated', affected}`. Existing read-consumer fields remain, with internal audit/manager fields used only for the version hash.
+- Saves resolve employee name, picture, and manager from trusted HR data. Missing required values or values exceeding verified column capacity return `422 employeeInfoInvalid`, without truncation. Null/empty pictures are supported. Audit values now identify the authenticated employee code rather than a browser-supplied name. Existing rows are not rewritten by a migration.
+- Pending and approved records cannot be saved, reopened, or submitted. Only the stored `ManagerCode` can decide a pending record. Manager decisions retain the Phase 7 ability to process already-pending inactive employees. No reopen endpoint exists.
+- Declining stores nonblank Unicode text up to 300 characters and sets `DeclineFlag = 1`. Correction/save leaves the reason and flag visible while setting draft status. Resubmission clears both (`NULL`, `0`); approval also clears them. This matches the calendar feedback and avoids stale decline indicators after resubmission.
+- Every actual day in the previous month's 21st through the current month's 20th must occur exactly once with a fixed code. Input order is immaterial. Columns are always server-owned `[21]`–`[31]`, `[1]`–`[20]`; nonexistent days are bound as `NULL`, covering 28/29/30/31-day months and year boundaries. Allowed codes: `RA`, `AB`, `AV`, `SV`, `UP<20`, `UP>20`, `D`, `NB`, `HA`, `MV`, `HDM`, `HDN`, `MRG`, `DOC`, `ST`. Submission validates saved actual-day codes too.
+- Portal writes run in a serializable transaction. Membership/assignment reads remain locked through commit; entry reads use `UPDLOCK, HOLDLOCK` on employee and period, compare versions, and check states inside the transaction. Save/submit hold read-only serializable HR scope/manager data through the portal commit, then roll back that read-only transaction to release locks. Bulk targets are sorted, all checked before the first update, and committed together. Conditional updates additionally constrain status/manager and require exactly one affected row. Deadlock, duplicate creation, stale state, and stale versions return controlled `409 stateConflict`; other database failures return sanitized `503 serviceUnavailable`. All pools/transactions are released on success and failure.
+- Audit time advances at least one SQL `datetime` tick on an immediate identical save, keeping old versions stale even after rapid corrections. No schema change or stored procedure is needed. A lost response after commit is still ambiguous to the client: reload before retrying.
+
+#### Changed areas and complete caller inventory
+
+- `server/dtr/services/dtrWrites.js` owns writes; `entryVersion.js` owns the fixed entry fields/hash; `dtrReads.js` exposes reusable Phase 7 scope logic and the response version. `router/dtr-actions.js`, `createApi.js`, and `main.js` compose authenticated reads/writes with bounded request bodies and controlled errors. The existing Nuxt `/dtr-api` mount is unchanged.
+- `components/dtr/dtr-table/employeeCalendar.vue` calls save and single submit with the displayed version and complete day values, including default `RA` for formerly missing values. Pending/approved and failed-load calendars disable writes. A conflict preserves edits, disables further writes, and offers an explicit reload. Successful save updates the version/table state; submit closes the panel and refreshes the table.
+- `pages/dtr/dtr-table/index.vue` retains versions in both refresh paths and sends structured bulk-submit targets. It refreshes after success/failure. The approvals page sends single approve/decline and bulk-approve requests, retains selection/version across confirmation, removes successful rows, clears committed selections, and refreshes on errors. Each confirmation dialog is bound to its selected employee and displayed version, including cached panels. The decline field and all new feedback/confirmation/reload text have English and Arabic translations.
+- The calendar's old employee-info request is no longer needed: save metadata is resolved on the server. Phase 7's safe employee-detail read and Vuex action remain available. Assigned-employee, period-status, calendar, and pending-approval reads remain fixed, scoped routes.
+- `server/dtr/router/sqlCalls.js` is deleted, and all mounted legacy aliases are removed. `/dtr-api/sql-call`, `/sql-params-call`, and `/hr-sql-call` return `404`; there are no remaining DTR callers or fallback gateways. `CLAUDE.md` now reflects this boundary. SQL execution and procedure audits outside this phase remain Phase 9 work.
+
+#### Database evidence and remaining limitations
+
+Read-only metadata was checked against Phase 7: all **43/43** entry-column types/capacities match, with **two unique indexes and no triggers**. The new seven portal statements, assignment read, three revised entry reads, and four HR scope statements were checked with typed declarations inside `IF 1 = 0 BEGIN ... END`: **15/15 compiled without executing writes**. Both negative controls were rejected (SQL errors 207 and 156). No credentials, connection details, employee rows, or tokens were printed or recorded.
+
+`OBJECT_DEFINITION` remains unavailable (`NULL`) for the retired `dtr.dtrEntries_checkIfExist` and administration's `dtr.adminAssignment_addData`. The new save does not execute the former, but their definitions remain **unverified**, as recorded in Phase 7; administration procedure internals still need Phase 9 review. No application-wide SQL/security completion claim is made.
+
+Local transaction fixtures simulate locking, failures, and rollback. They do not prove real SQL Server contention behavior, runtime write permissions, commit ambiguity, or large-batch performance. Holding serializable HR reads can delay HR updates; monitor timeout/deadlock rates and bulk duration during production checks. Real browser/mobile interaction and production English/Arabic layouts are pending; local Vue/Vuetify SSR checks cover both directions and control states. Historical rows may retain manager/editor metadata previously supplied by clients; verify the manager of designated test rows against trusted HR before testing. No background jobs, sessions, static-document access, or legacy records were redesigned.
+
+#### Validation and second review
+
+| Command/check | Actual result |
+| --- | --- |
+| Baseline `npm run test:security` before edits | 133 passed, 0 failed |
+| Final `npm run test:security` | **158 passed, 0 failed**, exit 0; all 26 new write tests and 21 retained read tests ran through the explicitly updated command |
+| Final `npm run lint` | **Passed**, exit 0, no warnings |
+| Final `npm run build` | **Passed**, exit 0; client and server compiled. Existing outdated Browserslist, large bundle, and large PDF-module Babel notices remain |
+| `git diff --check` | Passed; only Git line-ending conversion notices |
+| Read-only database checks | 43/43 metadata match; 15/15 statements compiled; negative controls rejected; no writes |
+| Independent source/compiled-client searches | No retired DTR gateway callers or browser-built DTR SQL found |
+| Isolated HTTP retirement checks | All three retired paths return `404` for five tested HTTP methods, with and without sessions; no database pool is opened |
+
+`tests/security/dtr-writes.test.js` exercises the isolated injected Express API and service, while `tests/security/helpers/dtr-fixture.js` shares scoped fixtures with read tests. Tests never load `.env` or application entry points. Coverage includes the complete draft/submission/decline/correction/resubmission/approval chain; membership revoked during a request; assignment/manager/editor impersonation; pending/approved protection; repeated and stale actions; simultaneous saves/creation and manager decisions; mixed forbidden/stale/invalid bulk requests changing zero rows; successful bulk operations; second-write/affected-row failure rollback; day codes, duplicate/missing/out-of-period days, leap/short months, reordered mapping, and other-period isolation; trusted data capacities; pool/transaction failures and cleanup; frontend payloads, feedback, refresh, stale reload, selected-dialog versions, translations, and real Vue 2/Vuetify SSR calendar controls in English/Arabic RTL. An obsolete Phase 7 test asserting that the write SQL gateway still worked was replaced with retirement coverage; existing applicable read cases remain.
+
+Initial test assertions tied to the retired route/data shape and initial lint failures were corrected. After the first passing implementation, the complete diff (including new files) was reviewed again from callers through authentication, scope, validation, binding, transaction, response, and errors. That review corrected duplicate status-refresh code, empty-picture compatibility, incomplete default-day payloads, conflict reload behavior, misleading confirmation text, and shared/cached approval dialogs. Regression cases were added and the full security/lint/build checks were rerun. Independent `rg` searches included affected server, frontend/store, router mounts, and compiled client assets, as well as direct HTTP retirement tests.
+
+#### Deployment and production verification checklist — user performs these steps
+
+1. Record the release and maintenance window, prior table/approval counts, and aliases for an assignment holder, a recorded manager who is a DTR member, and an account without DTR membership. Preserve the unrelated deleted QR image according to the user's intended release. No schema or session migration is required.
+2. Stop all workers and deploy frontend/backend together, including the new version/write services, revised read services/router/API composition, deleted SQL router, calendar/table/approval pages, and both locales. Follow the user's normal `npm ci`, build, and PM2 deployment procedure. Refresh browser/PWA caches; do not mix old workers or clients. Old SQL clients must receive `404`/validation errors, never an SQL fallback.
+3. **Read-only, English and Arabic, desktop and mobile:** compare assignment/table/approval counts; inspect all four statuses and decline reasons; confirm pending/approved calendars have disabled writes, absent entries show defaults, and failed reads require reload. Change periods across December/January and February in leap/nonleap years and verify the 21st–20th mapping. Open multiple approval panels and confirm each dialog shows the selected employee. Developer tools should show the scoped Phase 7 GET routes and opaque versions, with no legacy SQL requests.
+4. **Read-only boundaries:** harmless `POST {}` to each of `/dtr-api/sql-call`, `/dtr-api/sql-params-call`, `/dtr-api/hr-sql-call` must return `404`, including a DTR member. Without a session, a protected read returns `401`; a nonmember receives `403`; out-of-scope employee reads retain Phase 7's rejection. Do not send SQL or injection payloads to production.
+5. **Production writes require separate authorization first.** Designate two employees and exact periods for the checks below. Securely record whether each row exists and, if it does, its primary key and **every prior column**, including all day placeholders, status, decline text/flag, manager, employee metadata, and audit values. Keep employee data out of this document. Obtain authorization for exact operational restoration before testing: approved rows are immutable through these APIs and newly created rows have no delete/reopen API. If restoration is not authorized, perform only read-only checks.
+6. On a designated eligible employee/period, execute save → submit → recorded-manager decline with Unicode/apostrophe text → correction/save → resubmit → approve. Confirm statuses `0 → 1 → 2 → 0 → 1 → 3`, visible correction reason, cleanup on resubmission, success messages/table refresh, authenticated audit identity, and no change to other periods. A second tab with an old version must receive `409`; simultaneous manager decisions must leave one accepted decision and one controlled conflict. Reload before another attempt, especially after a lost response.
+7. On separately agreed eligible periods/rows for the two designated employees, bulk-submit then bulk-approve. For a mixed stale batch, capture two pending versions, decide one singly, then submit the captured bulk-approval request: expect `409` and the other row unchanged. An authenticated DTR member without the relevant assignment/recorded-manager role must receive `403` for the same designated targets, with zero changes. Record before/after values. Do not induce database failures in production; rollback-on-failure is covered locally. Use separate agreed rows/periods where necessary because approved entries cannot reopen.
+8. Restore exact previous values through the separately authorized operational process, targeting each existing row by primary key plus employee/period. If originally absent, remove only the newly created designated row identified by its new primary key. Restore audit/manager/metadata/decline fields and nonexistent-day placeholders too; verify full values and counts afterward. Never use a retired gateway or introduce a reopen bypass for restoration.
+9. Inspect sanitized logs for unexpected `400/401/403/409/503`, SQL timeouts/deadlocks, and slow bulk operations; smoke-test portal, administration/DTR setup, business cards, CoC, and surveys. Record the actual release, aliases, outcomes and restoration evidence. Mark **Deployed**/**Verified** only when confirmed. Stop before Phase 9.
+
+Maintenance window: **Pending**. Deployed release: **Pending**. Account/test-record aliases, separate production-write/restoration authorization, smoke results, and restoration evidence: **Pending**. Verified by/date: **Pending**.
+
+#### Rollback / recovery
+
+- Keep DTR functionality under maintenance if verification fails; preserve sanitized diagnostics and fix forward. There is no schema migration to reverse. Restore only separately authorized designated test records from their saved snapshots.
+- Phase 7 and earlier releases expose at least one retired DTR SQL gateway and are **not safe accessible rollback targets**. A rollback candidate must retain all three DTR retirements and the Phase 1–7 boundaries. If none exists, block `/dtr` and `/dtr-api` at the reverse proxy until fixed; leave unrelated modules available as appropriate.
+- Replace frontend/backend together and refresh caches. Preserve assignments and application data. Recovery must not enable SQL gateways, create an unapproved reopen workflow, or regenerate/delete existing DTR records.

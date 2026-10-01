@@ -10,6 +10,7 @@ const {
 
 // dtr.dtrEntries.EmployeeCode, dtr.adminAssignment.employeeCode and every
 // stored hierarchy code are varchar(10); dtrEntries.ManagerCode is nvarchar(10).
+const { DAY_COLUMNS, ENTRY_FIELDS, entryVersion } = require('./entryVersion')
 const CODE_LENGTH = 10
 const EMPLOYEE_CODE_PATTERN = /^[A-Za-z0-9_-]{1,10}$/
 
@@ -22,13 +23,6 @@ const MAX_YEAR = 2100
 
 // draft 0, pending 1, declined 2, approved 3
 const PENDING = 1
-
-// Day columns of dtr.dtrEntries, in the order of a period.
-const DAY_COLUMNS = Object.freeze([
-  21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-  12, 13, 14, 15, 16, 17, 18, 19, 20,
-])
-const DAY_COLUMN_LIST = DAY_COLUMNS.map((day) => `[${day}]`).join(', ')
 
 const LEVEL_NAMES = [...LEVELS.keys()]
 
@@ -67,17 +61,15 @@ const SCOPE_EMPLOYEE_QUERIES = new Map(
 const PERIOD_MATCH = `StartDate = CONVERT(date, @periodStart, 23)
     AND EndDate = CONVERT(date, @periodEnd, 23)`
 
-const PERIOD_ENTRIES_QUERY = `SELECT EmployeeCode, ApprovalStatus, DeclineFlag
+const PERIOD_ENTRIES_QUERY = `SELECT ${ENTRY_FIELDS}
   FROM dtr.dtrEntries
   WHERE ${PERIOD_MATCH}`
 
-const ENTRY_QUERY = `SELECT TOP (1) EmployeeCode, ManagerCode, ApprovalStatus,
-    DeclineFlag, DeclineMessage, ${DAY_COLUMN_LIST}
+const ENTRY_QUERY = `SELECT TOP (1) ${ENTRY_FIELDS}
   FROM dtr.dtrEntries
   WHERE EmployeeCode = @employeeCode AND ${PERIOD_MATCH}`
 
-const PENDING_APPROVALS_QUERY = `SELECT EmployeeCode, employeeName,
-    employeePicture, ApprovalStatus, ${DAY_COLUMN_LIST}
+const PENDING_APPROVALS_QUERY = `SELECT ${ENTRY_FIELDS}
   FROM dtr.dtrEntries
   WHERE ManagerCode = @managerCode AND ApprovalStatus = ${PENDING}
     AND ${PERIOD_MATCH}
@@ -184,30 +176,15 @@ function entryStatus(row, employeeCode) {
     EmployeeCode: employeeCode,
     ApprovalStatus: row.ApprovalStatus,
     DeclineFlag: isTrue(row.DeclineFlag),
+    version: entryVersion(row),
   }
 }
 
-function createDtrReads({ sql, portalConfig, hrConfig }) {
-  async function withPool(config, operation) {
-    const pool = new sql.ConnectionPool(config)
-    try {
-      await pool.connect()
-      return await operation(pool)
-    } finally {
-      await pool.close().catch(() => {})
-    }
-  }
-
+function createDtrScope(sql) {
   function bindPath(request, path) {
     for (const [field, value] of Object.entries(path))
       request.input(field, sql.VarChar(CODE_LENGTH), value)
     return request
-  }
-
-  function bindPeriod(request, period) {
-    return request
-      .input('periodStart', sql.VarChar(10), period.start)
-      .input('periodEnd', sql.VarChar(10), period.end)
   }
 
   // Distinct assignment scopes of the caller. No assignment is no scope.
@@ -226,6 +203,49 @@ function createDtrReads({ sql, portalConfig, hrConfig }) {
     return [...scopes.values()]
   }
 
+  // The active employee when one of the scopes contains the code, else null.
+  async function scopeEmployee(hr, scopes, employeeCode) {
+    if (!scopes.length) return null
+    for (const scope of scopes) {
+      const { recordset } = await bindPath(hr.request(), scope.path)
+        .input('employeeCode', sql.VarChar(CODE_LENGTH), employeeCode)
+        .query(SCOPE_EMPLOYEE_QUERIES.get(scope.level))
+      // One code naming two HR employees cannot be resolved safely.
+      if (recordset.length > 1) throw new DtrError('serviceUnavailable', 503)
+      if (recordset.length) return recordset[0]
+    }
+    return null
+  }
+
+  return { bindPath, callerScopes, scopeEmployee }
+}
+
+function createDtrReads({ sql, portalConfig, hrConfig }) {
+  const {
+    bindPath,
+    callerScopes,
+    scopeEmployee: resolveEmployee,
+  } = createDtrScope(sql)
+  const scopeEmployee = (scopes, code) =>
+    scopes.length
+      ? withPool(hrConfig, (hr) => resolveEmployee(hr, scopes, code))
+      : Promise.resolve(null)
+  async function withPool(config, operation) {
+    const pool = new sql.ConnectionPool(config)
+    try {
+      await pool.connect()
+      return await operation(pool)
+    } finally {
+      await pool.close().catch(() => {})
+    }
+  }
+
+  function bindPeriod(request, period) {
+    return request
+      .input('periodStart', sql.VarChar(10), period.start)
+      .input('periodEnd', sql.VarChar(10), period.end)
+  }
+
   // Active employees of every scope, each listed once, in first-seen order.
   async function scopeEmployees(scopes) {
     const employees = new Map()
@@ -242,22 +262,6 @@ function createDtrReads({ sql, portalConfig, hrConfig }) {
       }
     })
     return employees
-  }
-
-  // The active employee when one of the scopes contains the code, else null.
-  async function scopeEmployee(scopes, employeeCode) {
-    if (!scopes.length) return null
-    return await withPool(hrConfig, async (hr) => {
-      for (const scope of scopes) {
-        const { recordset } = await bindPath(hr.request(), scope.path)
-          .input('employeeCode', sql.VarChar(CODE_LENGTH), employeeCode)
-          .query(SCOPE_EMPLOYEE_QUERIES.get(scope.level))
-        // One code naming two HR employees cannot be resolved safely.
-        if (recordset.length > 1) throw new DtrError('serviceUnavailable', 503)
-        if (recordset.length) return recordset[0]
-      }
-      return null
-    })
   }
 
   async function readEntry(portal, employeeCode, period) {
@@ -363,6 +367,7 @@ function createDtrReads({ sql, portalConfig, hrConfig }) {
           entry: entry
             ? {
                 ApprovalStatus: entry.ApprovalStatus,
+                version: entryVersion(entry),
                 DeclineFlag: isTrue(entry.DeclineFlag),
                 DeclineMessage: entry.DeclineMessage || null,
                 days: periodDays(entry, period),
@@ -390,6 +395,7 @@ function createDtrReads({ sql, portalConfig, hrConfig }) {
           employeeName: row.employeeName,
           employeePicture: row.employeePicture,
           ApprovalStatus: row.ApprovalStatus,
+          version: entryVersion(row),
           days: periodDays(row, period),
         }))
       })
@@ -399,6 +405,9 @@ function createDtrReads({ sql, portalConfig, hrConfig }) {
 
 module.exports = {
   createDtrReads,
+  createDtrScope,
+  sameCode,
+  codeKey,
   DtrError,
   parsePeriod,
   validateEmployeeCode,

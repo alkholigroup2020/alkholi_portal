@@ -384,11 +384,20 @@
       "approved": "Successfully Approved",
       "notReadyForApproval": "You have to complete the DTR for all employees first!",
       "normalizeHO": "HO Attendance",
-      "normalizeSites": "Sites Attendance"
+      "normalizeSites": "Sites Attendance",
+      "successApproval": "Successfully Approved",
+      "successDecline": "Entry declined",
+      "reload": "Reload saved DTR",
+      "confirmSubmit": "Send the saved DTR for approval?",
+      "declineMessage": "Decline reason"
     },
     "approvalPage": {
       "sendAllForApproval": "Approve All",
-      "approveAllMessage": "Are you sure you want to approve all?"
+      "approveAllMessage": "Are you sure you want to approve all?",
+      "confirmApprove": "Approve this pending DTR?",
+      "confirmDecline": "Decline this pending DTR?",
+      "approve": "Approve",
+      "decline": "Decline"
     }
   },
   "errorMessages": {
@@ -434,7 +443,13 @@
       "invalidEmployeeCode": "The employee code is invalid.",
       "employeeNotFound": "This employee is not within your DTR assignments.",
       "invalidRequest": "The request could not be processed.",
-      "serviceUnavailable": "The DTR service is temporarily unavailable. Please try again later."
+      "serviceUnavailable": "The DTR service is temporarily unavailable. Please try again later.",
+      "invalidDays": "Please complete every day with a valid attendance code.",
+      "invalidVersion": "Reload the DTR before making this change.",
+      "stateConflict": "This DTR has changed. Close and reload it before continuing.",
+      "invalidTargets": "Please select a valid, distinct list of employees.",
+      "invalidDeclineMessage": "Enter a decline reason of 1 to 300 characters.",
+      "employeeInfoInvalid": "HR data exceeds the DTR field limits or is missing. Contact IT."
     },
     "administration": {
       "bCards": {

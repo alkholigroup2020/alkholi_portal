@@ -1,206 +1,54 @@
 const express = require('express')
-const router = express.Router()
-const sql = require('mssql')
-const { format } = require('date-fns')
-const sqlConfigs = require('../configs/sql')
-const auth = require('../middleware/authorization')
+const { DtrError } = require('../services/dtrReads')
 
-// Moved the portalDB function outside of the route handler to avoid creating a new connection pool every time the route is called
-const pool = new sql.ConnectionPool(sqlConfigs)
-
-async function portalDB() {
-  try {
-    await pool.connect()
-    return pool
-  } catch (err) {
-    return err
+module.exports = function createDtrActionsRouter({ memberOnly, dtrWrites }) {
+  const router = express.Router()
+  function write(operation) {
+    return async (req, res) => {
+      res.set('Cache-Control', 'no-store')
+      try {
+        return res
+          .status(200)
+          .json(await operation(req.auth.employeeCode, req.body))
+      } catch (error) {
+        return res
+          .status(error instanceof DtrError ? error.statusCode : 503)
+          .json({
+            message:
+              error instanceof DtrError ? error.message : 'serviceUnavailable',
+          })
+      }
+    }
   }
+  router.post(
+    '/save-dtr-data',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.save(caller, body))
+  )
+  router.post(
+    '/submit',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.act(caller, 'submit', body))
+  )
+  router.post(
+    '/approve',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.act(caller, 'approve', body))
+  )
+  router.post(
+    '/decline',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.act(caller, 'decline', body))
+  )
+  router.post(
+    '/bulk-submit',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.act(caller, 'submit', body, true))
+  )
+  router.post(
+    '/bulk-approve',
+    ...memberOnly,
+    write((caller, body) => dtrWrites.act(caller, 'approve', body, true))
+  )
+  return router
 }
-
-router.post('/save-dtr-data', auth, async (req, res) => {
-  try {
-    // formate the log date value
-    const logDate = format(new Date(), 'yyyy-MM-dd HH:mm:ss')
-
-    // Ensure the connection is established before executing the query
-    const portalDBConnection = await portalDB()
-
-    // Destructure the required properties from req.body
-    const {
-      employeeCode,
-      employeeName,
-      employeePicture,
-      startingDate,
-      endingDate,
-    } = req.body
-
-    const Q =
-      'exec [dtr].[dtrEntries_checkIfExist] @employeeCode, @startingDate, @endingDate'
-
-    const dtrEntryCheck = await portalDBConnection
-      .request()
-      .input('employeeCode', sql.VarChar, employeeCode)
-      .input('startingDate', sql.Date, startingDate)
-      .input('endingDate', sql.Date, endingDate)
-      .query(Q)
-
-    const checkResult = dtrEntryCheck.recordset[0].dtrEntry
-
-    if (checkResult === 1) {
-      // Generate placeholders for dtrEntries
-      let dtrEntryPlaceholders
-      if (req.body.dtrEntries.length === 31) {
-        dtrEntryPlaceholders = req.body.dtrEntries
-      } else if (req.body.dtrEntries.length === 30) {
-        dtrEntryPlaceholders = req.body.dtrEntries
-        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
-      } else if (req.body.dtrEntries.length === 29) {
-        dtrEntryPlaceholders = req.body.dtrEntries
-        dtrEntryPlaceholders.splice(9, 0, { date: 30, type: null })
-        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
-      } else if (req.body.dtrEntries.length === 28) {
-        dtrEntryPlaceholders = req.body.dtrEntries
-        dtrEntryPlaceholders.splice(8, 0, { date: 29, type: null })
-        dtrEntryPlaceholders.splice(9, 0, { date: 30, type: null })
-        dtrEntryPlaceholders.splice(10, 0, { date: 31, type: null })
-      }
-
-      // Generate the SQL query with parameter placeholders
-      const baseQuery = `UPDATE [dtr].[dtrEntries]
-      SET
-          [employeeName] = @employeeName,
-          [employeePicture] = @employeePicture,
-          [ManagerCode] = @managerCode,
-          [StartDate] = @startingDate,
-          [EndDate] = @endingDate,
-          [ModifiedDate] = @logDate,
-          [ModifiedBy] = @dtrAdmin,
-          [ApprovalStatus] = 0,
-          [21] = @type0,
-          [22] = @type1,
-          [23] = @type2,
-          [24] = @type3,
-          [25] = @type4,
-          [26] = @type5,
-          [27] = @type6,
-          [28] = @type7,
-          [29] = @type8,
-          [30] = @type9,
-          [31] = @type10,
-          [1] = @type11,
-          [2] = @type12,
-          [3] = @type13,
-          [4] = @type14,
-          [5] = @type15,
-          [6] = @type16,
-          [7] = @type17,
-          [8] = @type18,
-          [9] = @type19,
-          [10] = @type20,
-          [11] = @type21,
-          [12] = @type22,
-          [13] = @type23,
-          [14] = @type24,
-          [15] = @type25,
-          [16] = @type26,
-          [17] = @type27,
-          [18] = @type28,
-          [19] = @type29,
-          [20] = @type30
-      WHERE
-          [EmployeeCode] = @employeeCode;`
-
-      // Prepare the SQL request
-      const request = portalDBConnection.request()
-
-      // Add parameters to the request
-      request.input('employeeCode', employeeCode)
-      request.input('employeeName', employeeName)
-      request.input('employeePicture', employeePicture)
-      request.input('managerCode', req.body.managerCode)
-      request.input('startingDate', startingDate)
-      request.input('endingDate', endingDate)
-      request.input('logDate', logDate)
-      request.input('dtrAdmin', req.body.dtrAdmin)
-
-      dtrEntryPlaceholders.forEach((entry, index) => {
-        request.input(`type${index}`, entry.type)
-      })
-
-      // Execute the query
-      const theCall = await request.query(baseQuery)
-      res.send(theCall.rowsAffected)
-    } else {
-      // Generate the SQL query with parameter placeholders
-      const baseQuery = `INSERT INTO [dtr].[dtrEntries]
-        ([EmployeeCode], [employeeName], [employeePicture], [ManagerCode], [StartDate], [EndDate], [ModifiedDate], [ModifiedBy], [ApprovalStatus],
-          [21], [22], [23], [24], [25], [26], [27], [28], [29], [30], [31], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12], [13], [14], [15], [16], [17], [18], [19], [20]
-        )
-        VALUES
-        (@employeeCode, @employeeName, @employeePicture, @managerCode, @startingDate, @endingDate, @logDate, @dtrAdmin, 0,`
-
-      // Generate placeholders for dtrEntries
-      let dtrEntryPlaceholders
-      if (req.body.dtrEntries.length === 31) {
-        dtrEntryPlaceholders = req.body.dtrEntries
-          .map((_, index) => `@type${index}`)
-          .join(', ')
-      } else if (req.body.dtrEntries.length === 30) {
-        const entriesArray = req.body.dtrEntries
-        entriesArray.splice(10, 0, { date: 31, type: null })
-        dtrEntryPlaceholders = entriesArray
-          .map((_, index) => `@type${index}`)
-          .join(', ')
-      } else if (req.body.dtrEntries.length === 29) {
-        const entriesArray = req.body.dtrEntries
-        entriesArray.splice(9, 0, { date: 30, type: null })
-        entriesArray.splice(10, 0, { date: 31, type: null })
-        dtrEntryPlaceholders = entriesArray
-          .map((_, index) => `@type${index}`)
-          .join(', ')
-      } else if (req.body.dtrEntries.length === 28) {
-        const entriesArray = req.body.dtrEntries
-        entriesArray.splice(8, 0, { date: 29, type: null })
-        entriesArray.splice(9, 0, { date: 30, type: null })
-        entriesArray.splice(10, 0, { date: 31, type: null })
-        dtrEntryPlaceholders = entriesArray
-          .map((_, index) => `@type${index}`)
-          .join(', ')
-      }
-
-      const query = baseQuery + dtrEntryPlaceholders + ')'
-
-      // Prepare the SQL request
-      const request = portalDBConnection.request()
-
-      // Add parameters to the request
-      request.input('employeeCode', employeeCode)
-      request.input('employeeName', employeeName)
-      request.input('employeePicture', employeePicture)
-      request.input('managerCode', req.body.managerCode)
-      request.input('startingDate', startingDate)
-      request.input('endingDate', endingDate)
-      request.input('logDate', logDate)
-      request.input('dtrAdmin', req.body.dtrAdmin)
-
-      req.body.dtrEntries.forEach((entry, index) => {
-        request.input(`type${index}`, entry.type)
-      })
-
-      // Execute the query
-      const theCall = await request.query(query)
-      res.send(theCall.rowsAffected)
-    }
-  } catch (e) {
-    const statusCode = e.statusCode || 500
-    const message = e.message || e.toString().replace('Error: ', '')
-    res.status(statusCode).json({ message })
-  } finally {
-    // Only close the connection if it exists
-    if (pool.connected) {
-      await pool.close()
-    }
-  }
-})
-
-module.exports = router

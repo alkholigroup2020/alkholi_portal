@@ -15,7 +15,7 @@
           <p
             class="text-subtitle-1 font-weight-medium pt-3 pb-8 mb-0 text-center"
           >
-            {{ $t('dtrApp.approvalPage.approveAllMessage') }}
+            {{ $t('dtrApp.dtrPage.confirmSubmit') }}
           </p>
         </v-card-text>
 
@@ -51,13 +51,23 @@
       <div style="width: 100%" class="py-2 d-flex">
         <div class="d-flex">
           <v-btn
-            v-if="declineFlag"
+            v-if="!calendarLoaded && !overlay"
+            text
+            outlined
+            small
+            color="warning"
+            class="mx-2 text-capitalize cursor-pointer"
+            @click="getSavedData"
+            >{{ $t('dtrApp.dtrPage.reload') }}</v-btn
+          >
+          <v-btn
+            v-if="entryStatus === 0 || entryStatus === 2"
             text
             outlined
             small
             color="success"
             class="text-capitalize cursor-pointer"
-            :disabled="disabledStatus"
+            :disabled="disabledStatus || changeOccurs"
             @click="singleApprovalDialog = true"
             ><v-icon color="green" small class="mx-2"
               >mdi-checkbox-marked-circle-plus-outline</v-icon
@@ -199,7 +209,9 @@
       </table>
 
       <div v-if="declineMessage" class="d-flex align-center py-5">
-        <span class="text-body-2">Decline Message:</span>
+        <span class="text-body-2">{{
+          $t('dtrApp.dtrPage.declineMessage')
+        }}</span>
         <span class="error--text text-body-2 px-2">{{ declineMessage }}</span>
       </div>
       <v-divider></v-divider>
@@ -208,6 +220,8 @@
 </template>
 
 <script>
+import { authErrorMessage } from '~/utils/auth-client'
+
 export default {
   filters: {
     // This function takes a value parameter and returns a formatted date string
@@ -263,15 +277,18 @@ export default {
       overlay: false,
       singleApprovalDialog: false,
       changeOccurs: false,
+      entryVersion: null,
+      entryStatus: null,
+      calendarLoaded: false,
     }
   },
   computed: {
     disabledStatus() {
-      if (this.statusColor === 'orange' || this.statusColor === 'green') {
-        return true
-      } else {
-        return false
-      }
+      return (
+        !this.calendarLoaded ||
+        this.overlay ||
+        [1, 3].includes(this.entryStatus)
+      )
     },
   },
   created() {
@@ -355,6 +372,7 @@ export default {
     async getSavedData() {
       try {
         this.overlay = true
+        this.calendarLoaded = false
         // the server checks that this employee is assigned to the signed-in
         // user and returns the saved days of the period only
         const savedData = await this.$store.dispatch('dtr/getCalendar', {
@@ -364,12 +382,22 @@ export default {
         })
 
         const entry = savedData && savedData.entry
+        this.calendarLoaded = !!savedData
+        this.entryVersion = entry ? entry.version : null
+        this.entryStatus = entry ? entry.ApprovalStatus : null
+        this.declineMessage = entry ? entry.DeclineMessage : null
+
+        if (savedData) {
+          this.weeks.forEach((week) =>
+            week.forEach((day) => {
+              day.type = 'RA'
+            })
+          )
+          this.changeOccurs = false
+          this.prepareDataArray('firstTime')
+        }
 
         if (entry) {
-          if (entry.DeclineMessage) {
-            this.declineMessage = entry.DeclineMessage
-          }
-
           /*
           `entry.days` holds the saved type of every day of the period, keyed by the day number.
           Use Object.keys(input) to get an array of the keys in the input object.
@@ -406,6 +434,7 @@ export default {
           }
 
           updateType(this.weeks, this.dtrEntriesArray)
+          this.prepareDataArray('firstTime')
         }
 
         this.overlay = false
@@ -476,134 +505,63 @@ export default {
     },
 
     async saveData() {
+      if (!this.calendarLoaded || this.overlay) return
+      if (!this.changeOccurs)
+        return this.notifyUser('error', 'errorMessages.noChange')
+      this.overlay = true
       try {
-        if (this.changeOccurs) {
-          this.overlay = true
-          const employeeCode = this.employeeCode
-
-          const sDate = new Date(this.startDate)
-          const sDay = sDate.getDate().toString().padStart(2, '0')
-          const sMonth = (sDate.getMonth() + 1).toString().padStart(2, '0')
-          const sYear = sDate.getFullYear().toString()
-          const startingDate = `${sYear}-${sMonth}-${sDay}`
-
-          const eDate = new Date(this.endDate)
-          const eDay = eDate.getDate().toString().padStart(2, '0')
-          const eMonth = (eDate.getMonth() + 1).toString().padStart(2, '0')
-          const eYear = eDate.getFullYear().toString()
-          const endingDate = `${eYear}-${eMonth}-${eDay}`
-
-          // HR details of the assigned employee, resolved by the server
-          const employee = await this.$store.dispatch(
-            'dtr/getEmployee',
-            employeeCode
-          )
-
-          if (employee) {
-            const managerCode = employee.Manager_Code
-            const employeeName = employee.employee_name_eng
-            const employeePicture = employee.employee_picture
-
-            const dtrAdmin = localStorage.getItem('userFullName')
-
-            const payload = {
-              employeeCode,
-              managerCode,
-              startingDate,
-              endingDate,
-              dtrEntries: this.dtrEntriesArray,
-              dtrAdmin,
-              employeeName,
-              employeePicture,
-            }
-
-            const saveToDB = await this.$axios.post(
-              `${this.$config.baseURL}/dtr-api/save-dtr-data`,
-              payload
-            )
-
-            if (saveToDB.data[0] === 1) {
-              this.$emit('employeeDataSaved', this.employeeCode)
-
-              this.overlay = false
-              const notification = {
-                type: 'success',
-                message: this.$t(`successMessages.successSave`),
-              }
-              await this.$store.dispatch(
-                'appNotifications/addNotification',
-                notification
-              )
-            }
-          } else {
-            // the employee could not be loaded and the user was notified
-            this.overlay = false
+        this.prepareDataArray('firstTime')
+        const response = await this.$axios.post(
+          `${this.$config.baseURL}/dtr-api/save-dtr-data`,
+          {
+            employeeCode: this.employeeCode,
+            start: this.formatDate(new Date(this.startDate)),
+            end: this.formatDate(new Date(this.endDate)),
+            version: this.entryVersion,
+            dtrEntries: this.dtrEntriesArray,
           }
-        } else {
-          const notification = {
-            type: 'error',
-            message: this.$t(`errorMessages.noChange`),
-          }
-          await this.$store.dispatch(
-            'appNotifications/addNotification',
-            notification
-          )
-        }
-      } catch (e) {
-        this.overlay = false
-        const error = e.toString()
-        const newErrorString = error.replaceAll('Error: ', '')
-        const notification = {
-          type: 'error',
-          message: newErrorString,
-        }
-        await this.$store.dispatch(
-          'appNotifications/addNotification',
-          notification
         )
+        this.entryVersion = response.data.version
+        this.entryStatus = 0
+        this.changeOccurs = false
+        this.$emit('employeeDataSaved', this.employeeCode)
+        await this.notifyUser('success', 'successMessages.successSave')
+      } catch (error) {
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        // Preserve unsaved edits; a conflict requires closing/reloading the calendar.
+        if (error.response && error.response.status === 409)
+          this.calendarLoaded = false
+      } finally {
+        this.overlay = false
       }
     },
 
     async sendSingleForApproval() {
+      if (!this.calendarLoaded || this.overlay || this.changeOccurs) return
+      this.singleApprovalDialog = false
+      this.overlay = true
       try {
-        this.singleApprovalDialog = false
-        this.overlay = true
-
-        // Prepare variables for the query
-        const startingDate = this.formatDate(new Date(this.startDate))
-        const endingDate = this.formatDate(new Date(this.endDate))
-
-        const response = await this.$axios.post(
-          `${this.$config.baseURL}/dtr-api/sql-params-call`,
-          {
-            query: `
-                UPDATE [dtr].[dtrEntries]
-                SET [ApprovalStatus] = @approvalStatus
-                WHERE [EmployeeCode] = @employeeCode
-                AND [StartDate] = @startDate
-                AND [EndDate] = @endDate
-              `,
-            parameters: {
-              approvalStatus: 1,
-              employeeCode: this.employeeCode,
-              startDate: startingDate,
-              endDate: endingDate,
-            },
-          }
-        )
-
-        if (response.status === 200) {
-          // close the panel
-          this.$emit('closePanel')
-
-          this.overlay = false
-
-          // Send a successful feedback to the user
-          await this.notifyUser('success', 'dtrApp.dtrPage.sentForApproval')
-        }
-      } catch (e) {
+        await this.$axios.post(`${this.$config.baseURL}/dtr-api/submit`, {
+          employeeCode: this.employeeCode,
+          start: this.formatDate(new Date(this.startDate)),
+          end: this.formatDate(new Date(this.endDate)),
+          version: this.entryVersion,
+        })
+        this.entryStatus = 1
+        this.$emit('closePanel')
+        await this.notifyUser('success', 'dtrApp.dtrPage.sentForApproval')
+      } catch (error) {
+        await this.$store.dispatch('appNotifications/addNotification', {
+          type: 'error',
+          message: authErrorMessage(this.$store, error, 'dtr'),
+        })
+        if (error.response && error.response.status === 409)
+          this.calendarLoaded = false
+      } finally {
         this.overlay = false
-        await this.notifyUser('error', e.toString().replaceAll('Error: ', ''))
       }
     },
 

@@ -384,11 +384,20 @@
       "approved": "تمت الموافقة",
       "notReadyForApproval": "يجب إدخال تفاصيل الحضور لكافة الموظفين أولاً",
       "normalizeHO": "حضور المركز الرئيسي",
-      "normalizeSites": "حضور المواقع"
+      "normalizeSites": "حضور المواقع",
+      "successApproval": "تمت الموافقة بنجاح",
+      "successDecline": "تم رفض السجل",
+      "reload": "إعادة تحميل سجل الحضور المحفوظ",
+      "confirmSubmit": "هل تريد إرسال سجل الحضور المحفوظ للموافقة؟",
+      "declineMessage": "سبب الرفض"
     },
     "approvalPage": {
       "sendAllForApproval": "الموافقة للكل",
-      "approveAllMessage": "هل أنت متأكد من الموافقة على الكل؟"
+      "approveAllMessage": "هل أنت متأكد من الموافقة على الكل؟",
+      "confirmApprove": "هل تريد الموافقة على سجل الحضور المعلّق؟",
+      "confirmDecline": "هل تريد رفض سجل الحضور المعلّق؟",
+      "approve": "الموافقة",
+      "decline": "الرفض"
     }
   },
   "errorMessages": {
@@ -434,7 +443,13 @@
       "invalidEmployeeCode": "رقم الموظف غير صالح.",
       "employeeNotFound": "هذا الموظف ليس ضمن الموظفين المسندين إليك.",
       "invalidRequest": "تعذرت معالجة الطلب.",
-      "serviceUnavailable": "نظام الحضور اليومي غير متاح مؤقتًا. يرجى المحاولة لاحقًا."
+      "serviceUnavailable": "نظام الحضور اليومي غير متاح مؤقتًا. يرجى المحاولة لاحقًا.",
+      "invalidDays": "يرجى تعبئة جميع الأيام برمز حضور صحيح.",
+      "invalidVersion": "يرجى إعادة تحميل سجل الحضور قبل إجراء التغيير.",
+      "stateConflict": "تم تغيير سجل الحضور. يرجى إغلاقه وإعادة تحميله قبل المتابعة.",
+      "invalidTargets": "يرجى تحديد قائمة موظفين صحيحة دون تكرار.",
+      "invalidDeclineMessage": "يرجى إدخال سبب الرفض من حرف واحد إلى 300 حرف.",
+      "employeeInfoInvalid": "بيانات الموارد البشرية مفقودة أو تتجاوز حدود حقول الحضور. يرجى التواصل مع تقنية المعلومات."
     },
     "administration": {
       "bCards": {
